@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>A Jornada das Belas Pedras - Sala de Testes V10</title>
+    <title>A Jornada das Belas Pedras - Sala de Testes V14</title>
     <style>
         body {
             margin: 0;
@@ -139,7 +139,7 @@
         WASD/Setas: Mover<br>
         1, 2, 3: Trocar Gato<br>
         ESPAÇO: Ação/Interagir/Habilidade<br>
-        OBJETIVO: Passar pelo Burocrata e sobreviver ao Deserto.
+        OBJETIVO: Examine os túmulos antigos para encontrar a chave.
     </div>
 
     <div id="status-area">
@@ -181,15 +181,17 @@
                 this.assistants = [];
                 this.activeAssistantIndex = 0; 
                 this.isDialogueOpen = false;
+                this.dialogueCooldown = 0; 
                 this.playerHealth = 100;
                 this.lastDamageTime = 0; 
-                this.lastHeatDamageTime = 0; // Timer específico para o calor
+                this.lastHeatDamageTime = 0; 
                 this.fiodorDetectionUI = null; 
                 this.currentRoom = 1;
                 this.player = null;
                 this.koffe = null;
                 this.selector = null;
                 this.currentBackground = null; 
+                this.sandstormOverlay = null; 
             }
 
             preload() {
@@ -287,6 +289,37 @@
                 graphics.fillStyle(0x000000, 0.4); // Preto 40% opaco
                 graphics.fillEllipse(16, 16, 30, 20);
                 graphics.generateTexture('shadow', 32, 32);
+                
+                // NOVO: Túmulo Árabe (Pedras Alinhadas)
+                graphics.clear();
+                graphics.fillStyle(0x808080); // Cinza pedra base
+                graphics.fillCircle(8, 24, 6);
+                graphics.fillStyle(0x707070); 
+                graphics.fillCircle(16, 22, 7);
+                graphics.fillStyle(0x606060); 
+                graphics.fillCircle(24, 24, 6);
+                // Leve acumulo de areia na base
+                graphics.fillStyle(0xe6c288); 
+                graphics.fillRect(2, 28, 28, 4);
+                graphics.generateTexture('arab_tomb', 32, 32);
+                
+                // NOVO: Chave Antiga (Deserto)
+                graphics.clear();
+                graphics.lineStyle(2, 0xffd700);
+                graphics.strokeCircle(10, 10, 6);
+                graphics.lineBetween(16, 10, 28, 10);
+                graphics.lineBetween(28, 10, 28, 16);
+                graphics.generateTexture('desert_key', 32, 32);
+                
+                // NOVO: Portão Antigo
+                graphics.clear();
+                graphics.fillStyle(0x555555);
+                graphics.fillRect(0, 0, 32, 64);
+                graphics.lineStyle(2, 0x333333);
+                graphics.strokeRect(0, 0, 32, 64);
+                graphics.fillStyle(0x222222);
+                graphics.fillCircle(16, 32, 4); // Fechadura
+                graphics.generateTexture('ancient_gate', 32, 64);
 
                 // Paredes de Pedra
                 graphics.clear();
@@ -355,6 +388,7 @@
                 this.fiodorDetectionUI = document.getElementById('fiodor-detection');
                 
                 this.registry.set('hasFormularioAzul', false);
+                this.registry.set('hasDesertKey', false); 
                 
                 // --- CONFIGURAÇÃO DO MUNDO E CÂMARA ---
                 this.physics.world.setBounds(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
@@ -414,18 +448,22 @@
                 if (this.walls) this.walls.clear(true, true);
                 if (this.heavyBoxes) this.heavyBoxes.clear(true, true);
                 if (this.triggers) this.triggers.clear(true, true);
-                if (this.shadows) this.shadows.clear(true, true); // Novo grupo de sombras
+                if (this.shadows) this.shadows.clear(true, true); 
+                if (this.arabTombs) this.arabTombs.clear(true, true); 
                 if (this.dwarf) this.dwarf.destroy();
                 if (this.crystal) this.crystal.destroy();
                 if (this.paper) this.paper.destroy();
                 if (this.fungus) this.fungus.destroy();
                 if (this.exitPortal) this.exitPortal.destroy();
+                if (this.ancientGate) this.ancientGate.destroy(); 
+                if (this.sandstormOverlay) this.sandstormOverlay.destroy();
 
                 // Reinicializa Grupos
                 this.walls = this.physics.add.staticGroup();
                 this.heavyBoxes = this.physics.add.group({ bounceX: 0, bounceY: 0 }); 
                 this.triggers = this.physics.add.staticGroup();
-                this.shadows = this.physics.add.staticGroup(); // Grupo de Sombras
+                this.shadows = this.physics.add.staticGroup(); 
+                this.arabTombs = this.physics.add.staticGroup(); 
 
                 // Reposicionar Personagens
                 this.player.setPosition(200, 200);
@@ -481,9 +519,12 @@
 
                     // Colisões Sala 1
                     this.physics.add.collider(this.player, this.heavyBoxes, this.handleBoxPush, null, this);
+                    
+                    // Colisão física com o anão sem callback (interação é no update)
                     if (this.dwarf.active) {
-                        this.physics.add.collider(this.player, this.dwarf, this.dwarfInteraction, null, this);
+                        this.physics.add.collider(this.player, this.dwarf); 
                     }
+                    
                     this.physics.add.overlap(this.assistants[0], this.crystal, this.handleCrystal, null, this); 
                     this.physics.add.overlap(this.player, this.paper, this.collectPaper, null, this);
                     this.physics.add.overlap(this.player, this.fungus, this.handleFungusDamage, null, this);
@@ -498,16 +539,39 @@
                     this.createRoom(2, 2, 18, 13, 'ruin_wall');
                     this.player.setPosition(200, 200);
 
-                    // Adicionar Sombras (Zonas Seguras)
                     this.createShadows();
-
-                    this.triggerDialogue("Denise", "Sala 2: O Deserto. Que calor insuport\u00E1vel! \nPreciso ficar nas sombras para n\u00E3o desmaiar.");
+                    this.createArabTombs();
                     
+                    // Portão Antigo 
+                    this.ancientGate = this.physics.add.staticSprite(550, 400, 'ancient_gate');
+                    this.ancientGate.setDepth(5);
+                    
+                    // Colisão física com o portão sem callback
+                    this.physics.add.collider(this.player, this.ancientGate);
+
                     this.exitPortal = this.physics.add.staticSprite(550, 400, 'portal');
                     this.exitPortal.setVisible(true);
                     this.exitPortal.name = "return_portal";
-                    this.exitPortal.setDepth(5);
-                    this.physics.add.overlap(this.player, this.exitPortal, () => this.loadRoom(1), null, this);
+                    this.exitPortal.setDepth(4); 
+                    this.physics.add.overlap(this.player, this.exitPortal, () => {
+                         if (!this.ancientGate.active) this.loadRoom(1); 
+                    }, null, this);
+
+                    this.triggerDialogue("Denise", "Sala 2: O Deserto. Tempestades de areia v\u00EAm e v\u00E3o. \nExamine os t\u00FAmulos antigos para achar a chave!");
+
+                    this.sandstormOverlay = this.add.rectangle(0, 0, WORLD_WIDTH, WORLD_HEIGHT, 0xd2b48c);
+                    this.sandstormOverlay.setOrigin(0);
+                    this.sandstormOverlay.setDepth(30); 
+                    this.sandstormOverlay.setAlpha(0.1);
+                    
+                    this.tweens.add({
+                        targets: this.sandstormOverlay,
+                        alpha: 0.4,
+                        duration: 4000,
+                        yoyo: true,
+                        repeat: -1,
+                        ease: 'Sine.easeInOut'
+                    });
                 }
                 
                 // Colisões Globais
@@ -523,7 +587,6 @@
             }
 
             createShadows() {
-                // Cria sombras em locais estratégicos (atrás de "ruínas" imaginárias ou cantos)
                 const shadowPositions = [
                     {x: 100, y: 100},
                     {x: 300, y: 300},
@@ -534,9 +597,23 @@
 
                 shadowPositions.forEach(pos => {
                     const shadow = this.shadows.create(pos.x, pos.y, 'shadow');
-                    shadow.setScale(2); // Sombra maior
-                    shadow.setDepth(1); // Acima do chão, abaixo do player
+                    shadow.setScale(2); 
+                    shadow.setDepth(1); 
                 });
+            }
+            
+            createArabTombs() {
+                const t1 = this.arabTombs.create(150, 150, 'arab_tomb');
+                t1.setData('hasKey', false);
+                t1.setDepth(5);
+                
+                const t2 = this.arabTombs.create(400, 100, 'arab_tomb');
+                t2.setData('hasKey', false);
+                t2.setDepth(5);
+                
+                const t3 = this.arabTombs.create(550, 100, 'arab_tomb');
+                t3.setData('hasKey', true);
+                t3.setDepth(5);
             }
 
             update(time, delta) {
@@ -577,7 +654,22 @@
                 });
 
                 // Lógica de Koffe
-                if (this.playerHealth < 50) {
+                if (this.currentRoom === 2 && this.playerHealth < 70) {
+                     this.koffe.setAlpha(0.8);
+                     let nearestShadow = null;
+                     let minShadowDist = Infinity;
+                     this.shadows.children.iterate((shadow) => {
+                         const d = Phaser.Math.Distance.Between(this.player.x, this.player.y, shadow.x, shadow.y);
+                         if (d < minShadowDist) {
+                             minShadowDist = d;
+                             nearestShadow = shadow;
+                         }
+                     });
+                     if (nearestShadow) {
+                         this.koffe.x = Phaser.Math.Linear(this.koffe.x, nearestShadow.x, 0.05);
+                         this.koffe.y = Phaser.Math.Linear(this.koffe.y, nearestShadow.y, 0.05);
+                     }
+                } else if (this.playerHealth < 50) {
                     this.koffe.setAlpha(0.8);
                     this.koffe.x = Phaser.Math.Linear(this.koffe.x, this.player.x + 20, 0.05);
                     this.koffe.y = Phaser.Math.Linear(this.koffe.y, this.player.y - 30, 0.05);
@@ -594,29 +686,22 @@
                 this.selector.x = activeCat.x - 5;
                 this.selector.y = activeCat.y - 25;
 
-                // Fiódor UI (Sala 1)
+                // Fiódor UI
                 if (this.currentRoom === 1 && this.fungus && this.fungus.active && activeCat.name === "Fiódor") {
                     this.checkFiodorDetection();
                 } else {
                     this.fiodorDetectionUI.style.display = 'none';
                 }
 
-                // *** MECÂNICA DE CALOR (SALA 2) ***
+                // MECÂNICA DE CALOR
                 if (this.currentRoom === 2) {
-                    // Verifica se o player está sobrepondo alguma sombra
                     const isSafe = this.physics.overlap(this.player, this.shadows);
-                    
                     if (!isSafe) {
-                        // Aplica dano a cada 2 segundos
                         if (time > this.lastHeatDamageTime + 2000) {
                             this.playerHealth = Math.max(0, this.playerHealth - 5);
                             this.lastHeatDamageTime = time;
-                            
-                            // Feedback Visual
                             this.cameras.main.shake(100, 0.005);
-                            this.showFloatingText(this.player.x, this.player.y, "Calor! -5 HP", 0xff4500); // Laranja avermelhado
-
-                            // Game Over check
+                            this.showFloatingText(this.player.x, this.player.y, "Calor! -5 HP", 0xff4500); 
                             if (this.playerHealth <= 0) {
                                 this.triggerDialogue("Game Over", "O calor do deserto foi demais para voc\u00EA.");
                                 this.scene.pause();
@@ -625,13 +710,33 @@
                     }
                 }
 
-                // Inputs de Ação
+                // Inputs de Ação (Geral)
                 if (Phaser.Input.Keyboard.JustDown(this.keySpace) && !this.isDialogueOpen) {
-                    const distToDwarf = this.currentRoom === 1 && this.dwarf.active ? Phaser.Math.Distance.Between(this.player.x, this.player.y, this.dwarf.x, this.dwarf.y) : Infinity;
-                    const interactionRange = 50; 
-                    if (this.currentRoom === 1 && this.dwarf.active && distToDwarf < interactionRange) {
+                    // Fix: Cooldown Check
+                    if (this.time.now < this.dialogueCooldown) return;
+
+                    // Prioridade 1: Interagir com Anão (Sala 1)
+                    if (this.currentRoom === 1 && this.dwarf.active && Phaser.Math.Distance.Between(this.player.x, this.player.y, this.dwarf.x, this.dwarf.y) < 60) {
                         this.dwarfInteraction(this.player, this.dwarf);
-                    } else {
+                    } 
+                    // Prioridade 2: Interagir com Portão (Sala 2)
+                    else if (this.currentRoom === 2 && this.ancientGate.active && Phaser.Math.Distance.Between(this.player.x, this.player.y, this.ancientGate.x, this.ancientGate.y) < 60) {
+                        this.handleGateInteraction();
+                    }
+                    // Prioridade 3: Interagir com Túmulos (Sala 2)
+                    else if (this.currentRoom === 2) {
+                        let tombFound = false;
+                        this.arabTombs.children.iterate((tomb) => {
+                            if (tomb.active && Phaser.Math.Distance.Between(this.player.x, this.player.y, tomb.x, tomb.y) < 40) {
+                                this.handleTombInteraction(tomb);
+                                tombFound = true;
+                            }
+                        });
+                        if (!tombFound) {
+                            this.performAssistantAction();
+                        }
+                    }
+                    else {
                         this.performAssistantAction();
                     }
                 }
@@ -642,27 +747,43 @@
             // --- LÓGICA DE JOGO ---
 
             dwarfInteraction(player, dwarf) {
-                if (!Phaser.Input.Keyboard.JustDown(this.keySpace)) return;
+                // Check removed to avoid redundant key check failure
                 
                 if (this.registry.get('hasFormularioAzul')) {
                     this.triggerDialogue("An\u00E3o Burocrata", "Ah, aqui est\u00E1. Excelente! O Visto 'A' para a Sala 2 foi concedido. Por favor, prossiga.");
-                    
-                    // CONSOME O ITEM (Remove do inventário)
                     this.registry.set('hasFormularioAzul', false);
-                    
                     dwarf.disableBody(true, true);
                     this.tweens.add({ targets: dwarf, alpha: 0, duration: 800 });
-                    
                     this.exitPortal.enableBody(true, this.dwarf.x, this.dwarf.y + 16, true, true);
                     this.exitPortal.setAlpha(1);
                     this.exitPortal.setDepth(5);
-                    
                     this.time.delayedCall(1500, () => {
                         this.triggerDialogue("Denise", "Uma passagem abriu-se no local do An\u00E3o. Vamos em frente!");
                     });
-                    
                 } else {
                     this.triggerDialogue("An\u00E3o Burocrata", "Alto l\u00E1! Onde pensa que vai sem o Formul\u00E1rio Azul 2B? \n\n(Dica: Selecione Orpheu (3) e tente empurrar a caixa pesada pr\u00F3xima.)");
+                }
+            }
+            
+            handleTombInteraction(tomb) {
+                if (tomb.getData('hasKey')) {
+                    this.registry.set('hasDesertKey', true);
+                    this.triggerDialogue("Denise", "Encontrei! Uma Chave Antiga escondida neste t\u00FAmulo. \nEssas pedras alinhadas... t\u00EDpico da era pr\u00E9-isl\u00E2mica.");
+                    tomb.destroy(); 
+                } else {
+                    this.triggerDialogue("Denise", "Apenas pedras... nada aqui. Tenho que continuar a busca.");
+                }
+            }
+            
+            handleGateInteraction() {
+                if (this.registry.get('hasDesertKey')) {
+                    this.triggerDialogue("Sistema", "A chave antiga encaixa perfeitamente!");
+                    this.registry.set('hasDesertKey', false); 
+                    this.ancientGate.disableBody(true, true);
+                    this.ancientGate.setVisible(false);
+                    this.triggerDialogue("Denise", "O port\u00E3o abriu! Podemos voltar para a Sala 1 agora (Fim da Demo).");
+                } else {
+                    this.triggerDialogue("Sistema", "O port\u00E3o est\u00E1 trancado. Parece precisar de uma chave antiga.");
                 }
             }
 
@@ -811,6 +932,7 @@
 
             closeDialogue() {
                 this.isDialogueOpen = false;
+                this.dialogueCooldown = this.time.now + 200; // Fix: Adiciona 200ms de cooldown
                 document.getElementById('ui-layer').style.display = 'none';
                 if (this.typingEvent) this.typingEvent.destroy();
             }
@@ -832,12 +954,23 @@
             updateInventoryUI() {
                 const inventoryList = document.getElementById('inventory-list');
                 inventoryList.innerHTML = ''; 
+                
                 const hasFormulario = this.registry.get('hasFormularioAzul');
+                const hasKey = this.registry.get('hasDesertKey');
+                
                 if (hasFormulario) {
                     const li = document.createElement('li');
-                    li.innerText = '• Formul\u00E1rio Azul 2B (\uD83D\uDD11)';
+                    li.innerText = '• Formul\u00E1rio Azul 2B (\uD83D\uDCC4)';
                     inventoryList.appendChild(li);
-                } else {
+                }
+                
+                if (hasKey) {
+                    const li = document.createElement('li');
+                    li.innerText = '• Chave Antiga (\uD83D\uDD11)';
+                    inventoryList.appendChild(li);
+                }
+
+                if (!hasFormulario && !hasKey) {
                     const li = document.createElement('li');
                     li.innerText = '(Vazio)';
                     inventoryList.appendChild(li);
