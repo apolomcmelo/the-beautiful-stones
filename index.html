@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>A Jornada das Belas Pedras - Sala de Testes V6</title>
+    <title>A Jornada das Belas Pedras - Sala de Testes V8</title>
     <style>
         body {
             margin: 0;
@@ -56,16 +56,22 @@
             white-space: pre-wrap;
         }
 
-        /* UI de Vida */
-        #health-bar {
+        /* UI de Informação Global (Vida e Inventário) */
+        #status-area {
             position: absolute;
             top: 10px;
             right: 10px;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        #health-bar {
             width: 150px;
             height: 20px;
             background-color: #555;
             border: 2px solid #fff;
-            z-index: 100;
             border-radius: 4px;
             overflow: hidden;
             font-size: 12px;
@@ -80,6 +86,21 @@
             background-color: #e74c3c;
             width: 100%;
             transition: width 0.3s ease-out;
+        }
+        
+        #inventory-display {
+            background: rgba(0, 0, 0, 0.7);
+            padding: 8px;
+            border-radius: 4px;
+            color: #fff;
+            font-size: 12px;
+            width: 150px;
+        }
+        
+        #inventory-list {
+            margin-top: 5px;
+            list-style: none;
+            padding: 0;
         }
 
         /* Instruções no canto */
@@ -121,9 +142,17 @@
         OBJETIVO: Passar pelo Burocrata e ir para a Sala 2.
     </div>
 
-    <div id="health-bar">
-        <div id="health-fill"></div>
-        HP: <span id="health-value">100</span>
+    <div id="status-area">
+        <div id="health-bar">
+            <div id="health-fill"></div>
+            HP: <span id="health-value">100</span>
+        </div>
+        <div id="inventory-display">
+            Inventário:
+            <ul id="inventory-list">
+                <!-- Itens serão injetados aqui -->
+            </ul>
+        </div>
     </div>
 
     <div id="fiodor-detection">
@@ -154,14 +183,13 @@
                 this.activeAssistantIndex = 0; 
                 this.isDialogueOpen = false;
                 this.playerHealth = 100;
-                this.hasFormularioAzul = false;
                 this.lastDamageTime = 0; 
                 this.fiodorDetectionUI = null; 
                 this.currentRoom = 1;
                 this.player = null;
                 this.koffe = null;
                 this.selector = null;
-                this.currentBackground = null; // Para armazenar a referência do tileSprite
+                this.currentBackground = null; 
             }
 
             preload() {
@@ -269,17 +297,19 @@
                 graphics.lineBetween(30, 2, 2, 30); 
                 graphics.generateTexture('heavybox', 32, 32);
 
+                // Cristal (Maron)
                 graphics.clear();
-                graphics.fillStyle(0xff1493); // Cristal Maron
+                graphics.fillStyle(0xff1493); 
                 graphics.fillTriangle(16, 2, 4, 30, 28, 30);
                 graphics.generateTexture('crystal', 32, 32);
 
+                // Item Papelada (Formulário Azul 2B)
                 graphics.clear();
-                graphics.fillStyle(0x4682b4); // Item Papelada
+                graphics.fillStyle(0x4682b4); 
                 graphics.fillRect(6, 6, 20, 24);
                 graphics.fillStyle(0xffffff);
                 graphics.fillRect(8, 8, 16, 20);
-                graphics.fillStyle(0x000000); // Linhas
+                graphics.fillStyle(0x000000); 
                 graphics.fillRect(10, 12, 12, 2);
                 graphics.fillRect(10, 16, 12, 2);
                 graphics.generateTexture('paper', 32, 32);
@@ -298,6 +328,9 @@
             create() {
                 this.fiodorDetectionUI = document.getElementById('fiodor-detection');
                 
+                // Inicializa o sistema de registro (inventário) do Phaser
+                this.registry.set('hasFormularioAzul', false);
+                
                 // --- CONFIGURAÇÃO DO MUNDO E CÂMARA ---
                 this.physics.world.setBounds(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
                 this.cameras.main.setBounds(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
@@ -309,8 +342,8 @@
                 this.player.body.setOffset(8, 32); 
                 
                 // Configuração da Câmera: Segue o player com Deadzone
-                this.cameras.main.startFollow(this.player, false); // Sem easing
-                this.cameras.main.setDeadzone(100, 100); // Move a câmara apenas se o player sair desta área
+                this.cameras.main.startFollow(this.player, false); 
+                this.cameras.main.setDeadzone(100, 100); 
                 this.cameras.main.setZoom(2);
 
                 this.player.setDepth(10); 
@@ -338,10 +371,14 @@
                 this.keys123 = this.input.keyboard.addKeys('ONE,TWO,THREE');
                 this.keySpace = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
                 
+                // 6. Listener de Inventário (Phaser Registry)
+                this.registry.events.on('changedata', this.updateInventoryUI, this);
+
                 // --- CARREGAR A PRIMEIRA SALA ---
                 this.loadRoom(1);
                 
-                // Mensagem inicial
+                // Mensagem inicial e atualização da UI
+                this.updateInventoryUI();
                 this.time.delayedCall(1000, () => {
                     this.triggerDialogue("Denise", "OK, voltamos. Espero que agora os gatos fiquem por perto. Vamos resolver a burocracia do Anão. \n(Dica: Orpheu (3) empurra a caixa.)");
                 });
@@ -368,14 +405,13 @@
                 this.triggers = this.physics.add.staticGroup();
 
                 // 3. Chão (Fundo) - AGORA COBRE TODA A ÁREA DO MUNDO E ESTÁ FIXO NO MUNDO
-                // Cria um tileSprite que cobre TODA a área do mundo (800x600) na posição de mundo (0, 0)
                 this.currentBackground = this.add.tileSprite(0, 0, WORLD_WIDTH, WORLD_HEIGHT, 'floor').setOrigin(0).setDepth(0);
 
                 // 4. Reposicionar Personagens (IMPORTANTE: NÃO RECRIA!)
                 this.player.setPosition(200, 200);
                 this.assistants.forEach((cat, index) => {
                     cat.setPosition(this.player.x - 30 - (index * 15), this.player.y);
-                    cat.body.setVelocity(0, 0); // Limpa qualquer velocidade residual
+                    cat.body.setVelocity(0, 0); 
                 });
 
 
@@ -383,7 +419,7 @@
                     this.currentRoom = 1;
 
                     // --- Layout da Sala 1 (De 2,2 a 20,15 = 18x13) ---
-                    this.createRoom(2, 2, 18, 13); // Cria paredes num rectângulo de 18x13 tiles
+                    this.createRoom(2, 2, 18, 13); 
                     
                     // 1. O Burocrata (Bloqueio Físico)
                     this.dwarf = this.physics.add.staticSprite(550, 240, 'dwarf');
@@ -406,10 +442,16 @@
                     
                     // 4. O Item (Formulário) - Escondido
                     this.paper = this.physics.add.staticSprite(300, 240, 'paper');
-                    this.paper.disableBody(true, true); 
+                    // Se já pegou o item, mantém o paper desativado
+                    if (this.registry.get('hasFormularioAzul')) {
+                        this.paper.disableBody(true, true);
+                    } else {
+                        // Se não pegou, ele está inativo e escondido, esperando a caixa se mover.
+                        this.paper.disableBody(true, true); 
+                    }
                     this.paper.setDepth(5);
 
-                    // 5. Fungo Luminoso (Dano) - Posição mais visível (450, 100)
+                    // 5. Fungo Luminoso (Dano)
                     this.fungus = this.physics.add.staticSprite(450, 100, 'fungus'); 
                     this.fungus.name = "LuminousFungus";
                     this.fungus.setDepth(5);
@@ -417,27 +459,44 @@
 
                     // Portal de Saída (Inicialmente desativado/invisível)
                     this.exitPortal = this.physics.add.staticSprite(this.dwarf.x, this.dwarf.y + 16, 'portal');
-                    this.exitPortal.disableBody(true, true);
+                    
+                    // Reativa o portal se o puzzle já estiver completo
+                    if (this.registry.get('hasFormularioAzul')) {
+                         this.exitPortal.enableBody(true, this.dwarf.x, this.dwarf.y + 16, true, true);
+                         this.dwarf.disableBody(true, true); // Anão desaparece
+                         this.dwarf.setVisible(false);
+                    } else {
+                        this.exitPortal.disableBody(true, true);
+                    }
+
                     this.exitPortal.setDepth(5);
 
                     // --- COLISÕES E OVERLAPS Sala 1 ---
-                    this.physics.add.collider(this.player, this.walls);
+                    // CORREÇÃO: Colisão Denise vs Paredes removida daqui para ficar global no final da função
                     this.physics.add.collider(this.player, this.heavyBoxes, this.handleBoxPush, null, this);
-                    this.physics.add.collider(this.player, this.dwarf, this.dwarfInteraction, null, this);
+                    
+                    if (this.dwarf.active) {
+                        this.physics.add.collider(this.player, this.dwarf, this.dwarfInteraction, null, this);
+                    }
                     
                     this.physics.add.overlap(this.assistants[0], this.crystal, this.handleCrystal, null, this); 
                     this.physics.add.overlap(this.player, this.paper, this.collectPaper, null, this);
                     this.physics.add.overlap(this.player, this.fungus, this.handleFungusDamage, null, this);
-                    this.physics.add.overlap(this.player, this.exitPortal, () => this.loadRoom(2), null, this);
+                    
+                    this.physics.add.overlap(this.player, this.exitPortal, () => {
+                         if (this.exitPortal.active) {
+                             this.loadRoom(2);
+                         }
+                    }, null, this);
 
                 } else if (roomNumber === 2) {
                     this.currentRoom = 2;
-                    this.hasFormularioAzul = false; 
 
                     // --- Layout da Sala 2 ---
                     this.createRoom(2, 2, 18, 13);
-                    this.walls.create(350, 200, 'wall').setDepth(5);
-                    this.walls.create(400, 200, 'wall').setDepth(5);
+                    
+                    // Reposicionar player na entrada da Sala 2
+                    this.player.setPosition(200, 200);
 
                     this.triggerDialogue("Denise", "Sala 2: Vencemos a burocracia! Aqui há outra caixa... e sinto um frio. \n(Novo objetivo: Encontrar a chave! Para voltar, use o portal.)");
                     
@@ -450,20 +509,23 @@
 
                 }
                 
-                // COLISÕES CONSISTENTES ENTRE SALAS (Gatos vs. Mundo)
-                this.physics.add.collider(this.assistants, this.assistants); // Gato vs Gato
+                // COLISÕES CONSISTENTES ENTRE SALAS (Gatos vs. Mundo e Player vs. Paredes)
+                // CORREÇÃO: Colisão Player vs Paredes movida para cá para funcionar em todas as salas
+                this.physics.add.collider(this.player, this.walls);
+
+                this.physics.add.collider(this.assistants, this.assistants); 
                 this.assistants.forEach(cat => {
-                    this.physics.add.collider(cat, this.walls); // Gato vs Parede
-                    this.physics.add.collider(cat, this.player); // Gato vs Player
+                    this.physics.add.collider(cat, this.walls); 
+                    this.physics.add.collider(cat, this.player); 
                     if (this.heavyBoxes.children.entries.length > 0) {
-                        this.physics.add.collider(cat, this.heavyBoxes); // Gato vs Caixa
+                        this.physics.add.collider(cat, this.heavyBoxes); 
                     }
                 });
 
             }
 
             update(time, delta) {
-                if (!this.player) return; // Parar se os personagens não carregaram
+                if (!this.player) return; 
 
                 if (this.isDialogueOpen) {
                     this.player.setVelocity(0, 0);
@@ -473,10 +535,6 @@
                     }
                     return;
                 }
-
-                // *** REMOVIDO: A lógica manual de acompanhamento do tileSprite. ***
-                // O currentBackground agora está fixo nas coordenadas do mundo (0,0)
-                // e move-se naturalmente com a câmara, como os outros objetos.
 
                 // 1. Movimento Denise
                 const speed = 120;
@@ -503,7 +561,7 @@
                     } else {
                         cat.setAcceleration(0, 0); 
                         cat.setAngularAcceleration(0);
-                        cat.body.velocity.scale(0.95); // Pequeno arrasto para parar
+                        cat.body.velocity.scale(0.95); 
                     }
                 });
 
@@ -539,11 +597,11 @@
                     const distToDwarf = this.currentRoom === 1 && this.dwarf.active ? Phaser.Math.Distance.Between(this.player.x, this.player.y, this.dwarf.x, this.dwarf.y) : Infinity;
                     const interactionRange = 50; 
                     
-                    // Interação com o Anão (se houver e estiver perto)
-                    if (this.currentRoom === 1 && distToDwarf < interactionRange) {
-                        // A colisão com o dwarf trata a interação com o diálogo
+                    // Interação com o Anão
+                    if (this.currentRoom === 1 && this.dwarf.active && distToDwarf < interactionRange) {
+                        this.dwarfInteraction(this.player, this.dwarf);
                     } 
-                    // Se não for interação, é habilidade
+                    // Se não for interação próxima, é habilidade
                     else {
                         this.performAssistantAction();
                     }
@@ -558,7 +616,7 @@
                 // Interação só é permitida ao pressionar espaço
                 if (!Phaser.Input.Keyboard.JustDown(this.keySpace)) return;
                 
-                if (this.hasFormularioAzul) {
+                if (this.registry.get('hasFormularioAzul')) {
                     this.triggerDialogue("Anão Burocrata", "Ah, aqui está. Excelente! O Visto 'A' para a Sala 2 foi concedido. Por favor, prossiga.");
                     
                     dwarf.disableBody(true, true);
@@ -602,7 +660,6 @@
             
             checkFiodorDetection() {
                 const detectionRange = 150; 
-                // Acesso seguro ao fungus, pois verificamos se this.fungus.active é true antes
                 const distToFungus = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.fungus.x, this.fungus.y);
                 
                 if (distToFungus < detectionRange) {
@@ -635,6 +692,7 @@
                 } 
                 else if (cat.name === "Orpheu") {
                     this.showFloatingText(cat.x, cat.y, "GORFFF! (Força)");
+                    // A habilidade do Orpheu atua principalmente na colisão com a caixa.
                 }
                 else if (cat.name === "Fiódor") {
                     this.showFloatingText(cat.x, cat.y, "Zoom!");
@@ -647,33 +705,34 @@
                 }
             }
 
+            // Lógica de empurrar a caixa (Puzzle Orpheu)
             handleBoxPush(player, box) {
-                if (!box || !box.body) return;
+                if (!box || !box.body || this.registry.get('hasFormularioAzul')) return;
 
                 const activeAssistant = this.assistants[this.activeAssistantIndex];
+                const activeCatIsOrpheu = activeAssistant && activeAssistant.name === "Orpheu";
                 
-                if (!activeAssistant) {
-                    box.setImmovable(true);
-                    box.setVelocity(0);
-                    return; 
-                }
-                
-                if (activeAssistant.name === "Orpheu") {
+                if (activeCatIsOrpheu) {
+                    // Permite que a caixa se mova (Não Immovable)
                     box.setImmovable(false); 
                     
+                    // Aplica uma pequena velocidade na direção do player
                     box.setVelocity(player.body.velocity.x * 0.7, player.body.velocity.y * 0.7); 
                     
                     const distanceMoved = Phaser.Math.Distance.Between(box.x, box.y, box.startX, box.startY);
 
+                    // Se a caixa se mover o suficiente, revela o item
                     if (distanceMoved > 30 && !this.paper.active) {
                         this.paper.enableBody(true, box.x, box.y - 50, true, true);
                         this.triggerDialogue("Denise", "Olha só! Alguém derrubou o Formulário Azul 2B atrás dessa caixa pesada.");
                     }
 
                 } else {
+                    // Sem Orpheu, a caixa é Immovable
                     box.setImmovable(true);
                     box.setVelocity(0);
                     
+                    // Feedback ao tentar empurrar sem Orpheu
                     if (Phaser.Input.Keyboard.JustDown(this.keySpace)) {
                         this.triggerDialogue("Denise", "É muito pesado! Preciso de alguém forte... Talvez o Orpheu (3)?");
                     }
@@ -693,7 +752,7 @@
 
             collectPaper(player, paper) {
                 paper.disableBody(true, true);
-                this.hasFormularioAzul = true;
+                this.registry.set('hasFormularioAzul', true); // Define o item no inventário
                 this.triggerDialogue("Sistema", "Você obteve: Formulário Azul 2B! \n(Agora, fale com o Anão Burocrata na entrada. Pressione ESPAÇO perto dele.)");
             }
 
@@ -720,7 +779,7 @@
                     color: '#' + color.toString(16).padStart(6, '0'),
                     stroke: '#000',
                     strokeThickness: 2
-                }).setOrigin(0.5).setDepth(20); // Profundidade alta para feedback
+                }).setOrigin(0.5).setDepth(20); 
                 
                 this.tweens.add({
                     targets: text,
@@ -775,6 +834,24 @@
                     healthFill.style.backgroundColor = '#f39c12'; 
                 } else {
                     healthFill.style.backgroundColor = '#e74c3c'; 
+                }
+            }
+            
+            // Lógica para atualizar a UI do Inventário baseada no Phaser Registry
+            updateInventoryUI() {
+                const inventoryList = document.getElementById('inventory-list');
+                inventoryList.innerHTML = ''; 
+
+                const hasFormulario = this.registry.get('hasFormularioAzul');
+
+                if (hasFormulario) {
+                    const li = document.createElement('li');
+                    li.innerText = '• Formulário Azul 2B (🔑)';
+                    inventoryList.appendChild(li);
+                } else {
+                    const li = document.createElement('li');
+                    li.innerText = '(Vazio)';
+                    inventoryList.appendChild(li);
                 }
             }
         }
