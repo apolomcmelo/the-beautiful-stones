@@ -1,14 +1,14 @@
 <!DOCTYPE html>
-<html lang="pt">
+<html lang="pt-PT">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>A Jornada das Belas Pedras - Sala de Testes V14</title>
+    <title>A Jornada das Belas Pedras - Sala de Testes V18</title>
     <style>
         body {
             margin: 0;
             padding: 0;
-            background-color: #2c2137; /* Roxo escuro místico */
+            background-color: #1a1a1a; 
             color: #d3c6a6;
             font-family: 'Courier New', Courier, monospace;
             overflow: hidden;
@@ -20,11 +20,10 @@
 
         #game-container {
             position: relative;
-            box-shadow: 0 0 20px rgba(0,0,0,0.5);
-            image-rendering: pixelated; /* Garante o visual retro crocante */
+            box-shadow: 0 0 30px rgba(255, 255, 255, 0.1); 
+            image-rendering: pixelated; 
         }
 
-        /* UI Overlay para Diálogos */
         #ui-layer {
             position: absolute;
             bottom: 20px;
@@ -32,7 +31,7 @@
             transform: translateX(-50%);
             width: 80%;
             max-width: 600px;
-            background: #e6dcc3; /* Papel antigo */
+            background: #e6dcc3; 
             border: 4px solid #8b5a2b;
             border-radius: 4px;
             padding: 15px;
@@ -56,7 +55,6 @@
             white-space: pre-wrap;
         }
 
-        /* UI de Informação Global (Vida e Inventário) */
         #status-area {
             position: absolute;
             top: 10px;
@@ -103,7 +101,6 @@
             padding: 0;
         }
 
-        /* Instruções no canto */
         #controls-hint {
             position: absolute;
             top: 10px;
@@ -117,7 +114,6 @@
             border-radius: 4px;
         }
 
-        /* Feedback da Habilidade Fiódor */
         #fiodor-detection {
             position: absolute;
             top: 50px;
@@ -139,7 +135,7 @@
         WASD/Setas: Mover<br>
         1, 2, 3: Trocar Gato<br>
         ESPAÇO: Ação/Interagir/Habilidade<br>
-        OBJETIVO: Examine os túmulos antigos para encontrar a chave.
+        OBJETIVO: Resolva os problemas de cada sala para avançar.
     </div>
 
     <div id="status-area">
@@ -167,14 +163,12 @@
     </div>
 
     <script>
-        // CONFIGURAÇÕES GERAIS
         const TILE_SIZE = 32;
         const SCREEN_WIDTH = 640;
         const SCREEN_HEIGHT = 480;
         const WORLD_WIDTH = 800;
         const WORLD_HEIGHT = 600; 
 
-        // --- CLASSE PRINCIPAL DO JOGO ---
         class MainScene extends Phaser.Scene {
             constructor() {
                 super({ key: 'MainScene' });
@@ -191,197 +185,118 @@
                 this.koffe = null;
                 this.selector = null;
                 this.currentBackground = null; 
-                this.sandstormOverlay = null; 
+                this.sandstormOverlay = null;
+                
+                // Variáveis para gerir colisores dinâmicos
+                this.wallCollider = null;
+                this.assistantWallCollider = null;
+                this.boxWallCollider = null;
             }
 
             preload() {
-                // GERAÇÃO DE ASSETS (Pixel Art via Código)
                 const graphics = this.make.graphics({ x: 0, y: 0, add: false });
 
-                // 1. Denise (Arqueóloga)
+                // 1. Denise 
                 graphics.clear();
-                graphics.fillStyle(0xe0ac69); 
-                graphics.fillRect(8, 4, 16, 14); 
-                graphics.fillStyle(0x4a3000); 
-                graphics.fillRect(6, 2, 20, 8);
-                graphics.fillRect(6, 6, 4, 12);
-                graphics.fillRect(22, 6, 4, 12);
-                graphics.fillStyle(0x8fbc8f); 
-                graphics.fillRect(8, 18, 16, 14);
-                graphics.fillStyle(0x5c4033); 
-                graphics.fillRect(10, 32, 5, 12);
-                graphics.fillRect(17, 32, 5, 12);
-                graphics.lineStyle(2, 0xc0c0c0); 
-                graphics.strokeCircle(12, 10, 3);
-                graphics.strokeCircle(20, 10, 3);
+                graphics.fillStyle(0xe0ac69); graphics.fillRect(8, 4, 16, 14); 
+                graphics.fillStyle(0x4a3000); graphics.fillRect(6, 2, 20, 8); graphics.fillRect(6, 6, 4, 12); graphics.fillRect(22, 6, 4, 12);
+                graphics.fillStyle(0x8fbc8f); graphics.fillRect(8, 18, 16, 14);
+                graphics.fillStyle(0x5c4033); graphics.fillRect(10, 32, 5, 12); graphics.fillRect(17, 32, 5, 12);
+                graphics.lineStyle(2, 0xc0c0c0); graphics.strokeCircle(12, 10, 3); graphics.strokeCircle(20, 10, 3);
                 graphics.generateTexture('denise', 32, 48);
 
-                // 2. Maron (Preta)
-                graphics.clear();
-                graphics.fillStyle(0x1a1a1a);
-                graphics.fillRect(4, 12, 24, 16); 
-                graphics.fillRect(4, 4, 8, 8); 
-                graphics.fillStyle(0xffffff); 
-                graphics.fillRect(5, 6, 2, 2);
-                graphics.fillStyle(0xff69b4); 
-                graphics.fillRect(8, 12, 4, 2);
+                // 2. Maron
+                graphics.clear(); graphics.fillStyle(0x1a1a1a); graphics.fillRect(4, 12, 24, 16); graphics.fillRect(4, 4, 8, 8); 
+                graphics.fillStyle(0xffffff); graphics.fillRect(5, 6, 2, 2);
+                graphics.fillStyle(0xff69b4); graphics.fillRect(8, 12, 4, 2);
                 graphics.generateTexture('maron', 32, 32);
 
-                // 3. Fiódor (Branco/Dourado)
-                graphics.clear();
-                graphics.fillStyle(0xfff8dc); 
-                graphics.fillRect(4, 12, 24, 16);
-                graphics.fillRect(4, 4, 8, 8);
-                graphics.fillStyle(0xdaa520); 
-                graphics.fillRect(10, 14, 4, 12);
-                graphics.fillStyle(0x00bfff); 
-                graphics.fillRect(5, 6, 2, 2);
+                // 3. Fiódor
+                graphics.clear(); graphics.fillStyle(0xfff8dc); graphics.fillRect(4, 12, 24, 16); graphics.fillRect(4, 4, 8, 8);
+                graphics.fillStyle(0xdaa520); graphics.fillRect(10, 14, 4, 12);
+                graphics.fillStyle(0x00bfff); graphics.fillRect(5, 6, 2, 2);
                 graphics.generateTexture('fiodor', 32, 32);
 
-                // 4. Orpheu (Siamês Gordo)
-                graphics.clear();
-                graphics.fillStyle(0xd2b48c); 
-                graphics.fillRect(2, 10, 28, 20); 
-                graphics.fillStyle(0x4b3621); 
-                graphics.fillRect(2, 4, 10, 8); 
-                graphics.fillRect(26, 12, 4, 4); 
-                graphics.fillStyle(0xafeeee); 
-                graphics.fillRect(4, 6, 2, 2);
+                // 4. Orpheu
+                graphics.clear(); graphics.fillStyle(0xd2b48c); graphics.fillRect(2, 10, 28, 20); 
+                graphics.fillStyle(0x4b3621); graphics.fillRect(2, 4, 10, 8); graphics.fillRect(26, 12, 4, 4); 
+                graphics.fillStyle(0xafeeee); graphics.fillRect(4, 6, 2, 2);
                 graphics.generateTexture('orpheu', 32, 32);
 
-                // 5. Koffe (Fantasma)
-                graphics.clear();
-                graphics.fillStyle(0xe0ffff, 0.6); 
-                graphics.fillCircle(16, 16, 12);
-                graphics.fillRect(12, 20, 8, 10);
-                graphics.fillStyle(0x000000); 
-                graphics.fillRect(6, 8, 4, 8);
+                // 5. Koffe
+                graphics.clear(); graphics.fillStyle(0xe0ffff, 0.6); graphics.fillCircle(16, 16, 12); graphics.fillRect(12, 20, 8, 10);
+                graphics.fillStyle(0x000000); graphics.fillRect(6, 8, 4, 8);
                 graphics.generateTexture('koffe', 32, 32);
 
-                // 6. Fungo Luminoso (Dano)
-                graphics.clear();
-                graphics.fillStyle(0x32cd32); 
-                graphics.fillTriangle(16, 32, 4, 10, 28, 10);
-                graphics.fillStyle(0x00ff00, 0.7); 
-                graphics.fillCircle(16, 15, 10);
+                // 6. Fungo
+                graphics.clear(); graphics.fillStyle(0x32cd32); graphics.fillTriangle(16, 32, 4, 10, 28, 10);
+                graphics.fillStyle(0x00ff00, 0.7); graphics.fillCircle(16, 15, 10);
                 graphics.generateTexture('fungus', 32, 32);
 
-                // 7. Tiles / Cenário - CHÃO MADEIRA
-                graphics.clear();
-                graphics.fillStyle(0xcd853f); 
-                graphics.fillRect(0, 0, 32, 32);
-                graphics.lineStyle(2, 0xa0522d);
-                graphics.strokeRect(0,0,32,32);
+                // Cenários
+                graphics.clear(); graphics.fillStyle(0xcd853f); graphics.fillRect(0, 0, 32, 32); graphics.lineStyle(2, 0xa0522d); graphics.strokeRect(0,0,32,32);
                 graphics.generateTexture('floor', 32, 32);
                 
-                // NOVO: Chão de Areia (Deserto)
-                graphics.clear();
-                graphics.fillStyle(0xe6c288); 
-                graphics.fillRect(0, 0, 32, 32);
-                graphics.fillStyle(0xd4af73); 
-                graphics.fillRect(5, 5, 2, 2);
-                graphics.fillRect(20, 15, 2, 2);
-                graphics.fillRect(10, 25, 2, 2);
+                graphics.clear(); graphics.fillStyle(0xe6c288); graphics.fillRect(0, 0, 32, 32); graphics.fillStyle(0xd4af73); graphics.fillRect(5, 5, 2, 2); graphics.fillRect(20, 15, 2, 2); graphics.fillRect(10, 25, 2, 2);
                 graphics.generateTexture('sand', 32, 32);
 
-                // NOVO: Sombra (Zona Segura)
-                graphics.clear();
-                graphics.fillStyle(0x000000, 0.4); // Preto 40% opaco
-                graphics.fillEllipse(16, 16, 30, 20);
+                graphics.clear(); graphics.fillStyle(0x1a1a1a); graphics.fillRect(0, 0, 32, 32); graphics.lineStyle(2, 0x4a4a4a); graphics.strokeRect(1, 1, 30, 30); graphics.fillStyle(0x2a2a2a); graphics.fillRect(4, 4, 24, 24); graphics.fillStyle(0x151515); graphics.fillRect(8, 8, 4, 4);
+                graphics.generateTexture('mine_floor', 32, 32);
+
+                graphics.clear(); graphics.fillStyle(0x000000, 0.4); graphics.fillEllipse(16, 16, 30, 20);
                 graphics.generateTexture('shadow', 32, 32);
                 
-                // NOVO: Túmulo Árabe (Pedras Alinhadas)
-                graphics.clear();
-                graphics.fillStyle(0x808080); // Cinza pedra base
-                graphics.fillCircle(8, 24, 6);
-                graphics.fillStyle(0x707070); 
-                graphics.fillCircle(16, 22, 7);
-                graphics.fillStyle(0x606060); 
-                graphics.fillCircle(24, 24, 6);
-                // Leve acumulo de areia na base
-                graphics.fillStyle(0xe6c288); 
-                graphics.fillRect(2, 28, 28, 4);
+                graphics.clear(); graphics.fillStyle(0x808080); graphics.fillCircle(8, 24, 6); graphics.fillStyle(0x707070); graphics.fillCircle(16, 22, 7); graphics.fillStyle(0x606060); graphics.fillCircle(24, 24, 6); graphics.fillStyle(0xe6c288); graphics.fillRect(2, 28, 28, 4);
                 graphics.generateTexture('arab_tomb', 32, 32);
                 
-                // NOVO: Chave Antiga (Deserto)
-                graphics.clear();
-                graphics.lineStyle(2, 0xffd700);
-                graphics.strokeCircle(10, 10, 6);
-                graphics.lineBetween(16, 10, 28, 10);
-                graphics.lineBetween(28, 10, 28, 16);
+                graphics.clear(); graphics.lineStyle(2, 0xffd700); graphics.strokeCircle(10, 10, 6); graphics.lineBetween(16, 10, 28, 10); graphics.lineBetween(28, 10, 28, 16);
                 graphics.generateTexture('desert_key', 32, 32);
                 
-                // NOVO: Portão Antigo
-                graphics.clear();
-                graphics.fillStyle(0x555555);
-                graphics.fillRect(0, 0, 32, 64);
-                graphics.lineStyle(2, 0x333333);
-                graphics.strokeRect(0, 0, 32, 64);
-                graphics.fillStyle(0x222222);
-                graphics.fillCircle(16, 32, 4); // Fechadura
+                graphics.clear(); graphics.fillStyle(0xe74c3c); graphics.fillTriangle(16, 2, 4, 26, 28, 26); graphics.lineStyle(1, 0xffffff); graphics.strokeTriangle(16, 2, 4, 26, 28, 26);
+                graphics.generateTexture('gem_red', 32, 32);
+                
+                graphics.clear(); graphics.fillStyle(0x3498db); graphics.fillTriangle(16, 2, 4, 26, 28, 26); graphics.lineStyle(1, 0xffffff); graphics.strokeTriangle(16, 2, 4, 26, 28, 26);
+                graphics.generateTexture('gem_blue', 32, 32);
+                
+                graphics.clear(); graphics.fillStyle(0x555555); graphics.fillRect(4, 16, 24, 16); graphics.fillStyle(0x7f8c8d); graphics.fillRect(2, 12, 28, 4); graphics.fillStyle(0xc0392b); graphics.fillCircle(16, 24, 3);
+                graphics.generateTexture('pedestal_red', 32, 32);
+                
+                graphics.clear(); graphics.fillStyle(0x555555); graphics.fillRect(4, 16, 24, 16); graphics.fillStyle(0x7f8c8d); graphics.fillRect(2, 12, 28, 4); graphics.fillStyle(0x2980b9); graphics.fillCircle(16, 24, 3);
+                graphics.generateTexture('pedestal_blue', 32, 32);
+
+                graphics.clear(); graphics.fillStyle(0x555555); graphics.fillRect(0, 0, 32, 64); graphics.lineStyle(2, 0x333333); graphics.strokeRect(0, 0, 32, 64); graphics.fillStyle(0x222222); graphics.fillCircle(16, 32, 4); 
                 graphics.generateTexture('ancient_gate', 32, 64);
 
-                // Paredes de Pedra
-                graphics.clear();
-                graphics.fillStyle(0x708090); 
-                graphics.fillRect(0, 0, 32, 32);
-                graphics.fillStyle(0x2f4f4f);
-                graphics.fillRect(4, 4, 24, 24);
+                // Paredes
+                graphics.clear(); graphics.fillStyle(0x708090); graphics.fillRect(0, 0, 32, 32); graphics.fillStyle(0x2f4f4f); graphics.fillRect(4, 4, 24, 24);
                 graphics.generateTexture('wall', 32, 32);
 
-                // Paredes de Ruína (Deserto)
-                graphics.clear();
-                graphics.fillStyle(0x8b4513); 
-                graphics.fillRect(0, 0, 32, 32);
-                graphics.fillStyle(0xcd853f); 
-                graphics.fillRect(4, 4, 10, 8);
-                graphics.fillRect(18, 14, 10, 8);
+                graphics.clear(); graphics.fillStyle(0x8b4513); graphics.fillRect(0, 0, 32, 32); graphics.fillStyle(0xcd853f); graphics.fillRect(4, 4, 10, 8); graphics.fillRect(18, 14, 10, 8);
                 graphics.generateTexture('ruin_wall', 32, 32);
                 
-                // Portal 
-                graphics.clear();
-                graphics.fillStyle(0x00ffff);
-                graphics.fillEllipse(16, 16, 20, 28);
-                graphics.fillStyle(0x4682b4);
-                graphics.fillRect(10, 10, 12, 12);
+                graphics.clear(); graphics.fillStyle(0x1a1a1a); graphics.fillRect(0, 0, 32, 32); graphics.fillStyle(0x2d3436); graphics.fillRect(2, 2, 28, 28); graphics.lineStyle(2, 0xe0e0e0); graphics.beginPath(); graphics.moveTo(4, 28); graphics.lineTo(12, 14); graphics.lineTo(20, 18); graphics.lineTo(28, 4); graphics.strokePath(); graphics.fillStyle(0xffffff, 0.8); graphics.fillCircle(12, 14, 1); graphics.fillCircle(28, 4, 1);
+                graphics.generateTexture('mine_wall', 32, 32);
+
+                graphics.clear(); graphics.fillStyle(0x1a1a1a); graphics.fillRect(0, 0, 32, 32); graphics.fillStyle(0x0984e3); graphics.fillRect(4, 0, 24, 32); graphics.fillStyle(0x74b9ff, 0.4); graphics.fillRect(8, 4, 4, 8); graphics.fillRect(20, 16, 4, 8);
+                graphics.generateTexture('stream', 32, 32);
+
+                graphics.clear(); graphics.fillStyle(0x00ffff); graphics.fillEllipse(16, 16, 20, 28); graphics.fillStyle(0x4682b4); graphics.fillRect(10, 10, 12, 12);
                 graphics.generateTexture('portal', 32, 32);
 
-                // Caixa Pesada
-                graphics.clear();
-                graphics.fillStyle(0x8b4513); 
-                graphics.fillRect(2, 2, 28, 28);
-                graphics.lineStyle(2, 0x000000);
-                graphics.strokeRect(2,2,28,28);
-                graphics.lineBetween(2, 2, 30, 30); 
-                graphics.lineBetween(30, 2, 2, 30); 
+                graphics.clear(); graphics.fillStyle(0x8b4513); graphics.fillRect(2, 2, 28, 28); graphics.lineStyle(2, 0x000000); graphics.strokeRect(2,2,28,28); graphics.lineBetween(2, 2, 30, 30); graphics.lineBetween(30, 2, 2, 30); 
                 graphics.generateTexture('heavybox', 32, 32);
 
-                // Cristal 
-                graphics.clear();
-                graphics.fillStyle(0xff1493); 
-                graphics.fillTriangle(16, 2, 4, 30, 28, 30);
+                graphics.clear(); graphics.fillStyle(0xff1493); graphics.fillTriangle(16, 2, 4, 30, 28, 30);
                 graphics.generateTexture('crystal', 32, 32);
 
-                // Item Papelada 
-                graphics.clear();
-                graphics.fillStyle(0x4682b4); 
-                graphics.fillRect(6, 6, 20, 24);
-                graphics.fillStyle(0xffffff);
-                graphics.fillRect(8, 8, 16, 20);
-                graphics.fillStyle(0x000000); 
-                graphics.fillRect(10, 12, 12, 2);
-                graphics.fillRect(10, 16, 12, 2);
+                graphics.clear(); graphics.fillStyle(0x4682b4); graphics.fillRect(6, 6, 20, 24); graphics.fillStyle(0xffffff); graphics.fillRect(8, 8, 16, 20); graphics.fillStyle(0x000000); graphics.fillRect(10, 12, 12, 2); graphics.fillRect(10, 16, 12, 2);
                 graphics.generateTexture('paper', 32, 32);
 
-                // 8. Burocrata
-                graphics.clear();
-                graphics.fillStyle(0x8b0000); 
-                graphics.fillRect(6, 10, 20, 20);
-                graphics.fillStyle(0xffdead); 
-                graphics.fillRect(8, 2, 16, 12);
-                graphics.fillStyle(0x808080); 
-                graphics.fillRect(8, 10, 16, 12);
+                graphics.clear(); graphics.fillStyle(0x8b0000); graphics.fillRect(6, 10, 20, 20); graphics.fillStyle(0xffdead); graphics.fillRect(8, 2, 16, 12); graphics.fillStyle(0x808080); graphics.fillRect(8, 10, 16, 12);
                 graphics.generateTexture('dwarf', 32, 32);
+
+                graphics.clear(); graphics.fillStyle(0x27ae60); graphics.fillRect(6, 10, 20, 20); graphics.fillStyle(0xffdead); graphics.fillRect(8, 2, 16, 12); graphics.fillStyle(0xf1c40f); graphics.fillRect(6, 0, 20, 4); graphics.fillRect(12, -2, 8, 2);
+                graphics.generateTexture('foreman', 32, 32);
             }
 
             create() {
@@ -389,8 +304,11 @@
                 
                 this.registry.set('hasFormularioAzul', false);
                 this.registry.set('hasDesertKey', false); 
+                this.registry.set('hasRedGem', false);
+                this.registry.set('hasBlueGem', false);
+                this.registry.set('placedRed', false);
+                this.registry.set('placedBlue', false);
                 
-                // --- CONFIGURAÇÃO DO MUNDO E CÂMARA ---
                 this.physics.world.setBounds(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
                 this.cameras.main.setBounds(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
 
@@ -442,15 +360,24 @@
             
             loadRoom(roomNumber) {
                 console.log(`Carregando Sala: ${roomNumber}`);
+                this.currentRoom = roomNumber;
                 
-                // Destruição de objetos antigos
+                // Limpeza completa
                 if (this.currentBackground) this.currentBackground.destroy();
+                
+                // Grupos
                 if (this.walls) this.walls.clear(true, true);
                 if (this.heavyBoxes) this.heavyBoxes.clear(true, true);
                 if (this.triggers) this.triggers.clear(true, true);
                 if (this.shadows) this.shadows.clear(true, true); 
                 if (this.arabTombs) this.arabTombs.clear(true, true); 
+                if (this.gems) this.gems.clear(true, true); 
+                if (this.pedestals) this.pedestals.clear(true, true); 
+                if (this.water) this.water.clear(true, true); 
+                
+                // Sprites únicos
                 if (this.dwarf) this.dwarf.destroy();
+                if (this.foreman) this.foreman.destroy(); 
                 if (this.crystal) this.crystal.destroy();
                 if (this.paper) this.paper.destroy();
                 if (this.fungus) this.fungus.destroy();
@@ -458,12 +385,20 @@
                 if (this.ancientGate) this.ancientGate.destroy(); 
                 if (this.sandstormOverlay) this.sandstormOverlay.destroy();
 
+                // *** CRUCIAL: Remover Colisores Antigos ***
+                if (this.wallCollider) this.physics.world.removeCollider(this.wallCollider);
+                if (this.assistantWallCollider) this.physics.world.removeCollider(this.assistantWallCollider);
+                if (this.boxWallCollider) this.physics.world.removeCollider(this.boxWallCollider);
+
                 // Reinicializa Grupos
                 this.walls = this.physics.add.staticGroup();
                 this.heavyBoxes = this.physics.add.group({ bounceX: 0, bounceY: 0 }); 
                 this.triggers = this.physics.add.staticGroup();
                 this.shadows = this.physics.add.staticGroup(); 
                 this.arabTombs = this.physics.add.staticGroup(); 
+                this.gems = this.physics.add.staticGroup();
+                this.pedestals = this.physics.add.staticGroup();
+                this.water = this.physics.add.staticGroup();
 
                 // Reposicionar Personagens
                 this.player.setPosition(200, 200);
@@ -471,16 +406,23 @@
                     cat.setPosition(this.player.x - 30 - (index * 15), this.player.y);
                     cat.body.setVelocity(0, 0); 
                 });
+                
+                // Objetos "placeholder"
+                this.dwarf = { active: false, destroy: () => {} };
+                this.foreman = { active: false, destroy: () => {} };
+                this.ancientGate = { active: false, destroy: () => {} };
+                this.crystal = { active: false, destroy: () => {} };
+                this.paper = { active: false, destroy: () => {} };
+                this.fungus = { active: false, destroy: () => {} };
 
+                // --- SALA 1 ---
                 if (roomNumber === 1) {
-                    this.currentRoom = 1;
                     this.currentBackground = this.add.tileSprite(0, 0, WORLD_WIDTH, WORLD_HEIGHT, 'floor').setOrigin(0).setDepth(0);
-                    
                     this.createRoom(2, 2, 18, 13, 'wall'); 
                     
                     this.dwarf = this.physics.add.staticSprite(550, 240, 'dwarf');
-                    this.dwarf.name = "dwarf_blocker";
                     this.dwarf.setDepth(5);
+                    this.physics.add.collider(this.player, this.dwarf); 
                     
                     const box = this.heavyBoxes.create(300, 300, 'heavybox');
                     box.setImmovable(true); 
@@ -493,7 +435,8 @@
 
                     this.crystal = this.physics.add.staticSprite(100, 350, 'crystal');
                     this.crystal.setDepth(5);
-                    
+                    this.physics.add.overlap(this.assistants[0], this.crystal, this.handleCrystal, null, this); 
+
                     this.paper = this.physics.add.staticSprite(300, 240, 'paper');
                     if (this.registry.get('hasFormularioAzul')) {
                         this.paper.disableBody(true, true);
@@ -501,14 +444,16 @@
                         this.paper.disableBody(true, true); 
                     }
                     this.paper.setDepth(5);
+                    this.physics.add.overlap(this.player, this.paper, this.collectPaper, null, this);
 
                     this.fungus = this.physics.add.staticSprite(450, 100, 'fungus'); 
                     this.fungus.name = "LuminousFungus";
                     this.fungus.setDepth(5);
                     this.tweens.add({ targets: this.fungus, alpha: 0.5, duration: 500, yoyo: true, repeat: -1 });
+                    this.physics.add.overlap(this.player, this.fungus, this.handleFungusDamage, null, this);
 
                     this.exitPortal = this.physics.add.staticSprite(this.dwarf.x, this.dwarf.y + 16, 'portal');
-                    if (this.registry.get('hasFormularioAzul')) {
+                    if (this.registry.get('hasFormularioAzul')) { 
                          this.dwarf.disableBody(true, true); 
                          this.dwarf.setVisible(false);
                          this.exitPortal.enableBody(true, this.dwarf.x, this.dwarf.y + 16, true, true);
@@ -516,37 +461,20 @@
                         this.exitPortal.disableBody(true, true);
                     }
                     this.exitPortal.setDepth(5);
-
-                    // Colisões Sala 1
-                    this.physics.add.collider(this.player, this.heavyBoxes, this.handleBoxPush, null, this);
-                    
-                    // Colisão física com o anão sem callback (interação é no update)
-                    if (this.dwarf.active) {
-                        this.physics.add.collider(this.player, this.dwarf); 
-                    }
-                    
-                    this.physics.add.overlap(this.assistants[0], this.crystal, this.handleCrystal, null, this); 
-                    this.physics.add.overlap(this.player, this.paper, this.collectPaper, null, this);
-                    this.physics.add.overlap(this.player, this.fungus, this.handleFungusDamage, null, this);
                     this.physics.add.overlap(this.player, this.exitPortal, () => {
                          if (this.exitPortal.active) this.loadRoom(2);
                     }, null, this);
 
+                // --- SALA 2 ---
                 } else if (roomNumber === 2) {
-                    this.currentRoom = 2;
                     this.currentBackground = this.add.tileSprite(0, 0, WORLD_WIDTH, WORLD_HEIGHT, 'sand').setOrigin(0).setDepth(0);
-                    
                     this.createRoom(2, 2, 18, 13, 'ruin_wall');
-                    this.player.setPosition(200, 200);
 
                     this.createShadows();
                     this.createArabTombs();
                     
-                    // Portão Antigo 
                     this.ancientGate = this.physics.add.staticSprite(550, 400, 'ancient_gate');
                     this.ancientGate.setDepth(5);
-                    
-                    // Colisão física com o portão sem callback
                     this.physics.add.collider(this.player, this.ancientGate);
 
                     this.exitPortal = this.physics.add.staticSprite(550, 400, 'portal');
@@ -554,68 +482,91 @@
                     this.exitPortal.name = "return_portal";
                     this.exitPortal.setDepth(4); 
                     this.physics.add.overlap(this.player, this.exitPortal, () => {
-                         if (!this.ancientGate.active) this.loadRoom(1); 
+                         if (!this.ancientGate.active) this.loadRoom(3); 
                     }, null, this);
 
-                    this.triggerDialogue("Denise", "Sala 2: O Deserto. Tempestades de areia v\u00EAm e v\u00E3o. \nExamine os t\u00FAmulos antigos para achar a chave!");
+                    this.triggerDialogue("Denise", "Sala 2: O Deserto. Calor e mist\u00E9rio. \nEncontre a chave nos t\u00FAmulos!");
 
                     this.sandstormOverlay = this.add.rectangle(0, 0, WORLD_WIDTH, WORLD_HEIGHT, 0xd2b48c);
                     this.sandstormOverlay.setOrigin(0);
                     this.sandstormOverlay.setDepth(30); 
                     this.sandstormOverlay.setAlpha(0.1);
+                    this.tweens.add({ targets: this.sandstormOverlay, alpha: 0.4, duration: 4000, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+
+                // --- SALA 3 ---
+                } else if (roomNumber === 3) {
+                    this.currentBackground = this.add.tileSprite(0, 0, WORLD_WIDTH, WORLD_HEIGHT, 'mine_floor').setOrigin(0).setDepth(0);
+                    this.createRoom(2, 2, 18, 13, 'mine_wall');
                     
-                    this.tweens.add({
-                        targets: this.sandstormOverlay,
-                        alpha: 0.4,
-                        duration: 4000,
-                        yoyo: true,
-                        repeat: -1,
-                        ease: 'Sine.easeInOut'
-                    });
+                    for (let j = 3; j <= 14; j++) {
+                        if (j !== 8 && j !== 9) {
+                            const w = this.water.create(11 * TILE_SIZE, j * TILE_SIZE, 'stream');
+                            w.setDepth(1);
+                        }
+                    }
+                    this.physics.add.collider(this.player, this.water);
+                    this.physics.add.collider(this.assistants, this.water);
+
+                    this.triggerDialogue("Denise", "Sala 3: O Vale. O cheiro de pedra antiga e Mithril... \nCuidado com o riacho, \u00E9 fundo.");
+
+                    this.foreman = this.physics.add.staticSprite(550, 240, 'foreman');
+                    this.foreman.setDepth(5);
+                    this.physics.add.collider(this.player, this.foreman);
+
+                    if (!this.registry.get('hasRedGem') && !this.registry.get('placedRed')) {
+                        const rGem = this.gems.create(100, 100, 'gem_red');
+                        rGem.setData('color', 'red');
+                        rGem.setDepth(5);
+                    }
+                    if (!this.registry.get('hasBlueGem') && !this.registry.get('placedBlue')) {
+                        const bGem = this.gems.create(550, 400, 'gem_blue'); 
+                        bGem.setData('color', 'blue');
+                        bGem.setDepth(5);
+                    }
+
+                    const redPed = this.pedestals.create(200, 250, 'pedestal_red');
+                    redPed.setData('color', 'red');
+                    redPed.setDepth(5);
+                    
+                    const bluePed = this.pedestals.create(200, 350, 'pedestal_blue');
+                    bluePed.setData('color', 'blue');
+                    bluePed.setDepth(5);
+
+                    this.exitPortal = this.physics.add.staticSprite(550, 240, 'portal');
+                    this.exitPortal.setDepth(4);
+                    this.exitPortal.disableBody(true, true);
+                    this.physics.add.overlap(this.player, this.exitPortal, () => {
+                         if (this.exitPortal.active) this.triggerDialogue("Fim da Demo", "Obrigado por jogar! O Vale foi organizado.");
+                    }, null, this);
                 }
                 
-                // Colisões Globais
-                this.physics.add.collider(this.player, this.walls);
-                this.physics.add.collider(this.assistants, this.assistants); 
+                // *** CRIAÇÃO SEGURA DE COLISORES ***
+                this.wallCollider = this.physics.add.collider(this.player, this.walls);
+                this.assistantWallCollider = this.physics.add.collider(this.assistants, this.walls);
+                
                 this.assistants.forEach(cat => {
-                    this.physics.add.collider(cat, this.walls); 
                     this.physics.add.collider(cat, this.player); 
-                    if (this.heavyBoxes.children.entries.length > 0) {
-                        this.physics.add.collider(cat, this.heavyBoxes); 
-                    }
                 });
+                
+                if (this.heavyBoxes.getLength() > 0) {
+                     this.boxWallCollider = this.physics.add.collider(this.assistants, this.heavyBoxes);
+                     this.physics.add.collider(this.player, this.heavyBoxes, this.handleBoxPush, null, this);
+                }
             }
 
+            // --- CRIAÇÃO DE AMBIENTE ---
             createShadows() {
-                const shadowPositions = [
-                    {x: 100, y: 100},
-                    {x: 300, y: 300},
-                    {x: 500, y: 150},
-                    {x: 200, y: 400},
-                    {x: 550, y: 350}
-                ];
-
-                shadowPositions.forEach(pos => {
-                    const shadow = this.shadows.create(pos.x, pos.y, 'shadow');
-                    shadow.setScale(2); 
-                    shadow.setDepth(1); 
-                });
+                const shadowPositions = [{x: 100, y: 100}, {x: 300, y: 300}, {x: 500, y: 150}, {x: 200, y: 400}, {x: 550, y: 350}];
+                shadowPositions.forEach(pos => { this.shadows.create(pos.x, pos.y, 'shadow').setScale(2).setDepth(1); });
             }
             
             createArabTombs() {
-                const t1 = this.arabTombs.create(150, 150, 'arab_tomb');
-                t1.setData('hasKey', false);
-                t1.setDepth(5);
-                
-                const t2 = this.arabTombs.create(400, 100, 'arab_tomb');
-                t2.setData('hasKey', false);
-                t2.setDepth(5);
-                
-                const t3 = this.arabTombs.create(550, 100, 'arab_tomb');
-                t3.setData('hasKey', true);
-                t3.setDepth(5);
+                const t1 = this.arabTombs.create(150, 150, 'arab_tomb'); t1.setData('hasKey', false); t1.setDepth(5);
+                const t2 = this.arabTombs.create(400, 100, 'arab_tomb'); t2.setData('hasKey', false); t2.setDepth(5);
+                const t3 = this.arabTombs.create(550, 100, 'arab_tomb'); t3.setData('hasKey', true); t3.setDepth(5);
             }
 
+            // --- UPDATE LOOP ---
             update(time, delta) {
                 if (!this.player) return; 
 
@@ -658,12 +609,10 @@
                      this.koffe.setAlpha(0.8);
                      let nearestShadow = null;
                      let minShadowDist = Infinity;
-                     this.shadows.children.iterate((shadow) => {
+                     this.shadows.getChildren().forEach((shadow) => {
+                         if (!shadow.active) return;
                          const d = Phaser.Math.Distance.Between(this.player.x, this.player.y, shadow.x, shadow.y);
-                         if (d < minShadowDist) {
-                             minShadowDist = d;
-                             nearestShadow = shadow;
-                         }
+                         if (d < minShadowDist) { minShadowDist = d; nearestShadow = shadow; }
                      });
                      if (nearestShadow) {
                          this.koffe.x = Phaser.Math.Linear(this.koffe.x, nearestShadow.x, 0.05);
@@ -693,7 +642,7 @@
                     this.fiodorDetectionUI.style.display = 'none';
                 }
 
-                // MECÂNICA DE CALOR
+                // MECÂNICA DE CALOR (Sala 2)
                 if (this.currentRoom === 2) {
                     const isSafe = this.physics.overlap(this.player, this.shadows);
                     if (!isSafe) {
@@ -710,33 +659,54 @@
                     }
                 }
 
-                // Inputs de Ação (Geral)
+                // INPUTS DE AÇÃO (INTERAÇÕES)
                 if (Phaser.Input.Keyboard.JustDown(this.keySpace) && !this.isDialogueOpen) {
-                    // Fix: Cooldown Check
                     if (this.time.now < this.dialogueCooldown) return;
 
-                    // Prioridade 1: Interagir com Anão (Sala 1)
+                    let interacted = false;
+
+                    // Interação Sala 1 (Anão)
                     if (this.currentRoom === 1 && this.dwarf.active && Phaser.Math.Distance.Between(this.player.x, this.player.y, this.dwarf.x, this.dwarf.y) < 60) {
-                        this.dwarfInteraction(this.player, this.dwarf);
+                        this.dwarfInteraction(this.player, this.dwarf); interacted = true;
                     } 
-                    // Prioridade 2: Interagir com Portão (Sala 2)
+                    // Interação Sala 2 (Portão)
                     else if (this.currentRoom === 2 && this.ancientGate.active && Phaser.Math.Distance.Between(this.player.x, this.player.y, this.ancientGate.x, this.ancientGate.y) < 60) {
-                        this.handleGateInteraction();
+                        this.handleGateInteraction(); interacted = true;
                     }
-                    // Prioridade 3: Interagir com Túmulos (Sala 2)
+                    // Interação Sala 2 (Túmulos)
                     else if (this.currentRoom === 2) {
-                        let tombFound = false;
-                        this.arabTombs.children.iterate((tomb) => {
-                            if (tomb.active && Phaser.Math.Distance.Between(this.player.x, this.player.y, tomb.x, tomb.y) < 40) {
-                                this.handleTombInteraction(tomb);
-                                tombFound = true;
+                        this.arabTombs.getChildren().forEach((tomb) => {
+                            if (!tomb.active) return;
+                            if (Phaser.Math.Distance.Between(this.player.x, this.player.y, tomb.x, tomb.y) < 40) {
+                                this.handleTombInteraction(tomb); interacted = true;
                             }
                         });
-                        if (!tombFound) {
-                            this.performAssistantAction();
-                        }
                     }
-                    else {
+                    // Interação Sala 3 (Mestre de Obras)
+                    else if (this.currentRoom === 3 && this.foreman.active && Phaser.Math.Distance.Between(this.player.x, this.player.y, this.foreman.x, this.foreman.y) < 60) {
+                         this.handleForemanInteraction(); interacted = true;
+                    }
+                    // Interação Sala 3 (Coletar Gemas)
+                    else if (this.currentRoom === 3) {
+                         this.gems.getChildren().forEach((gem) => {
+                             if (!gem.active) return;
+                             if (Phaser.Math.Distance.Between(this.player.x, this.player.y, gem.x, gem.y) < 40) {
+                                 this.collectGem(gem); interacted = true;
+                             }
+                         });
+                         // Interação Sala 3 (Colocar Gemas)
+                         if (!interacted) {
+                             this.pedestals.getChildren().forEach((ped) => {
+                                 if (!ped.active) return;
+                                 if (Phaser.Math.Distance.Between(this.player.x, this.player.y, ped.x, ped.y) < 40) {
+                                     this.placeGem(ped); interacted = true;
+                                 }
+                             });
+                         }
+                    }
+
+                    // Se não houve interação específica, usa habilidade do gato
+                    if (!interacted) {
                         this.performAssistantAction();
                     }
                 }
@@ -744,47 +714,94 @@
                 this.updateUI();
             }
 
-            // --- LÓGICA DE JOGO ---
+            // --- LÓGICA DE INTERAÇÃO (PUZZLES) ---
 
             dwarfInteraction(player, dwarf) {
-                // Check removed to avoid redundant key check failure
-                
                 if (this.registry.get('hasFormularioAzul')) {
-                    this.triggerDialogue("An\u00E3o Burocrata", "Ah, aqui est\u00E1. Excelente! O Visto 'A' para a Sala 2 foi concedido. Por favor, prossiga.");
+                    this.triggerDialogue("An\u00E3o Burocrata", "Visto 'A' concedido. Pode passar.");
                     this.registry.set('hasFormularioAzul', false);
                     dwarf.disableBody(true, true);
                     this.tweens.add({ targets: dwarf, alpha: 0, duration: 800 });
                     this.exitPortal.enableBody(true, this.dwarf.x, this.dwarf.y + 16, true, true);
                     this.exitPortal.setAlpha(1);
                     this.exitPortal.setDepth(5);
-                    this.time.delayedCall(1500, () => {
-                        this.triggerDialogue("Denise", "Uma passagem abriu-se no local do An\u00E3o. Vamos em frente!");
-                    });
                 } else {
-                    this.triggerDialogue("An\u00E3o Burocrata", "Alto l\u00E1! Onde pensa que vai sem o Formul\u00E1rio Azul 2B? \n\n(Dica: Selecione Orpheu (3) e tente empurrar a caixa pesada pr\u00F3xima.)");
+                    this.triggerDialogue("An\u00E3o Burocrata", "Preciso do Formul\u00E1rio Azul 2B. Fale com os gatos.");
                 }
             }
             
             handleTombInteraction(tomb) {
                 if (tomb.getData('hasKey')) {
                     this.registry.set('hasDesertKey', true);
-                    this.triggerDialogue("Denise", "Encontrei! Uma Chave Antiga escondida neste t\u00FAmulo. \nEssas pedras alinhadas... t\u00EDpico da era pr\u00E9-isl\u00E2mica.");
+                    this.triggerDialogue("Denise", "Encontrei a Chave Antiga!");
                     tomb.destroy(); 
                 } else {
-                    this.triggerDialogue("Denise", "Apenas pedras... nada aqui. Tenho que continuar a busca.");
+                    this.triggerDialogue("Denise", "Nada aqui.");
                 }
             }
             
             handleGateInteraction() {
                 if (this.registry.get('hasDesertKey')) {
-                    this.triggerDialogue("Sistema", "A chave antiga encaixa perfeitamente!");
+                    this.triggerDialogue("Sistema", "Port\u00E3o aberto!");
                     this.registry.set('hasDesertKey', false); 
                     this.ancientGate.disableBody(true, true);
                     this.ancientGate.setVisible(false);
-                    this.triggerDialogue("Denise", "O port\u00E3o abriu! Podemos voltar para a Sala 1 agora (Fim da Demo).");
                 } else {
-                    this.triggerDialogue("Sistema", "O port\u00E3o est\u00E1 trancado. Parece precisar de uma chave antiga.");
+                    this.triggerDialogue("Sistema", "Trancado. Precisa de chave.");
                 }
+            }
+
+            collectGem(gem) {
+                const color = gem.getData('color');
+                if (color === 'red') {
+                    this.registry.set('hasRedGem', true);
+                    this.triggerDialogue("Denise", "Peguei uma Gema Vermelha.");
+                } else {
+                    this.registry.set('hasBlueGem', true);
+                    this.triggerDialogue("Denise", "Peguei uma Gema Azul.");
+                }
+                gem.destroy();
+            }
+
+            placeGem(pedestal) {
+                const color = pedestal.getData('color');
+                if (color === 'red') {
+                    if (this.registry.get('hasRedGem')) {
+                        this.registry.set('hasRedGem', false);
+                        this.registry.set('placedRed', true);
+                        this.triggerDialogue("Sistema", "Gema Vermelha encaixada!");
+                        const gem = this.add.image(pedestal.x, pedestal.y - 10, 'gem_red').setDepth(6);
+                    } else {
+                        this.triggerDialogue("Denise", "Este pedestal requer uma Gema Vermelha.");
+                    }
+                } else if (color === 'blue') {
+                    if (this.registry.get('hasBlueGem')) {
+                        this.registry.set('hasBlueGem', false);
+                        this.registry.set('placedBlue', true);
+                        this.triggerDialogue("Sistema", "Gema Azul encaixada!");
+                        const gem = this.add.image(pedestal.x, pedestal.y - 10, 'gem_blue').setDepth(6);
+                    } else {
+                        this.triggerDialogue("Denise", "Este pedestal requer uma Gema Azul.");
+                    }
+                }
+                this.checkRoom3Complete();
+            }
+            
+            checkRoom3Complete() {
+                if (this.registry.get('placedRed') && this.registry.get('placedBlue')) {
+                     if (this.foreman.active) {
+                         this.time.delayedCall(1000, () => {
+                             this.triggerDialogue("Mestre de Obras", "Perfeito! Simetria restaurada. Podem passar.");
+                             this.foreman.disableBody(true, true);
+                             this.tweens.add({ targets: this.foreman, alpha: 0, duration: 800 });
+                             this.exitPortal.enableBody(true, 550, 240, true, true);
+                         });
+                     }
+                }
+            }
+
+            handleForemanInteraction() {
+                this.triggerDialogue("Mestre de Obras", "Que bagun\u00E7a! Os pedestais est\u00E3o vazios. A Pequena Senhora dos Mon\u00F3litos deve consertar isso.");
             }
 
             handleFungusDamage(player, fungus) {
@@ -797,8 +814,7 @@
                     this.cameras.main.flash(100, 255, 0, 0); 
                     this.showFloatingText(player.x, player.y - 20, "-10 HP", 0xff0000);
                     if (this.playerHealth <= 0) {
-                        this.playerHealth = 0;
-                        this.triggerDialogue("Game Over", "Voc\u00EA sucumbiu ao veneno do Fungo Luminoso.");
+                        this.triggerDialogue("Game Over", "Fim de jogo.");
                         this.scene.pause();
                     }
                 }
@@ -831,11 +847,11 @@
                     const dist = Phaser.Math.Distance.Between(this.player.x, this.player.y, cat.x, cat.y);
                     if (dist < 50) {
                         this.playerHealth = Math.min(100, this.playerHealth + 10);
-                        this.showFloatingText(cat.x, cat.y, "+10 HP \u2665 (Conforto)", 0x32cd32);
+                        this.showFloatingText(cat.x, cat.y, "+10 HP \u2665", 0x32cd32);
                     }
                 } 
                 else if (cat.name === "Orpheu") {
-                    this.showFloatingText(cat.x, cat.y, "GORFFF! (For\u00E7a)");
+                    this.showFloatingText(cat.x, cat.y, "GORFFF!");
                 }
                 else if (cat.name === "Fiódor") {
                     this.showFloatingText(cat.x, cat.y, "Zoom!");
@@ -855,13 +871,13 @@
                     const distanceMoved = Phaser.Math.Distance.Between(box.x, box.y, box.startX, box.startY);
                     if (distanceMoved > 30 && !this.paper.active) {
                         this.paper.enableBody(true, box.x, box.y - 50, true, true);
-                        this.triggerDialogue("Denise", "Olha s\u00F3! Algu\u00E9m derrubou o Formul\u00E1rio Azul 2B atr\u00E1s dessa caixa pesada.");
+                        this.triggerDialogue("Denise", "Olha s\u00F3! O formul\u00E1rio.");
                     }
                 } else {
                     box.setImmovable(true);
                     box.setVelocity(0);
                     if (Phaser.Input.Keyboard.JustDown(this.keySpace)) {
-                        this.triggerDialogue("Denise", "\u00C9 muito pesado! Preciso de algu\u00E9m forte... Talvez o Orpheu (3)?");
+                        this.triggerDialogue("Denise", "\u00C9 muito pesado! Orpheu?");
                     }
                 }
             }
@@ -874,19 +890,27 @@
             collectPaper(player, paper) {
                 paper.disableBody(true, true);
                 this.registry.set('hasFormularioAzul', true); 
-                this.triggerDialogue("Sistema", "Voc\u00EA obteve: Formul\u00E1rio Azul 2B! \n(Agora, fale com o An\u00E3o Burocrata na entrada. Pressione ESPA\u00C7O perto dele.)");
+                this.triggerDialogue("Sistema", "Peguei o Formul\u00E1rio Azul.");
             }
 
-            // --- UI & AUXILIARES ---
-
             createRoom(x, y, w, h, wallTexture = 'wall') {
+                // Top Wall (Thicker to prevent glitch)
                 for (let i = x; i < x + w; i++) {
-                    this.walls.create(i * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2, wallTexture).setDepth(5); 
-                    this.walls.create(i * TILE_SIZE + TILE_SIZE / 2, (y + h) * TILE_SIZE + TILE_SIZE / 2, wallTexture).setDepth(5); 
+                    this.walls.create(i * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2, wallTexture).setDepth(5);
+                    // Add second layer
+                    this.walls.create(i * TILE_SIZE + TILE_SIZE / 2, (y - 1) * TILE_SIZE + TILE_SIZE / 2, wallTexture).setDepth(5).setVisible(false);
                 }
+                // Bottom Wall
+                for (let i = x; i < x + w; i++) {
+                    this.walls.create(i * TILE_SIZE + TILE_SIZE / 2, (y + h) * TILE_SIZE + TILE_SIZE / 2, wallTexture).setDepth(5);
+                }
+                // Left Wall
                 for (let j = y; j <= y + h; j++) {
-                    this.walls.create(x * TILE_SIZE + TILE_SIZE / 2, j * TILE_SIZE + TILE_SIZE / 2, wallTexture).setDepth(5); 
-                    this.walls.create((x + w) * TILE_SIZE + TILE_SIZE / 2, j * TILE_SIZE + TILE_SIZE / 2, wallTexture).setDepth(5); 
+                    this.walls.create(x * TILE_SIZE + TILE_SIZE / 2, j * TILE_SIZE + TILE_SIZE / 2, wallTexture).setDepth(5);
+                }
+                // Right Wall
+                for (let j = y; j <= y + h; j++) {
+                    this.walls.create((x + w) * TILE_SIZE + TILE_SIZE / 2, j * TILE_SIZE + TILE_SIZE / 2, wallTexture).setDepth(5);
                 }
             }
 
@@ -932,7 +956,7 @@
 
             closeDialogue() {
                 this.isDialogueOpen = false;
-                this.dialogueCooldown = this.time.now + 200; // Fix: Adiciona 200ms de cooldown
+                this.dialogueCooldown = this.time.now + 200; 
                 document.getElementById('ui-layer').style.display = 'none';
                 if (this.typingEvent) this.typingEvent.destroy();
             }
@@ -957,23 +981,25 @@
                 
                 const hasFormulario = this.registry.get('hasFormularioAzul');
                 const hasKey = this.registry.get('hasDesertKey');
+                const hasRed = this.registry.get('hasRedGem');
+                const hasBlue = this.registry.get('hasBlueGem');
                 
+                let empty = true;
                 if (hasFormulario) {
-                    const li = document.createElement('li');
-                    li.innerText = '• Formul\u00E1rio Azul 2B (\uD83D\uDCC4)';
-                    inventoryList.appendChild(li);
+                    const li = document.createElement('li'); li.innerText = '• Formul\u00E1rio Azul'; inventoryList.appendChild(li); empty = false;
                 }
-                
                 if (hasKey) {
-                    const li = document.createElement('li');
-                    li.innerText = '• Chave Antiga (\uD83D\uDD11)';
-                    inventoryList.appendChild(li);
+                    const li = document.createElement('li'); li.innerText = '• Chave Antiga'; inventoryList.appendChild(li); empty = false;
+                }
+                if (hasRed) {
+                    const li = document.createElement('li'); li.innerText = '• Gema Vermelha'; inventoryList.appendChild(li); empty = false;
+                }
+                if (hasBlue) {
+                    const li = document.createElement('li'); li.innerText = '• Gema Azul'; inventoryList.appendChild(li); empty = false;
                 }
 
-                if (!hasFormulario && !hasKey) {
-                    const li = document.createElement('li');
-                    li.innerText = '(Vazio)';
-                    inventoryList.appendChild(li);
+                if (empty) {
+                    const li = document.createElement('li'); li.innerText = '(Vazio)'; inventoryList.appendChild(li);
                 }
             }
         }
