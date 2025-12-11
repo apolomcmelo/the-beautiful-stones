@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>A Jornada das Belas Pedras - Sala de Testes V20</title>
+    <title>A Jornada das Belas Pedras - Versão Final V28</title>
     <style>
         body {
             margin: 0;
@@ -44,16 +44,8 @@
             z-index: 200;
         }
 
-        #ui-name {
-            font-weight: bold;
-            text-transform: uppercase;
-            margin-bottom: 5px;
-            color: #8b0000;
-        }
-
-        #ui-text {
-            white-space: pre-wrap;
-        }
+        #ui-name { font-weight: bold; text-transform: uppercase; margin-bottom: 5px; color: #8b0000; }
+        #ui-text { white-space: pre-wrap; }
 
         #status-area {
             position: absolute;
@@ -63,129 +55,101 @@
             display: flex;
             flex-direction: column;
             gap: 8px;
+            pointer-events: none;
         }
 
         #health-bar {
-            width: 150px;
-            height: 20px;
-            background-color: #555;
-            border: 2px solid #fff;
-            border-radius: 4px;
-            overflow: hidden;
-            font-size: 12px;
-            line-height: 20px;
-            text-align: center;
-            color: white;
-            text-shadow: 1px 1px 0 #000;
+            width: 150px; height: 20px; background-color: #555; border: 2px solid #fff; border-radius: 4px;
+            overflow: hidden; font-size: 12px; line-height: 20px; text-align: center; color: white; text-shadow: 1px 1px 0 #000;
+        }
+        #health-fill { height: 100%; background-color: #e74c3c; width: 100%; transition: width 0.3s ease-out; }
+        
+        #boss-health-bar {
+            width: 300px; height: 25px; background-color: #333; border: 2px solid #ffd700; border-radius: 4px;
+            overflow: hidden; font-size: 14px; line-height: 25px; text-align: center; color: white;
+            position: absolute; top: 50px; left: 50%; transform: translateX(-50%); display: none; z-index: 99;
+        }
+        #boss-health-fill { height: 100%; background-color: #8b0000; width: 100%; transition: width 0.2s; }
+
+        #buff-indicator {
+            background: rgba(0, 0, 0, 0.7); padding: 5px; border-radius: 4px; color: #ffd700; font-size: 12px; display: none; text-align: right;
         }
 
-        #health-fill {
-            height: 100%;
-            background-color: #e74c3c;
-            width: 100%;
-            transition: width 0.3s ease-out;
-        }
-        
         #inventory-display {
-            background: rgba(0, 0, 0, 0.7);
-            padding: 8px;
-            border-radius: 4px;
-            color: #fff;
-            font-size: 12px;
-            width: 150px;
+            background: rgba(0, 0, 0, 0.7); padding: 8px; border-radius: 4px; color: #fff; font-size: 12px; width: 150px;
         }
-        
-        #inventory-list {
-            margin-top: 5px;
-            list-style: none;
-            padding: 0;
-        }
+        #inventory-list { margin-top: 5px; list-style: none; padding: 0; }
 
         #controls-hint {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            background: rgba(0, 0, 0, 0.7);
-            padding: 10px;
-            color: white;
-            font-size: 10px;
-            pointer-events: none;
-            z-index: 100;
-            border-radius: 4px;
+            position: absolute; top: 10px; left: 10px; background: rgba(0, 0, 0, 0.7); padding: 10px;
+            color: white; font-size: 10px; pointer-events: none; z-index: 100; border-radius: 4px;
         }
 
         #fiodor-detection {
-            position: absolute;
-            top: 50px;
-            right: 10px;
-            background: rgba(46, 204, 113, 0.7);
-            padding: 8px;
-            color: white;
-            font-size: 12px;
-            border-radius: 4px;
-            display: none;
-            z-index: 100;
+            position: absolute; top: 50px; right: 10px; background: rgba(46, 204, 113, 0.7); padding: 8px;
+            color: white; font-size: 12px; border-radius: 4px; display: none; z-index: 100;
         }
 
-        /* TELA DE VITÓRIA */
-        #victory-screen {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.85);
-            display: none;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 300;
-            color: #ffd700;
-            text-align: center;
+        .fullscreen-screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: #000; display: none; flex-direction: column;
+            justify-content: center; align-items: center; z-index: 300;
+            color: #d3c6a6; text-align: center; padding: 20px; box-sizing: border-box;
         }
+        
+        #intro-screen { display: flex; } 
 
-        #victory-title {
-            font-size: 40px;
-            margin-bottom: 20px;
-            text-shadow: 0 0 10px #ff0000;
+        h1 { color: #e0ac69; text-shadow: 2px 2px 0 #5c3a1e; font-size: 28px; margin-bottom: 20px; }
+        p.story-text { font-size: 16px; max-width: 500px; line-height: 1.6; margin-bottom: 30px; }
+        
+        button.action-btn {
+            padding: 15px 30px; font-size: 18px; background-color: #8b5a2b; color: #fff;
+            border: 2px solid #e0ac69; cursor: pointer; font-family: 'Courier New', Courier, monospace;
+            text-transform: uppercase; transition: background 0.2s;
         }
+        button.action-btn:hover { background-color: #a06b35; }
 
-        #victory-desc {
-            font-size: 18px;
-            margin-bottom: 40px;
-            color: #fff;
-            max-width: 80%;
+        #final-scene-img {
+            width: 300px; height: 200px; background: #333; margin-bottom: 20px;
+            display: flex; align-items: center; justify-content: center; border: 4px solid #fff;
+            position: relative; overflow: hidden;
         }
+        .cake { width: 60px; height: 40px; background: pink; position: absolute; bottom: 20px; }
+        .candle { width: 5px; height: 15px; background: red; position: absolute; bottom: 60px; }
+        .zoom-face { font-size: 80px; display: none; color: white; font-weight: bold; }
 
-        #restart-btn {
-            padding: 15px 30px;
-            font-size: 20px;
-            background-color: #8b0000;
-            color: #fff;
-            border: 2px solid #ffd700;
-            cursor: pointer;
-            font-family: 'Courier New', Courier, monospace;
-            text-transform: uppercase;
-        }
-        #restart-btn:hover {
-            background-color: #a00000;
-        }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
 </head>
 <body>
 
-    <div id="victory-screen">
-        <div id="victory-title">JORNADA CONCLUÍDA!</div>
-        <div id="victory-desc">Denise e os seus gatos encontraram a lendária Pedra Mestra.<br>A burocracia foi vencida, o deserto atravessado e a simetria restaurada.</div>
-        <button id="restart-btn" onclick="location.reload()">Jogar Novamente</button>
+    <div id="intro-screen" class="fullscreen-screen">
+        <h1>A Jornada das Belas Pedras</h1>
+        <p class="story-text">
+            "Ela veio de Portugal com mais mapas que descanso. Apaixonada por megálitos, trazia três promessas felinas e um cachorro eternamente em seu coração."
+            <br><br>
+            Mas antes das pedras... ela precisa vencer a <strong>Burocracia</strong>.
+        </p>
+        <button class="action-btn" onclick="startGame()">Começar Expedição</button>
+    </div>
+
+    <div id="victory-screen" class="fullscreen-screen">
+        <div id="final-scene-img">
+            <div class="cake" style="left:120px;"></div>
+            <div class="candle" style="left:148px;"></div>
+            <div style="position:absolute; top: 50px; color: gold; font-weight: bold;">FELIZ ANIVERSÁRIO!</div>
+            <div class="zoom-face" id="zoom-text">FOOOOODA-SE!</div>
+        </div>
+        <div id="victory-title">SEGREDO REVELADO</div>
+        <div id="victory-desc">Era apenas uma festa surpresa dos anões.<br>Toda a papelada foi para isto.</div>
+        <button class="action-btn" onclick="location.reload()">Nova Jornada</button>
     </div>
 
     <div id="controls-hint">
         WASD/Setas: Mover<br>
         1, 2, 3: Trocar Gato<br>
-        ESPAÇO: Ação/Interagir/Habilidade<br>
-        OBJETIVO: Resolva os problemas de cada sala para avançar.
+        ESPAÇO: Interagir / Atacar (Boss)<br>
+        Objetivo: Vença a Burocracia.
     </div>
 
     <div id="status-area">
@@ -193,17 +157,19 @@
             <div id="health-fill"></div>
             HP: <span id="health-value">100</span>
         </div>
+        <div id="buff-indicator"></div>
         <div id="inventory-display">
             Inventário:
-            <ul id="inventory-list">
-                <!-- Itens serão injetados aqui -->
-            </ul>
+            <ul id="inventory-list"></ul>
         </div>
     </div>
-
-    <div id="fiodor-detection">
-        RISCO DETETADO! (Fiódor)
+    
+    <div id="boss-health-bar">
+        <div id="boss-health-fill"></div>
+        DON ESCRIBÁN
     </div>
+
+    <div id="fiodor-detection">RISCO DETETADO! (Fiódor)</div>
 
     <div id="game-container"></div>
 
@@ -219,25 +185,39 @@
         const WORLD_WIDTH = 800;
         const WORLD_HEIGHT = 600; 
 
+        window.startGame = function() {
+            document.getElementById('intro-screen').style.display = 'none';
+            if (window.gameScene) {
+                window.gameScene.startGameplay();
+            }
+        };
+
         class MainScene extends Phaser.Scene {
             constructor() {
                 super({ key: 'MainScene' });
-                this.assistants = [];
-                this.activeAssistantIndex = 0; 
+                this.isGameStarted = false;
                 this.isDialogueOpen = false;
-                this.dialogueCooldown = 0; 
-                this.playerHealth = 100;
-                this.lastDamageTime = 0; 
-                this.lastHeatDamageTime = 0; 
-                this.fiodorDetectionUI = null; 
                 this.currentRoom = 1;
-                this.player = null;
-                this.koffe = null;
-                this.selector = null;
-                this.currentBackground = null; 
-                this.sandstormOverlay = null;
                 
-                // Variáveis para gerir colisores dinâmicos
+                this.player = null;
+                this.assistants = [];
+                this.activeAssistantIndex = 0;
+                
+                this.playerHealth = 100;
+                this.speedMultiplier = 1;
+                this.defenseMultiplier = 1;
+                this.buffTimer = 0;
+                this.currentBuffName = "";
+
+                this.boss = null;
+                this.bossHealth = 100;
+                this.bossPhase = 1;
+                this.bossAttackTimer = 0;
+                this.projectiles = null;
+                this.lastDamageTime = 0;
+                this.lastHeatDamageTime = 0;
+                this.dialogueCooldown = 0;
+                
                 this.wallCollider = null;
                 this.assistantWallCollider = null;
                 this.boxWallCollider = null;
@@ -246,137 +226,55 @@
             preload() {
                 const graphics = this.make.graphics({ x: 0, y: 0, add: false });
 
-                // 1. Denise 
-                graphics.clear();
-                graphics.fillStyle(0xe0ac69); graphics.fillRect(8, 4, 16, 14); 
-                graphics.fillStyle(0x4a3000); graphics.fillRect(6, 2, 20, 8); graphics.fillRect(6, 6, 4, 12); graphics.fillRect(22, 6, 4, 12);
-                graphics.fillStyle(0x8fbc8f); graphics.fillRect(8, 18, 16, 14);
-                graphics.fillStyle(0x5c4033); graphics.fillRect(10, 32, 5, 12); graphics.fillRect(17, 32, 5, 12);
-                graphics.lineStyle(2, 0xc0c0c0); graphics.strokeCircle(12, 10, 3); graphics.strokeCircle(20, 10, 3);
-                graphics.generateTexture('denise', 32, 48);
-
-                // 2. Maron
-                graphics.clear(); graphics.fillStyle(0x1a1a1a); graphics.fillRect(4, 12, 24, 16); graphics.fillRect(4, 4, 8, 8); 
-                graphics.fillStyle(0xffffff); graphics.fillRect(5, 6, 2, 2);
-                graphics.fillStyle(0xff69b4); graphics.fillRect(8, 12, 4, 2);
-                graphics.generateTexture('maron', 32, 32);
-
-                // 3. Fiódor
-                graphics.clear(); graphics.fillStyle(0xfff8dc); graphics.fillRect(4, 12, 24, 16); graphics.fillRect(4, 4, 8, 8);
-                graphics.fillStyle(0xdaa520); graphics.fillRect(10, 14, 4, 12);
-                graphics.fillStyle(0x00bfff); graphics.fillRect(5, 6, 2, 2);
-                graphics.generateTexture('fiodor', 32, 32);
-
-                // 4. Orpheu
-                graphics.clear(); graphics.fillStyle(0xd2b48c); graphics.fillRect(2, 10, 28, 20); 
-                graphics.fillStyle(0x4b3621); graphics.fillRect(2, 4, 10, 8); graphics.fillRect(26, 12, 4, 4); 
-                graphics.fillStyle(0xafeeee); graphics.fillRect(4, 6, 2, 2);
-                graphics.generateTexture('orpheu', 32, 32);
-
-                // 5. Koffe
-                graphics.clear(); graphics.fillStyle(0xe0ffff, 0.6); graphics.fillCircle(16, 16, 12); graphics.fillRect(12, 20, 8, 10);
-                graphics.fillStyle(0x000000); graphics.fillRect(6, 8, 4, 8);
-                graphics.generateTexture('koffe', 32, 32);
-
-                // 6. Fungo
-                graphics.clear(); graphics.fillStyle(0x32cd32); graphics.fillTriangle(16, 32, 4, 10, 28, 10);
-                graphics.fillStyle(0x00ff00, 0.7); graphics.fillCircle(16, 15, 10);
-                graphics.generateTexture('fungus', 32, 32);
+                // Personagens
+                graphics.clear(); graphics.fillStyle(0xe0ac69); graphics.fillRect(8, 4, 16, 14); graphics.fillStyle(0x4a3000); graphics.fillRect(6, 2, 20, 8); graphics.fillRect(6, 6, 4, 12); graphics.fillRect(22, 6, 4, 12); graphics.fillStyle(0x8fbc8f); graphics.fillRect(8, 18, 16, 14); graphics.lineStyle(2, 0xc0c0c0); graphics.strokeCircle(12, 10, 3); graphics.strokeCircle(20, 10, 3); graphics.generateTexture('denise', 32, 48);
+                graphics.clear(); graphics.fillStyle(0x1a1a1a); graphics.fillRect(4, 12, 24, 16); graphics.fillRect(4, 4, 8, 8); graphics.fillStyle(0xffffff); graphics.fillRect(5, 6, 2, 2); graphics.fillStyle(0xff69b4); graphics.fillRect(8, 12, 4, 2); graphics.generateTexture('maron', 32, 32);
+                graphics.clear(); graphics.fillStyle(0xfff8dc); graphics.fillRect(4, 12, 24, 16); graphics.fillRect(4, 4, 8, 8); graphics.fillStyle(0xdaa520); graphics.fillRect(10, 14, 4, 12); graphics.fillStyle(0x00bfff); graphics.fillRect(5, 6, 2, 2); graphics.generateTexture('fiodor', 32, 32);
+                graphics.clear(); graphics.fillStyle(0xd2b48c); graphics.fillRect(2, 10, 28, 20); graphics.fillStyle(0x4b3621); graphics.fillRect(2, 4, 10, 8); graphics.fillRect(26, 12, 4, 4); graphics.fillStyle(0xafeeee); graphics.fillRect(4, 6, 2, 2); graphics.generateTexture('orpheu', 32, 32);
+                graphics.clear(); graphics.fillStyle(0xe0ffff, 0.6); graphics.fillCircle(16, 16, 12); graphics.fillRect(12, 20, 8, 10); graphics.fillStyle(0x000000); graphics.fillRect(6, 8, 4, 8); graphics.generateTexture('koffe', 32, 32);
 
                 // Cenários
-                graphics.clear(); graphics.fillStyle(0xcd853f); graphics.fillRect(0, 0, 32, 32); graphics.lineStyle(2, 0xa0522d); graphics.strokeRect(0,0,32,32);
-                graphics.generateTexture('floor', 32, 32);
-                
-                graphics.clear(); graphics.fillStyle(0xe6c288); graphics.fillRect(0, 0, 32, 32); graphics.fillStyle(0xd4af73); graphics.fillRect(5, 5, 2, 2); graphics.fillRect(20, 15, 2, 2); graphics.fillRect(10, 25, 2, 2);
-                graphics.generateTexture('sand', 32, 32);
-
-                graphics.clear(); graphics.fillStyle(0x1a1a1a); graphics.fillRect(0, 0, 32, 32); graphics.lineStyle(2, 0x4a4a4a); graphics.strokeRect(1, 1, 30, 30); graphics.fillStyle(0x2a2a2a); graphics.fillRect(4, 4, 24, 24); graphics.fillStyle(0x151515); graphics.fillRect(8, 8, 4, 4);
-                graphics.generateTexture('mine_floor', 32, 32);
-
-                // NOVO: Chão de Mármore (Santuário)
-                graphics.clear(); graphics.fillStyle(0xfdfbf7); graphics.fillRect(0, 0, 32, 32); graphics.lineStyle(1, 0xdcdde1); graphics.strokeRect(0, 0, 32, 32);
-                graphics.generateTexture('marble_floor', 32, 32);
-
-                graphics.clear(); graphics.fillStyle(0x000000, 0.4); graphics.fillEllipse(16, 16, 30, 20);
-                graphics.generateTexture('shadow', 32, 32);
-                
-                graphics.clear(); graphics.fillStyle(0x808080); graphics.fillCircle(8, 24, 6); graphics.fillStyle(0x707070); graphics.fillCircle(16, 22, 7); graphics.fillStyle(0x606060); graphics.fillCircle(24, 24, 6); graphics.fillStyle(0xe6c288); graphics.fillRect(2, 28, 28, 4);
-                graphics.generateTexture('arab_tomb', 32, 32);
-                
-                graphics.clear(); graphics.lineStyle(2, 0xffd700); graphics.strokeCircle(10, 10, 6); graphics.lineBetween(16, 10, 28, 10); graphics.lineBetween(28, 10, 28, 16);
-                graphics.generateTexture('desert_key', 32, 32);
-                
-                graphics.clear(); graphics.fillStyle(0xe74c3c); graphics.fillTriangle(16, 2, 4, 26, 28, 26); graphics.lineStyle(1, 0xffffff); graphics.strokeTriangle(16, 2, 4, 26, 28, 26);
-                graphics.generateTexture('gem_red', 32, 32);
-                
-                graphics.clear(); graphics.fillStyle(0x3498db); graphics.fillTriangle(16, 2, 4, 26, 28, 26); graphics.lineStyle(1, 0xffffff); graphics.strokeTriangle(16, 2, 4, 26, 28, 26);
-                graphics.generateTexture('gem_blue', 32, 32);
-                
-                // NOVO: Pedra Mestra (Correção de Bug: fillDiamond -> fillTriangle)
-                graphics.clear(); 
-                graphics.fillStyle(0xffffff); 
-                // Parte Branca Externa
-                graphics.fillTriangle(16, 4, 28, 16, 4, 16);  // Topo
-                graphics.fillTriangle(4, 16, 28, 16, 16, 28); // Fundo
-                
-                graphics.fillStyle(0xa29bfe, 0.5); 
-                // Parte Roxa Interna
-                graphics.fillTriangle(16, 8, 24, 16, 8, 16); // Topo
-                graphics.fillTriangle(8, 16, 24, 16, 16, 24); // Fundo
-                
-                graphics.generateTexture('master_stone', 32, 32);
-                
-                graphics.clear(); graphics.fillStyle(0x555555); graphics.fillRect(4, 16, 24, 16); graphics.fillStyle(0x7f8c8d); graphics.fillRect(2, 12, 28, 4); graphics.fillStyle(0xc0392b); graphics.fillCircle(16, 24, 3);
-                graphics.generateTexture('pedestal_red', 32, 32);
-                
-                graphics.clear(); graphics.fillStyle(0x555555); graphics.fillRect(4, 16, 24, 16); graphics.fillStyle(0x7f8c8d); graphics.fillRect(2, 12, 28, 4); graphics.fillStyle(0x2980b9); graphics.fillCircle(16, 24, 3);
-                graphics.generateTexture('pedestal_blue', 32, 32);
-
-                // NOVO: Pedestal Dourado (Santuário)
-                graphics.clear(); graphics.fillStyle(0xf1c40f); graphics.fillRect(2, 10, 28, 22); graphics.fillStyle(0xf39c12); graphics.fillRect(4, 12, 24, 18);
-                graphics.generateTexture('pedestal_gold', 32, 32);
-
-                graphics.clear(); graphics.fillStyle(0x555555); graphics.fillRect(0, 0, 32, 64); graphics.lineStyle(2, 0x333333); graphics.strokeRect(0, 0, 32, 64); graphics.fillStyle(0x222222); graphics.fillCircle(16, 32, 4); 
-                graphics.generateTexture('ancient_gate', 32, 64);
+                graphics.clear(); graphics.fillStyle(0xcd853f); graphics.fillRect(0, 0, 32, 32); graphics.lineStyle(2, 0xa0522d); graphics.strokeRect(0,0,32,32); graphics.generateTexture('floor', 32, 32);
+                graphics.clear(); graphics.fillStyle(0xe6c288); graphics.fillRect(0, 0, 32, 32); graphics.fillStyle(0xd4af73); graphics.fillRect(5, 5, 2, 2); graphics.fillRect(20, 15, 2, 2); graphics.generateTexture('sand', 32, 32);
+                graphics.clear(); graphics.fillStyle(0x1a1a1a); graphics.fillRect(0, 0, 32, 32); graphics.lineStyle(2, 0x4a4a4a); graphics.strokeRect(1, 1, 30, 30); graphics.fillStyle(0x2a2a2a); graphics.fillRect(4, 4, 24, 24); graphics.generateTexture('mine_floor', 32, 32);
+                graphics.clear(); graphics.fillStyle(0xfdfbf7); graphics.fillRect(0, 0, 32, 32); graphics.lineStyle(1, 0xdcdde1); graphics.strokeRect(0, 0, 32, 32); graphics.generateTexture('marble_floor', 32, 32);
 
                 // Paredes
-                graphics.clear(); graphics.fillStyle(0x708090); graphics.fillRect(0, 0, 32, 32); graphics.fillStyle(0x2f4f4f); graphics.fillRect(4, 4, 24, 24);
-                graphics.generateTexture('wall', 32, 32);
+                graphics.clear(); graphics.fillStyle(0x708090); graphics.fillRect(0, 0, 32, 32); graphics.fillStyle(0x2f4f4f); graphics.fillRect(4, 4, 24, 24); graphics.generateTexture('wall', 32, 32);
+                graphics.clear(); graphics.fillStyle(0x8b4513); graphics.fillRect(0, 0, 32, 32); graphics.fillStyle(0xcd853f); graphics.fillRect(4, 4, 10, 8); graphics.fillRect(18, 14, 10, 8); graphics.generateTexture('ruin_wall', 32, 32);
+                graphics.clear(); graphics.fillStyle(0x1a1a1a); graphics.fillRect(0, 0, 32, 32); graphics.fillStyle(0x2d3436); graphics.fillRect(2, 2, 28, 28); graphics.lineStyle(2, 0xe0e0e0); graphics.strokeRect(4,4,24,24); graphics.generateTexture('mine_wall', 32, 32);
+                graphics.clear(); graphics.fillStyle(0xffffff); graphics.fillRect(0, 0, 32, 32); graphics.fillStyle(0xf1c40f); graphics.fillRect(4, 0, 6, 32); graphics.fillRect(22, 0, 6, 32); graphics.generateTexture('gold_wall', 32, 32);
 
-                graphics.clear(); graphics.fillStyle(0x8b4513); graphics.fillRect(0, 0, 32, 32); graphics.fillStyle(0xcd853f); graphics.fillRect(4, 4, 10, 8); graphics.fillRect(18, 14, 10, 8);
-                graphics.generateTexture('ruin_wall', 32, 32);
+                // Objetos
+                graphics.clear(); graphics.fillStyle(0x000000, 0.4); graphics.fillEllipse(16, 16, 30, 20); graphics.generateTexture('shadow', 32, 32);
+                graphics.clear(); graphics.fillStyle(0x808080); graphics.fillCircle(16, 22, 10); graphics.fillStyle(0xe6c288); graphics.fillRect(2, 28, 28, 4); graphics.generateTexture('arab_tomb', 32, 32);
+                graphics.clear(); graphics.lineStyle(2, 0xffd700); graphics.strokeCircle(10, 10, 6); graphics.lineBetween(16, 10, 28, 10); graphics.generateTexture('desert_key', 32, 32);
+                graphics.clear(); graphics.fillStyle(0xe74c3c); graphics.fillTriangle(16, 2, 4, 26, 28, 26); graphics.generateTexture('gem_red', 32, 32);
+                graphics.clear(); graphics.fillStyle(0x3498db); graphics.fillTriangle(16, 2, 4, 26, 28, 26); graphics.generateTexture('gem_blue', 32, 32);
+                graphics.clear(); graphics.fillStyle(0x555555); graphics.fillRect(4, 16, 24, 16); graphics.fillStyle(0xc0392b); graphics.fillCircle(16, 24, 3); graphics.generateTexture('pedestal_red', 32, 32);
+                graphics.clear(); graphics.fillStyle(0x555555); graphics.fillRect(4, 16, 24, 16); graphics.fillStyle(0x2980b9); graphics.fillCircle(16, 24, 3); graphics.generateTexture('pedestal_blue', 32, 32);
+                graphics.clear(); graphics.fillStyle(0x00ffff); graphics.fillEllipse(16, 16, 20, 28); graphics.generateTexture('portal', 32, 32);
+                graphics.clear(); graphics.fillStyle(0x8b4513); graphics.fillRect(2, 2, 28, 28); graphics.strokeRect(2,2,28,28); graphics.generateTexture('heavybox', 32, 32);
+                graphics.clear(); graphics.fillStyle(0xff1493); graphics.fillTriangle(16, 2, 4, 30, 28, 30); graphics.generateTexture('crystal', 32, 32);
+                graphics.clear(); graphics.fillStyle(0x4682b4); graphics.fillRect(6, 6, 20, 24); graphics.fillStyle(0xffffff); graphics.fillRect(8, 8, 16, 20); graphics.generateTexture('paper', 32, 32);
+                graphics.clear(); graphics.fillStyle(0x32cd32); graphics.fillTriangle(16, 32, 4, 10, 28, 10); graphics.generateTexture('fungus', 32, 32);
+                graphics.clear(); graphics.fillStyle(0x0984e3); graphics.fillRect(4, 0, 24, 32); graphics.generateTexture('stream', 32, 32);
+
+                // NPCs
+                graphics.clear(); graphics.fillStyle(0x8b0000); graphics.fillRect(6, 10, 20, 20); graphics.fillStyle(0xffdead); graphics.fillRect(8, 2, 16, 12); graphics.generateTexture('dwarf', 32, 32);
+                graphics.clear(); graphics.fillStyle(0x27ae60); graphics.fillRect(6, 10, 20, 20); graphics.fillStyle(0xf1c40f); graphics.fillRect(6, 0, 20, 4); graphics.generateTexture('foreman', 32, 32);
+
+                // Especiarias
+                graphics.clear(); graphics.fillStyle(0x8b4513); graphics.fillRect(10, 4, 12, 24); graphics.lineStyle(1, 0x5c3a1e); graphics.strokeRect(10,4,12,24); graphics.generateTexture('spice_cinnamon', 32, 32);
+                graphics.clear(); graphics.fillStyle(0x3e2723); graphics.fillCircle(16, 12, 6); graphics.fillRect(14, 18, 4, 10); graphics.generateTexture('spice_clove', 32, 32);
                 
-                graphics.clear(); graphics.fillStyle(0x1a1a1a); graphics.fillRect(0, 0, 32, 32); graphics.fillStyle(0x2d3436); graphics.fillRect(2, 2, 28, 28); graphics.lineStyle(2, 0xe0e0e0); graphics.beginPath(); graphics.moveTo(4, 28); graphics.lineTo(12, 14); graphics.lineTo(20, 18); graphics.lineTo(28, 4); graphics.strokePath(); graphics.fillStyle(0xffffff, 0.8); graphics.fillCircle(12, 14, 1); graphics.fillCircle(28, 4, 1);
-                graphics.generateTexture('mine_wall', 32, 32);
-
-                // NOVO: Paredes Douradas (Santuário)
-                graphics.clear(); graphics.fillStyle(0xffffff); graphics.fillRect(0, 0, 32, 32); graphics.fillStyle(0xf1c40f); graphics.fillRect(4, 0, 6, 32); graphics.fillRect(22, 0, 6, 32);
-                graphics.generateTexture('gold_wall', 32, 32);
-
-                graphics.clear(); graphics.fillStyle(0x1a1a1a); graphics.fillRect(0, 0, 32, 32); graphics.fillStyle(0x0984e3); graphics.fillRect(4, 0, 24, 32); graphics.fillStyle(0x74b9ff, 0.4); graphics.fillRect(8, 4, 4, 8); graphics.fillRect(20, 16, 4, 8);
-                graphics.generateTexture('stream', 32, 32);
-
-                graphics.clear(); graphics.fillStyle(0x00ffff); graphics.fillEllipse(16, 16, 20, 28); graphics.fillStyle(0x4682b4); graphics.fillRect(10, 10, 12, 12);
-                graphics.generateTexture('portal', 32, 32);
-
-                graphics.clear(); graphics.fillStyle(0x8b4513); graphics.fillRect(2, 2, 28, 28); graphics.lineStyle(2, 0x000000); graphics.strokeRect(2,2,28,28); graphics.lineBetween(2, 2, 30, 30); graphics.lineBetween(30, 2, 2, 30); 
-                graphics.generateTexture('heavybox', 32, 32);
-
-                graphics.clear(); graphics.fillStyle(0xff1493); graphics.fillTriangle(16, 2, 4, 30, 28, 30);
-                graphics.generateTexture('crystal', 32, 32);
-
-                graphics.clear(); graphics.fillStyle(0x4682b4); graphics.fillRect(6, 6, 20, 24); graphics.fillStyle(0xffffff); graphics.fillRect(8, 8, 16, 20); graphics.fillStyle(0x000000); graphics.fillRect(10, 12, 12, 2); graphics.fillRect(10, 16, 12, 2);
-                graphics.generateTexture('paper', 32, 32);
-
-                graphics.clear(); graphics.fillStyle(0x8b0000); graphics.fillRect(6, 10, 20, 20); graphics.fillStyle(0xffdead); graphics.fillRect(8, 2, 16, 12); graphics.fillStyle(0x808080); graphics.fillRect(8, 10, 16, 12);
-                graphics.generateTexture('dwarf', 32, 32);
-
-                graphics.clear(); graphics.fillStyle(0x27ae60); graphics.fillRect(6, 10, 20, 20); graphics.fillStyle(0xffdead); graphics.fillRect(8, 2, 16, 12); graphics.fillStyle(0xf1c40f); graphics.fillRect(6, 0, 20, 4); graphics.fillRect(12, -2, 8, 2);
-                graphics.generateTexture('foreman', 32, 32);
+                // BOSS e Carimbo
+                graphics.clear(); graphics.fillStyle(0x800000); graphics.fillRect(0, 0, 64, 80); graphics.fillStyle(0xffd700); graphics.fillRect(10, 10, 44, 20); graphics.fillStyle(0xffdead); graphics.fillRect(16, -10, 32, 20); graphics.fillStyle(0xffffff); graphics.fillRect(5, 50, 20, 25); graphics.generateTexture('boss', 64, 80);
+                graphics.clear(); graphics.fillStyle(0xff0000); graphics.fillRect(0, 0, 24, 24); graphics.fillStyle(0xffffff); graphics.fillRect(4, 6, 16, 2); graphics.fillRect(4, 10, 16, 2); graphics.fillRect(4, 14, 16, 2); graphics.generateTexture('stamp', 24, 24);
             }
 
             create() {
-                this.fiodorDetectionUI = document.getElementById('fiodor-detection');
+                window.gameScene = this;
                 
                 this.registry.set('hasFormularioAzul', false);
                 this.registry.set('hasDesertKey', false); 
@@ -384,64 +282,89 @@
                 this.registry.set('hasBlueGem', false);
                 this.registry.set('placedRed', false);
                 this.registry.set('placedBlue', false);
+                this.registry.set('hasCinnamon', false);
+                this.registry.set('hasClove', false);
                 
                 this.physics.world.setBounds(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
                 this.cameras.main.setBounds(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
 
-                // 1. Player
-                this.player = this.physics.add.sprite(200, 200, 'denise');
-                this.player.setCollideWorldBounds(true);
-                this.player.body.setSize(16, 16);
-                this.player.body.setOffset(8, 32); 
-                
-                this.cameras.main.startFollow(this.player, false); 
-                this.cameras.main.setDeadzone(100, 100); 
-                this.cameras.main.setZoom(2);
-                this.player.setDepth(10); 
+                this.createCharacters();
 
-                // 2. Assistentes
-                const maron = this.physics.add.sprite(180, 200, 'maron').setName("Maron").setBounce(0.5).setCollideWorldBounds(true);
-                const fiodor = this.physics.add.sprite(160, 200, 'fiodor').setName("Fiódor").setBounce(0.5).setCollideWorldBounds(true);
-                const orpheu = this.physics.add.sprite(140, 200, 'orpheu').setName("Orpheu").setBounce(0.5).setCollideWorldBounds(true);
-                this.assistants.push(maron, fiodor, orpheu);
-                this.assistants.forEach(cat => cat.setDepth(10)); 
+                this.fiodorDetectionUI = document.getElementById('fiodor-detection');
+                this.registry.events.on('changedata', this.updateInventoryUI, this);
 
-                // 3. Koffe 
-                this.koffe = this.add.sprite(0, 0, 'koffe');
-                this.koffe.setAlpha(0);
-                this.koffe.setDepth(10); 
-                this.tweens.add({ targets: this.koffe, y: '+=5', duration: 1500, yoyo: true, repeat: -1 });
-                
-                // 4. Seletor
-                this.selector = this.add.triangle(0, 0, 0, 0, 5, 10, 10, 0, 0xffff00);
-                this.selector.setDepth(11); 
+                this.selector = this.add.triangle(0, 0, 0, 0, 5, 10, 10, 0, 0xffff00).setDepth(11).setVisible(false);
 
-                // 5. Inputs
                 this.cursors = this.input.keyboard.createCursorKeys();
                 this.wasd = this.input.keyboard.addKeys('W,A,S,D');
                 this.keys123 = this.input.keyboard.addKeys('ONE,TWO,THREE');
                 this.keySpace = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
-                
-                // 6. Listener de Inventário
-                this.registry.events.on('changedata', this.updateInventoryUI, this);
+            }
 
-                // --- CARREGAR A PRIMEIRA SALA ---
+            createCharacters() {
+                this.player = this.physics.add.sprite(200, 200, 'denise');
+                this.player.setCollideWorldBounds(true);
+                this.player.body.setSize(16, 16);
+                this.player.body.setOffset(8, 32); 
+                this.player.setDepth(10).setVisible(false);
+                this.cameras.main.startFollow(this.player, false); 
+                this.cameras.main.setZoom(2);
+
+                const maron = this.physics.add.sprite(180, 200, 'maron').setName("Maron").setBounce(0.5).setCollideWorldBounds(true);
+                const fiodor = this.physics.add.sprite(160, 200, 'fiodor').setName("Fiódor").setBounce(0.5).setCollideWorldBounds(true);
+                const orpheu = this.physics.add.sprite(140, 200, 'orpheu').setName("Orpheu").setBounce(0.5).setCollideWorldBounds(true);
+                this.assistants.push(maron, fiodor, orpheu);
+                this.assistants.forEach(cat => cat.setDepth(10).setVisible(false));
+
+                this.koffe = this.add.sprite(0, 0, 'koffe').setAlpha(0).setDepth(10);
+                this.tweens.add({ targets: this.koffe, y: '+=5', duration: 1500, yoyo: true, repeat: -1 });
+            }
+
+            startGameplay() {
+                this.isGameStarted = true;
+                this.player.setVisible(true);
+                this.assistants.forEach(c => c.setVisible(true));
+                this.selector.setVisible(true);
                 this.loadRoom(1);
-                
                 this.updateInventoryUI();
-                this.time.delayedCall(1000, () => {
-                    this.triggerDialogue("Denise", "OK, voltamos. Vamos resolver a burocracia do An\u00E3o Burocrata. \n(Dica: Orpheu (3) empurra a caixa.)");
+                
+                this.time.delayedCall(500, () => {
+                   this.triggerDialogue("Denise", "Então? Vamos a isso. A primeira pedra não vai se escavar sozinha.");
                 });
             }
             
+            createRoom(x, y, w, h, wallTexture = 'wall') {
+                for (let i = x; i < x + w; i++) {
+                    this.walls.create(i * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2, wallTexture).setDepth(5);
+                    this.walls.create(i * TILE_SIZE + TILE_SIZE / 2, (y - 1) * TILE_SIZE + TILE_SIZE / 2, wallTexture).setDepth(5).setVisible(false);
+                }
+                for (let i = x; i < x + w; i++) {
+                    this.walls.create(i * TILE_SIZE + TILE_SIZE / 2, (y + h) * TILE_SIZE + TILE_SIZE / 2, wallTexture).setDepth(5);
+                }
+                for (let j = y; j <= y + h; j++) {
+                    this.walls.create(x * TILE_SIZE + TILE_SIZE / 2, j * TILE_SIZE + TILE_SIZE / 2, wallTexture).setDepth(5);
+                }
+                for (let j = y; j <= y + h; j++) {
+                    this.walls.create((x + w) * TILE_SIZE + TILE_SIZE / 2, j * TILE_SIZE + TILE_SIZE / 2, wallTexture).setDepth(5);
+                }
+            }
+            
+            // --- FUNÇÕES AUXILIARES RESTAURADAS ---
+            createShadows() {
+                [{x: 100, y: 100}, {x: 300, y: 300}, {x: 500, y: 150}].forEach(pos => this.shadows.create(pos.x, pos.y, 'shadow').setScale(2).setDepth(1));
+            }
+
+            createArabTombs() {
+                const t3 = this.arabTombs.create(550, 100, 'arab_tomb'); t3.setData('hasKey', true).setDepth(5);
+                this.arabTombs.create(150, 150, 'arab_tomb').setData('hasKey', false).setDepth(5);
+            }
+            // ------------------------------------
+
             loadRoom(roomNumber) {
                 console.log(`Carregando Sala: ${roomNumber}`);
                 this.currentRoom = roomNumber;
                 
-                // Limpeza completa
                 if (this.currentBackground) this.currentBackground.destroy();
-                
-                // Grupos
                 if (this.walls) this.walls.clear(true, true);
                 if (this.heavyBoxes) this.heavyBoxes.clear(true, true);
                 if (this.triggers) this.triggers.clear(true, true);
@@ -450,24 +373,16 @@
                 if (this.gems) this.gems.clear(true, true); 
                 if (this.pedestals) this.pedestals.clear(true, true); 
                 if (this.water) this.water.clear(true, true); 
-                
-                // Sprites únicos
-                if (this.dwarf) this.dwarf.destroy();
-                if (this.foreman) this.foreman.destroy(); 
-                if (this.crystal) this.crystal.destroy();
-                if (this.paper) this.paper.destroy();
-                if (this.fungus) this.fungus.destroy();
-                if (this.exitPortal) this.exitPortal.destroy();
-                if (this.ancientGate) this.ancientGate.destroy(); 
-                if (this.sandstormOverlay) this.sandstormOverlay.destroy();
-                if (this.masterStone) this.masterStone.destroy(); // Novo
+                if (this.spices) this.spices.clear(true, true);
+                if (this.projectiles) this.projectiles.clear(true, true);
 
-                // *** CRUCIAL: Remover Colisores Antigos ***
+                const singles = [this.dwarf, this.foreman, this.crystal, this.paper, this.fungus, this.exitPortal, this.ancientGate, this.sandstormOverlay, this.boss];
+                singles.forEach(s => { if(s && s.destroy) s.destroy(); });
+
                 if (this.wallCollider) this.physics.world.removeCollider(this.wallCollider);
                 if (this.assistantWallCollider) this.physics.world.removeCollider(this.assistantWallCollider);
                 if (this.boxWallCollider) this.physics.world.removeCollider(this.boxWallCollider);
 
-                // Reinicializa Grupos
                 this.walls = this.physics.add.staticGroup();
                 this.heavyBoxes = this.physics.add.group({ bounceX: 0, bounceY: 0 }); 
                 this.triggers = this.physics.add.staticGroup();
@@ -476,671 +391,464 @@
                 this.gems = this.physics.add.staticGroup();
                 this.pedestals = this.physics.add.staticGroup();
                 this.water = this.physics.add.staticGroup();
+                this.spices = this.physics.add.staticGroup();
+                this.projectiles = this.physics.add.group();
 
-                // Reposicionar Personagens
-                this.player.setPosition(200, 200);
+                // BUG 1 FIX: Spawn Player e Gatos seguros (mais à direita)
+                const spawnX = roomNumber === 5 ? 400 : 250; 
+                // Ajustado Y para sala 5 para evitar parede de baixo
+                const spawnY = roomNumber === 5 ? 350 : 300; 
+                this.player.setPosition(spawnX, spawnY);
                 this.assistants.forEach((cat, index) => {
                     cat.setPosition(this.player.x - 30 - (index * 15), this.player.y);
                     cat.body.setVelocity(0, 0); 
                 });
-                
-                // Objetos "placeholder"
-                this.dwarf = { active: false, destroy: () => {} };
-                this.foreman = { active: false, destroy: () => {} };
-                this.ancientGate = { active: false, destroy: () => {} };
-                this.crystal = { active: false, destroy: () => {} };
-                this.paper = { active: false, destroy: () => {} };
-                this.fungus = { active: false, destroy: () => {} };
-                this.masterStone = { active: false, destroy: () => {} };
 
-                // --- SALA 1 ---
-                if (roomNumber === 1) {
+                if (roomNumber === 1) { // LABIRINTO
                     this.currentBackground = this.add.tileSprite(0, 0, WORLD_WIDTH, WORLD_HEIGHT, 'floor').setOrigin(0).setDepth(0);
                     this.createRoom(2, 2, 18, 13, 'wall'); 
                     
-                    this.dwarf = this.physics.add.staticSprite(550, 240, 'dwarf');
-                    this.dwarf.setDepth(5);
+                    this.dwarf = this.physics.add.staticSprite(550, 240, 'dwarf').setDepth(5);
                     this.physics.add.collider(this.player, this.dwarf); 
                     
-                    const box = this.heavyBoxes.create(300, 300, 'heavybox');
-                    box.setImmovable(true); 
-                    box.setCollideWorldBounds(true);
-                    box.setDrag(800, 800); 
-                    box.name = "HeavyBox";
-                    box.startX = 300; 
-                    box.startY = 300; 
-                    box.setDepth(5);
+                    const box = this.heavyBoxes.create(300, 300, 'heavybox').setDepth(5);
+                    box.setImmovable(true).setCollideWorldBounds(true).setDrag(800, 800);
+                    box.name = "HeavyBox"; box.startX = 300; box.startY = 300; 
 
-                    this.crystal = this.physics.add.staticSprite(100, 350, 'crystal');
-                    this.crystal.setDepth(5);
+                    this.crystal = this.physics.add.staticSprite(100, 350, 'crystal').setDepth(5);
                     this.physics.add.overlap(this.assistants[0], this.crystal, this.handleCrystal, null, this); 
 
-                    this.paper = this.physics.add.staticSprite(300, 240, 'paper');
-                    if (this.registry.get('hasFormularioAzul')) {
-                        this.paper.disableBody(true, true);
-                    } else {
-                        this.paper.disableBody(true, true); 
-                    }
-                    this.paper.setDepth(5);
-                    this.physics.add.overlap(this.player, this.paper, this.collectPaper, null, this);
+                    // BUG 2 FIX: Papel invisível/desativado inicialmente
+                    this.paper = this.physics.add.staticSprite(300, 240, 'paper').setDepth(4).setVisible(false);
+                    this.paper.disableBody(true, true); 
 
-                    this.fungus = this.physics.add.staticSprite(450, 100, 'fungus'); 
-                    this.fungus.name = "LuminousFungus";
-                    this.fungus.setDepth(5);
+                    this.fungus = this.physics.add.staticSprite(450, 100, 'fungus').setDepth(5);
                     this.tweens.add({ targets: this.fungus, alpha: 0.5, duration: 500, yoyo: true, repeat: -1 });
-                    this.physics.add.overlap(this.player, this.fungus, this.handleFungusDamage, null, this);
+                    // BUG 3 FIX: Usa this.time.now em vez de variável time não definida
+                    this.physics.add.overlap(this.player, this.fungus, (p, f) => this.handleFungusDamage(this.time.now), null, this);
 
-                    this.exitPortal = this.physics.add.staticSprite(this.dwarf.x, this.dwarf.y + 16, 'portal');
-                    if (this.registry.get('hasFormularioAzul')) { 
-                         this.dwarf.disableBody(true, true); 
-                         this.dwarf.setVisible(false);
-                         this.exitPortal.enableBody(true, this.dwarf.x, this.dwarf.y + 16, true, true);
-                    } else {
-                        this.exitPortal.disableBody(true, true);
-                    }
-                    this.exitPortal.setDepth(5);
-                    this.physics.add.overlap(this.player, this.exitPortal, () => {
-                         if (this.exitPortal.active) this.loadRoom(2);
+                    this.exitPortal = this.physics.add.staticSprite(this.dwarf.x, this.dwarf.y + 16, 'portal').setDepth(4);
+                    this.exitPortal.disableBody(true, true); // Sempre desativado até interação
+                    this.exitPortal.setVisible(false);
+                    
+                    this.physics.add.overlap(this.player, this.exitPortal, () => { 
+                        if(this.exitPortal.active && this.exitPortal.visible) this.loadRoom(2); 
                     }, null, this);
 
-                // --- SALA 2 ---
-                } else if (roomNumber === 2) {
+                } else if (roomNumber === 2) { // DESERTO
                     this.currentBackground = this.add.tileSprite(0, 0, WORLD_WIDTH, WORLD_HEIGHT, 'sand').setOrigin(0).setDepth(0);
                     this.createRoom(2, 2, 18, 13, 'ruin_wall');
-
                     this.createShadows();
                     this.createArabTombs();
-                    
-                    this.ancientGate = this.physics.add.staticSprite(550, 400, 'ancient_gate');
-                    this.ancientGate.setDepth(5);
+                    this.ancientGate = this.physics.add.staticSprite(550, 400, 'ancient_gate').setDepth(5);
                     this.physics.add.collider(this.player, this.ancientGate);
 
-                    this.exitPortal = this.physics.add.staticSprite(550, 400, 'portal');
-                    this.exitPortal.setVisible(true);
-                    this.exitPortal.name = "return_portal";
-                    this.exitPortal.setDepth(4); 
-                    this.physics.add.overlap(this.player, this.exitPortal, () => {
-                         if (!this.ancientGate.active) this.loadRoom(3); 
-                    }, null, this);
-
-                    this.triggerDialogue("Denise", "Sala 2: O Deserto. Calor e mist\u00E9rio. \nEncontre a chave nos t\u00FAmulos!");
-
-                    this.sandstormOverlay = this.add.rectangle(0, 0, WORLD_WIDTH, WORLD_HEIGHT, 0xd2b48c);
-                    this.sandstormOverlay.setOrigin(0);
-                    this.sandstormOverlay.setDepth(30); 
-                    this.sandstormOverlay.setAlpha(0.1);
+                    this.exitPortal = this.physics.add.staticSprite(550, 400, 'portal').setDepth(4).setVisible(true);
+                    this.physics.add.overlap(this.player, this.exitPortal, () => { if(!this.ancientGate.active) this.loadRoom(3); }, null, this);
+                    this.triggerDialogue("Denise", "Deserto... Onde estará a chave?");
+                    this.sandstormOverlay = this.add.rectangle(0, 0, WORLD_WIDTH, WORLD_HEIGHT, 0xd2b48c).setOrigin(0).setDepth(30).setAlpha(0.1);
                     this.tweens.add({ targets: this.sandstormOverlay, alpha: 0.4, duration: 4000, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
 
-                // --- SALA 3 ---
-                } else if (roomNumber === 3) {
+                } else if (roomNumber === 3) { // MINA
                     this.currentBackground = this.add.tileSprite(0, 0, WORLD_WIDTH, WORLD_HEIGHT, 'mine_floor').setOrigin(0).setDepth(0);
                     this.createRoom(2, 2, 18, 13, 'mine_wall');
-                    
-                    for (let j = 3; j <= 14; j++) {
-                        if (j !== 8 && j !== 9) {
-                            const w = this.water.create(11 * TILE_SIZE, j * TILE_SIZE, 'stream');
-                            w.setDepth(1);
-                        }
-                    }
+                    for (let j = 3; j <= 14; j++) { if (j !== 8 && j !== 9) this.water.create(11 * TILE_SIZE, j * TILE_SIZE, 'stream').setDepth(1); }
                     this.physics.add.collider(this.player, this.water);
                     this.physics.add.collider(this.assistants, this.water);
-
-                    this.triggerDialogue("Denise", "Sala 3: O Vale. O cheiro de pedra antiga e Mithril... \nCuidado com o riacho, \u00E9 fundo.");
-
-                    this.foreman = this.physics.add.staticSprite(550, 240, 'foreman');
-                    this.foreman.setDepth(5);
+                    this.foreman = this.physics.add.staticSprite(550, 240, 'foreman').setDepth(5);
                     this.physics.add.collider(this.player, this.foreman);
+                    if (!this.registry.get('hasRedGem') && !this.registry.get('placedRed')) this.gems.create(100, 100, 'gem_red').setData('color','red').setDepth(5);
+                    if (!this.registry.get('hasBlueGem') && !this.registry.get('placedBlue')) this.gems.create(550, 400, 'gem_blue').setData('color','blue').setDepth(5);
+                    this.pedestals.create(200, 250, 'pedestal_red').setData('color', 'red').setDepth(5);
+                    this.pedestals.create(200, 350, 'pedestal_blue').setData('color', 'blue').setDepth(5);
+                    this.exitPortal = this.physics.add.staticSprite(550, 240, 'portal').setDepth(4).disableBody(true, true);
+                    this.physics.add.overlap(this.player, this.exitPortal, () => { if(this.exitPortal.active) this.loadRoom(4); }, null, this); 
 
-                    if (!this.registry.get('hasRedGem') && !this.registry.get('placedRed')) {
-                        const rGem = this.gems.create(100, 100, 'gem_red');
-                        rGem.setData('color', 'red');
-                        rGem.setDepth(5);
-                    }
-                    if (!this.registry.get('hasBlueGem') && !this.registry.get('placedBlue')) {
-                        const bGem = this.gems.create(550, 400, 'gem_blue'); 
-                        bGem.setData('color', 'blue');
-                        bGem.setDepth(5);
-                    }
-
-                    const redPed = this.pedestals.create(200, 250, 'pedestal_red');
-                    redPed.setData('color', 'red');
-                    redPed.setDepth(5);
-                    
-                    const bluePed = this.pedestals.create(200, 350, 'pedestal_blue');
-                    bluePed.setData('color', 'blue');
-                    bluePed.setDepth(5);
-
-                    this.exitPortal = this.physics.add.staticSprite(550, 240, 'portal');
-                    this.exitPortal.setDepth(4);
-                    this.exitPortal.disableBody(true, true);
-                    this.physics.add.overlap(this.player, this.exitPortal, () => {
-                         if (this.exitPortal.active) this.loadRoom(4); // Vai para Sala 4
-                    }, null, this);
-
-                // --- SALA 4: O SANTUÁRIO ---
-                } else if (roomNumber === 4) {
+                } else if (roomNumber === 4) { // CORREDOR
                     this.currentBackground = this.add.tileSprite(0, 0, WORLD_WIDTH, WORLD_HEIGHT, 'marble_floor').setOrigin(0).setDepth(0);
                     this.createRoom(2, 2, 18, 13, 'gold_wall');
                     
-                    this.triggerDialogue("Denise", "Sala 4: O Santu\u00E1rio. \n\u00C9... \u00E9 lindo. A Pedra Mestra est\u00E1 logo ali!");
+                    const cin = this.spices.create(300, 300, 'spice_cinnamon').setDepth(5).setData('type', 'cinnamon');
+                    const clove = this.spices.create(500, 300, 'spice_clove').setDepth(5).setData('type', 'clove');
+                    this.physics.add.overlap(this.player, this.spices, this.collectSpice, null, this);
 
-                    // Pedestal Dourado Central
-                    const goldPed = this.pedestals.create(320, 300, 'pedestal_gold');
-                    goldPed.setDepth(5);
-                    this.physics.add.collider(this.player, goldPed);
+                    this.exitPortal = this.physics.add.staticSprite(400, 100, 'portal').setDepth(5);
+                    this.physics.add.overlap(this.player, this.exitPortal, () => { this.loadRoom(5); }, null, this);
+                    
+                    this.triggerDialogue("Denise", "Cheira a... Canela? E Cravo? Melhor apanhar, posso precisar.");
 
-                    // A Pedra Mestra
-                    this.masterStone = this.physics.add.staticSprite(320, 280, 'master_stone');
-                    this.masterStone.setDepth(6);
-                    this.tweens.add({
-                        targets: this.masterStone,
-                        y: '-=10',
-                        duration: 1500,
-                        yoyo: true,
-                        repeat: -1,
-                        ease: 'Sine.easeInOut'
-                    });
-                    this.tweens.addCounter({
-                        from: 0, to: 360, duration: 3000, repeat: -1,
-                        onUpdate: (tween) => {
-                            const color = Phaser.Display.Color.HSVToRGB(tween.getValue() / 360, 1, 1);
-                            this.masterStone.setTint(color.color);
-                        }
-                    });
+                } else if (roomNumber === 5) { // BOSS
+                    this.currentBackground = this.add.tileSprite(0, 0, WORLD_WIDTH, WORLD_HEIGHT, 'marble_floor').setOrigin(0).setDepth(0);
+                    this.createRoom(2, 2, 18, 13, 'gold_wall');
 
-                    // Colisão de Vitória
-                    this.physics.add.overlap(this.player, this.masterStone, () => {
-                        this.handleVictory();
-                    }, null, this);
+                    this.boss = this.physics.add.sprite(400, 150, 'boss').setDepth(6).setImmovable(true);
+                    this.boss.body.setSize(60, 60);
+                    this.physics.add.collider(this.player, this.boss);
+                    this.physics.add.collider(this.assistants, this.boss);
+                    this.bossHealth = 100;
+                    document.getElementById('boss-health-bar').style.display = 'block';
+                    
+                    this.triggerDialogue("Don Escribán", "PARADA! Onde está a Licença B7-Alfa com selo de cera?");
                 }
                 
-                // *** CRIAÇÃO SEGURA DE COLISORES ***
                 this.wallCollider = this.physics.add.collider(this.player, this.walls);
                 this.assistantWallCollider = this.physics.add.collider(this.assistants, this.walls);
-                
-                this.assistants.forEach(cat => {
-                    this.physics.add.collider(cat, this.player); 
-                });
-                
+                this.assistants.forEach(cat => this.physics.add.collider(cat, this.player));
                 if (this.heavyBoxes.getLength() > 0) {
                      this.boxWallCollider = this.physics.add.collider(this.assistants, this.heavyBoxes);
                      this.physics.add.collider(this.player, this.heavyBoxes, this.handleBoxPush, null, this);
                 }
             }
 
-            // --- CRIAÇÃO DE AMBIENTE ---
-            createShadows() {
-                const shadowPositions = [{x: 100, y: 100}, {x: 300, y: 300}, {x: 500, y: 150}, {x: 200, y: 400}, {x: 550, y: 350}];
-                shadowPositions.forEach(pos => { this.shadows.create(pos.x, pos.y, 'shadow').setScale(2).setDepth(1); });
-            }
-            
-            createArabTombs() {
-                const t1 = this.arabTombs.create(150, 150, 'arab_tomb'); t1.setData('hasKey', false); t1.setDepth(5);
-                const t2 = this.arabTombs.create(400, 100, 'arab_tomb'); t2.setData('hasKey', false); t2.setDepth(5);
-                const t3 = this.arabTombs.create(550, 100, 'arab_tomb'); t3.setData('hasKey', true); t3.setDepth(5);
-            }
-
-            // --- UPDATE LOOP ---
             update(time, delta) {
-                if (!this.player) return; 
+                if (!this.isGameStarted) return;
+                if (!this.player) return;
 
                 if (this.isDialogueOpen) {
                     this.player.setVelocity(0, 0);
                     this.assistants.forEach(a => a.setVelocity(0,0));
-                    if (Phaser.Input.Keyboard.JustDown(this.keySpace)) {
-                        this.closeDialogue();
-                    }
+                    if (Phaser.Input.Keyboard.JustDown(this.keySpace)) this.closeDialogue();
                     return;
                 }
 
-                // Movimento Player
-                const speed = 120;
-                this.player.setVelocity(0); 
-                if (this.cursors.left.isDown || this.wasd.A.isDown) this.player.setVelocityX(-speed);
-                else if (this.cursors.right.isDown || this.wasd.D.isDown) this.player.setVelocityX(speed);
-                if (this.cursors.up.isDown || this.wasd.W.isDown) this.player.setVelocityY(-speed);
-                else if (this.cursors.down.isDown || this.wasd.S.isDown) this.player.setVelocityY(speed);
-                this.player.body.velocity.normalize().scale(speed);
-                
-                // Movimento Gatos
-                this.assistants.forEach((cat, index) => {
-                    const distToPlayer = Phaser.Math.Distance.Between(cat.x, cat.y, this.player.x, this.player.y);
-                    const minDistance = 50 + (index * 15); 
-                    const followSpeed = speed * 0.9;
-                    if (distToPlayer > minDistance) {
-                        this.physics.moveToObject(cat, this.player, followSpeed); 
-                    } else if (distToPlayer < 40) {
-                        this.physics.moveToObject(cat, this.player, -followSpeed * 0.5); 
+                if (this.buffTimer > 0) {
+                    this.buffTimer -= delta;
+                    if (this.buffTimer <= 0) {
+                        this.speedMultiplier = 1;
+                        this.defenseMultiplier = 1;
+                        this.currentBuffName = "";
+                        document.getElementById('buff-indicator').style.display = 'none';
                     } else {
-                        cat.setAcceleration(0, 0); 
-                        cat.setAngularAcceleration(0);
-                        cat.body.velocity.scale(0.95); 
+                        document.getElementById('buff-indicator').style.display = 'block';
+                        document.getElementById('buff-indicator').innerText = `Efeito: ${this.currentBuffName} (${Math.ceil(this.buffTimer/1000)}s)`;
                     }
-                });
-
-                // Lógica de Koffe
-                if (this.currentRoom === 2 && this.playerHealth < 70) {
-                     this.koffe.setAlpha(0.8);
-                     let nearestShadow = null;
-                     let minShadowDist = Infinity;
-                     this.shadows.getChildren().forEach((shadow) => {
-                         if (!shadow.active) return;
-                         const d = Phaser.Math.Distance.Between(this.player.x, this.player.y, shadow.x, shadow.y);
-                         if (d < minShadowDist) { minShadowDist = d; nearestShadow = shadow; }
-                     });
-                     if (nearestShadow) {
-                         this.koffe.x = Phaser.Math.Linear(this.koffe.x, nearestShadow.x, 0.05);
-                         this.koffe.y = Phaser.Math.Linear(this.koffe.y, nearestShadow.y, 0.05);
-                     }
-                } else if (this.playerHealth < 50) {
-                    this.koffe.setAlpha(0.8);
-                    this.koffe.x = Phaser.Math.Linear(this.koffe.x, this.player.x + 20, 0.05);
-                    this.koffe.y = Phaser.Math.Linear(this.koffe.y, this.player.y - 30, 0.05);
-                } else {
-                    this.koffe.setAlpha(0);
                 }
 
-                // Troca de Gato
+                const baseSpeed = 120 * this.speedMultiplier;
+                this.player.setVelocity(0);
+                if (this.cursors.left.isDown || this.wasd.A.isDown) this.player.setVelocityX(-baseSpeed);
+                else if (this.cursors.right.isDown || this.wasd.D.isDown) this.player.setVelocityX(baseSpeed);
+                if (this.cursors.up.isDown || this.wasd.W.isDown) this.player.setVelocityY(-baseSpeed);
+                else if (this.cursors.down.isDown || this.wasd.S.isDown) this.player.setVelocityY(baseSpeed);
+                this.player.body.velocity.normalize().scale(baseSpeed);
+
+                this.updateAssistants(baseSpeed);
+                this.updateKoffe();
+
                 if (Phaser.Input.Keyboard.JustDown(this.keys123.ONE)) this.setActiveAssistant(0);
                 if (Phaser.Input.Keyboard.JustDown(this.keys123.TWO)) this.setActiveAssistant(1);
                 if (Phaser.Input.Keyboard.JustDown(this.keys123.THREE)) this.setActiveAssistant(2);
-
+                
                 const activeCat = this.assistants[this.activeAssistantIndex];
-                this.selector.x = activeCat.x - 5;
-                this.selector.y = activeCat.y - 25;
+                this.selector.setPosition(activeCat.x - 5, activeCat.y - 25);
 
-                // Fiódor UI
-                if (this.currentRoom === 1 && this.fungus && this.fungus.active && activeCat.name === "Fiódor") {
-                    this.checkFiodorDetection();
-                } else {
-                    this.fiodorDetectionUI.style.display = 'none';
+                if (this.currentRoom === 5 && this.boss && this.boss.active) {
+                    this.updateBoss(time);
                 }
 
-                // MECÂNICA DE CALOR (Sala 2)
-                if (this.currentRoom === 2) {
-                    const isSafe = this.physics.overlap(this.player, this.shadows);
-                    if (!isSafe) {
-                        if (time > this.lastHeatDamageTime + 2000) {
-                            this.playerHealth = Math.max(0, this.playerHealth - 5);
-                            this.lastHeatDamageTime = time;
-                            this.cameras.main.shake(100, 0.005);
-                            this.showFloatingText(this.player.x, this.player.y, "Calor! -5 HP", 0xff4500); 
-                            if (this.playerHealth <= 0) {
-                                this.triggerDialogue("Game Over", "O calor do deserto foi demais para voc\u00EA.");
-                                this.scene.pause();
-                            }
-                        }
+                if (this.currentRoom === 2 && !this.physics.overlap(this.player, this.shadows)) {
+                    if (time > this.lastHeatDamageTime + 2000) {
+                        this.damagePlayer(5, "Calor!");
+                        this.lastHeatDamageTime = time;
                     }
                 }
 
-                // INPUTS DE AÇÃO (INTERAÇÕES)
                 if (Phaser.Input.Keyboard.JustDown(this.keySpace) && !this.isDialogueOpen) {
-                    if (this.time.now < this.dialogueCooldown) return;
-
-                    let interacted = false;
-
-                    // Interação Sala 1 (Anão)
-                    if (this.currentRoom === 1 && this.dwarf.active && Phaser.Math.Distance.Between(this.player.x, this.player.y, this.dwarf.x, this.dwarf.y) < 60) {
-                        this.dwarfInteraction(this.player, this.dwarf); interacted = true;
-                    } 
-                    // Interação Sala 2 (Portão)
-                    else if (this.currentRoom === 2 && this.ancientGate.active && Phaser.Math.Distance.Between(this.player.x, this.player.y, this.ancientGate.x, this.ancientGate.y) < 60) {
-                        this.handleGateInteraction(); interacted = true;
-                    }
-                    // Interação Sala 2 (Túmulos)
-                    else if (this.currentRoom === 2) {
-                        this.arabTombs.getChildren().forEach((tomb) => {
-                            if (!tomb.active) return;
-                            if (Phaser.Math.Distance.Between(this.player.x, this.player.y, tomb.x, tomb.y) < 40) {
-                                this.handleTombInteraction(tomb); interacted = true;
-                            }
-                        });
-                    }
-                    // Interação Sala 3 (Mestre de Obras)
-                    else if (this.currentRoom === 3 && this.foreman.active && Phaser.Math.Distance.Between(this.player.x, this.player.y, this.foreman.x, this.foreman.y) < 60) {
-                         this.handleForemanInteraction(); interacted = true;
-                    }
-                    // Interação Sala 3 (Coletar Gemas)
-                    else if (this.currentRoom === 3) {
-                         this.gems.getChildren().forEach((gem) => {
-                             if (!gem.active) return;
-                             if (Phaser.Math.Distance.Between(this.player.x, this.player.y, gem.x, gem.y) < 40) {
-                                 this.collectGem(gem); interacted = true;
-                             }
-                         });
-                         // Interação Sala 3 (Colocar Gemas)
-                         if (!interacted) {
-                             this.pedestals.getChildren().forEach((ped) => {
-                                 if (!ped.active) return;
-                                 if (Phaser.Math.Distance.Between(this.player.x, this.player.y, ped.x, ped.y) < 40) {
-                                     this.placeGem(ped); interacted = true;
-                                 }
-                             });
-                         }
-                    }
-
-                    // Se não houve interação específica, usa habilidade do gato
-                    if (!interacted) {
-                        this.performAssistantAction();
+                    if (this.time.now > this.dialogueCooldown) {
+                        if (this.currentRoom === 5 && this.boss && this.boss.active && Phaser.Math.Distance.Between(this.player.x, this.player.y, this.boss.x, this.boss.y) < 80) {
+                            this.damageBoss(5);
+                        } else {
+                            this.handleInteractions();
+                        }
                     }
                 }
                 
                 this.updateUI();
             }
 
-            // --- LÓGICA DE INTERAÇÃO (PUZZLES) ---
-            
-            handleVictory() {
-                this.physics.pause();
-                this.isDialogueOpen = true; // Bloqueia input
-                document.getElementById('victory-screen').style.display = 'flex';
+            updateAssistants(speed) {
+                this.assistants.forEach((cat, index) => {
+                    const dist = Phaser.Math.Distance.Between(cat.x, cat.y, this.player.x, this.player.y);
+                    if (dist > 50 + (index * 15)) this.physics.moveToObject(cat, this.player, speed * 0.9);
+                    else { cat.body.setVelocity(0,0); }
+                });
             }
 
-            dwarfInteraction(player, dwarf) {
-                if (this.registry.get('hasFormularioAzul')) {
-                    this.triggerDialogue("An\u00E3o Burocrata", "Visto 'A' concedido. Pode passar.");
-                    this.registry.set('hasFormularioAzul', false);
-                    dwarf.disableBody(true, true);
-                    this.tweens.add({ targets: dwarf, alpha: 0, duration: 800 });
-                    this.exitPortal.enableBody(true, this.dwarf.x, this.dwarf.y + 16, true, true);
-                    this.exitPortal.setAlpha(1);
-                    this.exitPortal.setDepth(5);
-                } else {
-                    this.triggerDialogue("An\u00E3o Burocrata", "Preciso do Formul\u00E1rio Azul 2B. Fale com os gatos.");
-                }
-            }
-            
-            handleTombInteraction(tomb) {
-                if (tomb.getData('hasKey')) {
-                    this.registry.set('hasDesertKey', true);
-                    this.triggerDialogue("Denise", "Encontrei a Chave Antiga!");
-                    tomb.destroy(); 
-                } else {
-                    this.triggerDialogue("Denise", "Nada aqui.");
-                }
-            }
-            
-            handleGateInteraction() {
-                if (this.registry.get('hasDesertKey')) {
-                    this.triggerDialogue("Sistema", "Port\u00E3o aberto!");
-                    this.registry.set('hasDesertKey', false); 
-                    this.ancientGate.disableBody(true, true);
-                    this.ancientGate.setVisible(false);
-                } else {
-                    this.triggerDialogue("Sistema", "Trancado. Precisa de chave.");
-                }
+            updateKoffe() {
+                if (this.currentRoom === 2 && this.playerHealth < 70) this.koffe.setAlpha(0.8).setPosition(this.player.x + 20, this.player.y - 30);
+                else this.koffe.setAlpha(0);
             }
 
-            collectGem(gem) {
-                const color = gem.getData('color');
-                if (color === 'red') {
-                    this.registry.set('hasRedGem', true);
-                    this.triggerDialogue("Denise", "Peguei uma Gema Vermelha.");
-                } else {
-                    this.registry.set('hasBlueGem', true);
-                    this.triggerDialogue("Denise", "Peguei uma Gema Azul.");
-                }
-                gem.destroy();
-            }
-
-            placeGem(pedestal) {
-                const color = pedestal.getData('color');
-                if (color === 'red') {
-                    if (this.registry.get('hasRedGem')) {
-                        this.registry.set('hasRedGem', false);
-                        this.registry.set('placedRed', true);
-                        this.triggerDialogue("Sistema", "Gema Vermelha encaixada!");
-                        const gem = this.add.image(pedestal.x, pedestal.y - 10, 'gem_red').setDepth(6);
-                    } else {
-                        this.triggerDialogue("Denise", "Este pedestal requer uma Gema Vermelha.");
-                    }
-                } else if (color === 'blue') {
-                    if (this.registry.get('hasBlueGem')) {
-                        this.registry.set('hasBlueGem', false);
-                        this.registry.set('placedBlue', true);
-                        this.triggerDialogue("Sistema", "Gema Azul encaixada!");
-                        const gem = this.add.image(pedestal.x, pedestal.y - 10, 'gem_blue').setDepth(6);
-                    } else {
-                        this.triggerDialogue("Denise", "Este pedestal requer uma Gema Azul.");
+            updateBoss(time) {
+                if (this.bossAttackTimer < time) {
+                    this.bossAttackTimer = time + 2000;
+                    const attackType = Phaser.Math.RND.pick([1, 2]);
+                    
+                    if (attackType === 1) { 
+                        const stamp = this.projectiles.create(this.player.x, 0, 'stamp');
+                        stamp.setVelocityY(200);
+                        this.showFloatingText(this.boss.x, this.boss.y, "CARIMBO!", 0xff0000);
+                    } else { 
+                        const paper = this.projectiles.create(this.boss.x, this.boss.y, 'stamp');
+                        this.physics.moveToObject(paper, this.player, 150);
+                        this.showFloatingText(this.boss.x, this.boss.y, "PAPELADA!", 0xff0000);
                     }
                 }
-                this.checkRoom3Complete();
+                
+                this.physics.overlap(this.player, this.projectiles, (player, proj) => {
+                    proj.destroy();
+                    this.damagePlayer(10, "Burocracia!");
+                });
+                
+                this.projectiles.children.iterate(p => {
+                    if(p && (p.y > WORLD_HEIGHT || p.x < 0 || p.x > WORLD_WIDTH)) p.destroy();
+                });
             }
-            
-            checkRoom3Complete() {
-                if (this.registry.get('placedRed') && this.registry.get('placedBlue')) {
-                     if (this.foreman.active) {
-                         this.time.delayedCall(1000, () => {
-                             this.triggerDialogue("Mestre de Obras", "Perfeito! Simetria restaurada. Podem passar.");
-                             this.foreman.disableBody(true, true);
-                             this.tweens.add({ targets: this.foreman, alpha: 0, duration: 800 });
-                             this.exitPortal.enableBody(true, 550, 240, true, true);
+
+            damageBoss(amount) {
+                this.bossHealth -= amount;
+                this.showFloatingText(this.boss.x, this.boss.y, `Argumento! -${amount}`, 0xffff00);
+                document.getElementById('boss-health-fill').style.width = `${this.bossHealth}%`;
+                
+                this.tweens.add({ targets: this.boss, x: this.boss.x + 5, duration: 50, yoyo: true, repeat: 3 });
+
+                if (this.bossHealth <= 0) {
+                    this.boss.destroy();
+                    this.projectiles.clear(true, true);
+                    document.getElementById('boss-health-bar').style.display = 'none';
+                    this.handleVictory();
+                }
+            }
+
+            collectSpice(player, spice) {
+                const type = spice.getData('type');
+                if (type === 'cinnamon') {
+                    this.speedMultiplier = 1.5;
+                    this.buffTimer = 10000;
+                    this.currentBuffName = "Velocidade de Canela";
+                    this.triggerDialogue("Sistema", "Canela! Sinto-me rápida como o vento.");
+                } else if (type === 'clove') {
+                    this.defenseMultiplier = 0.5;
+                    this.buffTimer = 15000;
+                    this.currentBuffName = "Escudo de Cravo";
+                    this.triggerDialogue("Sistema", "Cravo! Estou rija como uma rocha.");
+                }
+                spice.destroy();
+            }
+
+            damagePlayer(amount, source) {
+                const finalDamage = amount * this.defenseMultiplier;
+                this.playerHealth = Math.max(0, this.playerHealth - finalDamage);
+                this.showFloatingText(this.player.x, this.player.y, `-${Math.floor(finalDamage)} HP`, 0xff0000);
+                this.cameras.main.shake(100, 0.01);
+                
+                if (this.playerHealth <= 0) {
+                    this.physics.pause();
+                    this.triggerDialogue("GAME OVER", "A Burocracia venceu.");
+                    setTimeout(() => location.reload(), 3000);
+                }
+            }
+
+            handleInteractions() {
+                let interacted = false;
+                
+                if (this.currentRoom === 1 && this.dwarf.active && Phaser.Math.Distance.Between(this.player.x, this.player.y, this.dwarf.x, this.dwarf.y) < 60) {
+                    this.dwarfInteraction(); interacted = true;
+                }
+                else if (this.currentRoom === 1 && this.paper.active && this.paper.visible && Phaser.Math.Distance.Between(this.player.x, this.player.y, this.paper.x, this.paper.y) < 40) {
+                    this.collectPaper(this.player, this.paper); interacted = true;
+                }
+                else if (this.currentRoom === 2 && this.ancientGate.active && Phaser.Math.Distance.Between(this.player.x, this.player.y, this.ancientGate.x, this.ancientGate.y) < 60) {
+                    this.handleGateInteraction(); interacted = true;
+                }
+                else if (this.currentRoom === 2) {
+                    this.arabTombs.getChildren().forEach(t => {
+                        if (t.active && Phaser.Math.Distance.Between(this.player.x, this.player.y, t.x, t.y) < 40) {
+                            this.handleTombInteraction(t); interacted = true;
+                        }
+                    });
+                }
+                else if (this.currentRoom === 3) {
+                    // Check Foreman interaction FIRST
+                    if (this.foreman && this.foreman.active && Phaser.Math.Distance.Between(this.player.x, this.player.y, this.foreman.x, this.foreman.y) < 60) {
+                        this.triggerDialogue("Mestre", "O caos me irrita! Preciso de simetria. Vermelho com Vermelho, Azul com Azul.");
+                        interacted = true;
+                    }
+
+                     if (!interacted) {
+                        this.gems.getChildren().forEach(g => {
+                            if (g.active && Phaser.Math.Distance.Between(this.player.x, this.player.y, g.x, g.y) < 40) { this.collectGem(g); interacted = true; }
+                        });
+                     }
+                     if (!interacted) {
+                         this.pedestals.getChildren().forEach(p => {
+                             if (p.active && Phaser.Math.Distance.Between(this.player.x, this.player.y, p.x, p.y) < 40) { this.placeGem(p); interacted = true; }
                          });
                      }
                 }
-            }
-
-            handleForemanInteraction() {
-                this.triggerDialogue("Mestre de Obras", "Que bagun\u00E7a! Os pedestais est\u00E3o vazios. A Pequena Senhora dos Mon\u00F3litos deve consertar isso.");
-            }
-
-            handleFungusDamage(player, fungus) {
-                if (this.currentRoom !== 1) return;
-                const now = this.time.now;
-                const damageInterval = 1000; 
-                if (now > this.lastDamageTime + damageInterval) {
-                    this.playerHealth = Math.max(0, this.playerHealth - 10);
-                    this.lastDamageTime = now;
-                    this.cameras.main.flash(100, 255, 0, 0); 
-                    this.showFloatingText(player.x, player.y - 20, "-10 HP", 0xff0000);
-                    if (this.playerHealth <= 0) {
-                        this.triggerDialogue("Game Over", "Fim de jogo.");
-                        this.scene.pause();
-                    }
-                }
-            }
-            
-            checkFiodorDetection() {
-                const detectionRange = 150; 
-                const distToFungus = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.fungus.x, this.fungus.y);
-                if (distToFungus < detectionRange) {
-                    this.fiodorDetectionUI.style.display = 'block';
-                } else {
-                    this.fiodorDetectionUI.style.display = 'none';
-                }
+                
+                if (!interacted) this.performAssistantAction();
             }
 
             setActiveAssistant(index) {
                 this.activeAssistantIndex = index;
-                this.tweens.add({
-                    targets: this.assistants[index],
-                    scaleX: 1.2,
-                    scaleY: 1.2,
-                    duration: 100,
-                    yoyo: true
-                });
+                this.tweens.add({ targets: this.assistants[index], scaleX: 1.2, scaleY: 1.2, duration: 100, yoyo: true });
             }
-
             performAssistantAction() {
                 const cat = this.assistants[this.activeAssistantIndex];
                 if (cat.name === "Maron") {
-                    const dist = Phaser.Math.Distance.Between(this.player.x, this.player.y, cat.x, cat.y);
-                    if (dist < 50) {
-                        this.playerHealth = Math.min(100, this.playerHealth + 10);
-                        this.showFloatingText(cat.x, cat.y, "+10 HP \u2665", 0x32cd32);
-                    }
-                } 
-                else if (cat.name === "Orpheu") {
-                    this.showFloatingText(cat.x, cat.y, "GORFFF!");
-                }
-                else if (cat.name === "Fiódor") {
-                    this.showFloatingText(cat.x, cat.y, "Zoom!");
-                    const direction = new Phaser.Math.Vector2(this.player.body.velocity.x, this.player.body.velocity.y).normalize();
-                    if (direction.lengthSq() === 0) direction.y = -1;
-                    cat.body.setVelocity(direction.x * 300, direction.y * 300);
+                    this.playerHealth = Math.min(100, this.playerHealth + 10);
+                    this.showFloatingText(cat.x, cat.y, "+10 HP ❤", 0x32cd32);
+                } else if (cat.name === "Orpheu") {
+                    this.showFloatingText(cat.x, cat.y, "GORFFF! (Empurrão)", 0xffffff);
+                } else if (cat.name === "Fiódor") {
+                    this.showFloatingText(cat.x, cat.y, "Zoom!", 0x00bfff);
+                    const dir = new Phaser.Math.Vector2(this.player.body.velocity.x, this.player.body.velocity.y).normalize();
+                    if (dir.lengthSq() === 0) dir.y = -1;
+                    cat.body.setVelocity(dir.x * 400, dir.y * 400);
                 }
             }
 
-            handleBoxPush(player, box) {
-                if (!box || !box.body || this.registry.get('hasFormularioAzul')) return;
-                const activeAssistant = this.assistants[this.activeAssistantIndex];
-                const activeCatIsOrpheu = activeAssistant && activeAssistant.name === "Orpheu";
-                if (activeCatIsOrpheu) {
-                    box.setImmovable(false); 
-                    box.setVelocity(player.body.velocity.x * 0.7, player.body.velocity.y * 0.7); 
-                    const distanceMoved = Phaser.Math.Distance.Between(box.x, box.y, box.startX, box.startY);
-                    if (distanceMoved > 30 && !this.paper.active) {
-                        this.paper.enableBody(true, box.x, box.y - 50, true, true);
-                        this.triggerDialogue("Denise", "Olha s\u00F3! O formul\u00E1rio.");
-                    }
-                } else {
-                    box.setImmovable(true);
-                    box.setVelocity(0);
-                    if (Phaser.Input.Keyboard.JustDown(this.keySpace)) {
-                        this.triggerDialogue("Denise", "\u00C9 muito pesado! Orpheu?");
-                    }
-                }
-            }
-
-            handleCrystal(maron, crystal) {
-                if (Math.random() > 0.05) return; 
-                this.tweens.add({ targets: crystal, alpha: 0.5, yoyo: true, duration: 200 });
-            }
-
-            collectPaper(player, paper) {
-                paper.disableBody(true, true);
-                this.registry.set('hasFormularioAzul', true); 
-                this.triggerDialogue("Sistema", "Peguei o Formul\u00E1rio Azul.");
-            }
-
-            createRoom(x, y, w, h, wallTexture = 'wall') {
-                // Top Wall (Thicker to prevent glitch)
-                for (let i = x; i < x + w; i++) {
-                    this.walls.create(i * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2, wallTexture).setDepth(5);
-                    // Add second layer
-                    this.walls.create(i * TILE_SIZE + TILE_SIZE / 2, (y - 1) * TILE_SIZE + TILE_SIZE / 2, wallTexture).setDepth(5).setVisible(false);
-                }
-                // Bottom Wall
-                for (let i = x; i < x + w; i++) {
-                    this.walls.create(i * TILE_SIZE + TILE_SIZE / 2, (y + h) * TILE_SIZE + TILE_SIZE / 2, wallTexture).setDepth(5);
-                }
-                // Left Wall
-                for (let j = y; j <= y + h; j++) {
-                    this.walls.create(x * TILE_SIZE + TILE_SIZE / 2, j * TILE_SIZE + TILE_SIZE / 2, wallTexture).setDepth(5);
-                }
-                // Right Wall
-                for (let j = y; j <= y + h; j++) {
-                    this.walls.create((x + w) * TILE_SIZE + TILE_SIZE / 2, j * TILE_SIZE + TILE_SIZE / 2, wallTexture).setDepth(5);
-                }
-            }
-
-            showFloatingText(x, y, message, color = 0xffffff) {
-                const text = this.add.text(x, y - 20, message, {
-                    fontSize: '12px',
-                    color: '#' + color.toString(16).padStart(6, '0'),
-                    stroke: '#000',
-                    strokeThickness: 2
-                }).setOrigin(0.5).setDepth(20); 
-                
-                this.tweens.add({
-                    targets: text,
-                    y: y - 50,
-                    alpha: 0,
-                    duration: 1000,
-                    onComplete: () => text.destroy()
-                });
-            }
-
-            triggerDialogue(name, text) {
-                this.isDialogueOpen = true;
-                const ui = document.getElementById('ui-layer');
-                const nameEl = document.getElementById('ui-name');
-                const textEl = document.getElementById('ui-text');
-                ui.style.display = 'block';
-                nameEl.innerText = name;
-                textEl.innerText = ""; 
-                let i = 0;
-                this.typingEvent = this.time.addEvent({
-                    delay: 30,
-                    callback: () => {
-                        if (i < text.length) {
-                             textEl.innerText += text[i];
-                             i++;
-                        } else {
-                            this.typingEvent.destroy();
+            // BUG 4 FIX: Interação sem spawn imediato de portal colidindo
+            dwarfInteraction() {
+                if (this.registry.get('hasFormularioAzul')) {
+                    this.triggerDialogue("Anão", "Visto 'A' concedido. Pode passar.");
+                    this.registry.set('hasFormularioAzul', false);
+                    
+                    // Animation: Fade out slowly
+                    this.tweens.add({
+                        targets: this.dwarf,
+                        alpha: 0,
+                        duration: 1000,
+                        onComplete: () => {
+                            if (this.dwarf) this.dwarf.destroy();
                         }
-                    },
-                    repeat: text.length - 1
-                });
+                    });
+
+                    // Ativa o portal um pouco depois para o jogador não entrar automaticamente
+                    this.time.delayedCall(1000, () => {
+                        if (this.exitPortal) {
+                            this.exitPortal.enableBody(true, 550, 240+16, true, true);
+                            this.exitPortal.setVisible(true);
+                        }
+                    });
+                } else this.triggerDialogue("Anão", "Preciso do Formulário Azul. Está debaixo de algo pesado.");
             }
 
-            closeDialogue() {
-                this.isDialogueOpen = false;
-                this.dialogueCooldown = this.time.now + 200; 
-                document.getElementById('ui-layer').style.display = 'none';
-                if (this.typingEvent) this.typingEvent.destroy();
+            collectPaper(p, paper) { 
+                paper.destroy(); 
+                this.registry.set('hasFormularioAzul', true); 
+                this.triggerDialogue("Sistema", "Peguei o Formulário Azul."); 
             }
 
-            updateUI() {
-                const healthFill = document.getElementById('health-fill');
-                const healthValue = document.getElementById('health-value');
-                healthFill.style.width = `${this.playerHealth}%`;
-                healthValue.innerText = this.playerHealth;
-                if (this.playerHealth > 50) {
-                    healthFill.style.backgroundColor = '#2ecc71'; 
-                } else if (this.playerHealth > 20) {
-                    healthFill.style.backgroundColor = '#f39c12'; 
-                } else {
-                    healthFill.style.backgroundColor = '#e74c3c'; 
+            handleBoxPush(p, box) {
+                if(this.assistants[this.activeAssistantIndex].name === "Orpheu") {
+                    box.setImmovable(false).setVelocity(p.body.velocity.x*0.8, p.body.velocity.y*0.8);
+                    
+                    // Lógica para revelar o papel
+                    const dist = Phaser.Math.Distance.Between(box.x, box.y, box.startX, box.startY);
+                    if (dist > 30 && this.paper && !this.paper.visible && !this.registry.get('hasFormularioAzul')) {
+                        this.paper.setVisible(true);
+                        this.paper.enableBody(true, box.startX, box.startY, true, true);
+                        this.triggerDialogue("Denise", "Ali está o papel! Debaixo da caixa!");
+                    }
+                } else { 
+                    box.setImmovable(true).setVelocity(0); 
+                    if(Phaser.Input.Keyboard.JustDown(this.keySpace)) this.triggerDialogue("Denise", "Muito pesado... Preciso do Orpheu.");
+                }
+            }
+
+            handleTombInteraction(t) {
+                if(t.getData('hasKey')) { t.destroy(); this.registry.set('hasDesertKey', true); this.triggerDialogue("Denise", "Encontrei a Chave Antiga!"); }
+                else this.triggerDialogue("Denise", "Apenas areia e pó.");
+            }
+
+            handleGateInteraction() {
+                if(this.registry.get('hasDesertKey')) { 
+                    this.ancientGate.destroy(); 
+                    this.registry.set('hasDesertKey', false); 
+                    this.triggerDialogue("Sistema", "O portão abre com um estrondo."); 
+                }
+                else this.triggerDialogue("Sistema", "Trancado. Precisa de uma chave antiga.");
+            }
+
+            collectGem(g) {
+                if(g.getData('color')==='red') { this.registry.set('hasRedGem', true); this.triggerDialogue("Denise", "Peguei a Gema Vermelha."); }
+                else { this.registry.set('hasBlueGem', true); this.triggerDialogue("Denise", "Peguei a Gema Azul."); }
+                g.destroy();
+            }
+
+            placeGem(p) {
+                if(p.getData('color')==='red' && this.registry.get('hasRedGem')) {
+                    this.registry.set('hasRedGem', false); this.registry.set('placedRed', true);
+                    this.add.image(p.x, p.y-10, 'gem_red').setDepth(6);
+                } else if(p.getData('color')==='blue' && this.registry.get('hasBlueGem')) {
+                    this.registry.set('hasBlueGem', false); this.registry.set('placedBlue', true);
+                    this.add.image(p.x, p.y-10, 'gem_blue').setDepth(6);
+                }
+                if(this.registry.get('placedRed') && this.registry.get('placedBlue') && this.foreman && this.foreman.active) {
+                    this.foreman.destroy();
+                    this.exitPortal.enableBody(true, 550, 240, true, true);
+                    this.triggerDialogue("Mestre", "Simetria restaurada! Podes passar.");
+                }
+            }
+
+            handleCrystal(m, c) { this.tweens.add({targets:c, alpha:0.5, yoyo:true, duration:200}); }
+            
+            // BUG 3 FIX: Dano com intervalo de tempo
+            handleFungusDamage(time) { 
+                if (time > this.lastDamageTime + 1000) {
+                    this.damagePlayer(10, "Fungo"); 
+                    this.lastDamageTime = time;
                 }
             }
             
-            updateInventoryUI() {
-                const inventoryList = document.getElementById('inventory-list');
-                inventoryList.innerHTML = ''; 
-                
-                const hasFormulario = this.registry.get('hasFormularioAzul');
-                const hasKey = this.registry.get('hasDesertKey');
-                const hasRed = this.registry.get('hasRedGem');
-                const hasBlue = this.registry.get('hasBlueGem');
-                
-                let empty = true;
-                if (hasFormulario) {
-                    const li = document.createElement('li'); li.innerText = '• Formul\u00E1rio Azul'; inventoryList.appendChild(li); empty = false;
-                }
-                if (hasKey) {
-                    const li = document.createElement('li'); li.innerText = '• Chave Antiga'; inventoryList.appendChild(li); empty = false;
-                }
-                if (hasRed) {
-                    const li = document.createElement('li'); li.innerText = '• Gema Vermelha'; inventoryList.appendChild(li); empty = false;
-                }
-                if (hasBlue) {
-                    const li = document.createElement('li'); li.innerText = '• Gema Azul'; inventoryList.appendChild(li); empty = false;
-                }
+            checkFiodorDetection() { this.fiodorDetectionUI.style.display = (Phaser.Math.Distance.Between(this.player.x, this.player.y, this.fungus.x, this.fungus.y) < 150) ? 'block' : 'none'; }
+            handleVictory() {
+                this.isDialogueOpen = true;
+                this.physics.pause();
+                document.getElementById('victory-screen').style.display = 'flex';
+                setTimeout(() => {
+                    document.getElementById('zoom-text').style.display = 'block';
+                }, 2000);
+            }
 
-                if (empty) {
-                    const li = document.createElement('li'); li.innerText = '(Vazio)'; inventoryList.appendChild(li);
-                }
+            showFloatingText(x, y, message, color = 0xffffff) {
+                const text = this.add.text(x, y - 20, message, { fontSize: '12px', color: '#' + color.toString(16).padStart(6, '0'), stroke: '#000', strokeThickness: 2 }).setOrigin(0.5).setDepth(20); 
+                this.tweens.add({ targets: text, y: y - 50, alpha: 0, duration: 1000, onComplete: () => text.destroy() });
+            }
+            triggerDialogue(name, text) {
+                this.isDialogueOpen = true;
+                const ui = document.getElementById('ui-layer');
+                document.getElementById('ui-name').innerText = name;
+                document.getElementById('ui-text').innerText = text;
+                ui.style.display = 'block';
+            }
+            closeDialogue() {
+                this.isDialogueOpen = false; this.dialogueCooldown = this.time.now + 200; document.getElementById('ui-layer').style.display = 'none';
+            }
+            updateUI() {
+                document.getElementById('health-fill').style.width = `${this.playerHealth}%`;
+                document.getElementById('health-value').innerText = Math.ceil(this.playerHealth);
+            }
+            updateInventoryUI() {
+                const list = document.getElementById('inventory-list'); list.innerHTML = '';
+                const items = [];
+                if(this.registry.get('hasFormularioAzul')) items.push("Formulário");
+                if(this.registry.get('hasDesertKey')) items.push("Chave");
+                if(this.registry.get('hasRedGem')) items.push("Gema V.");
+                if(this.registry.get('hasBlueGem')) items.push("Gema A.");
+                if(items.length === 0) list.innerHTML = '<li>(Vazio)</li>';
+                else items.forEach(i => list.innerHTML += `<li>• ${i}</li>`);
             }
         }
 
         const config = {
-            type: Phaser.AUTO,
-            width: SCREEN_WIDTH,
-            height: SCREEN_HEIGHT,
-            parent: 'game-container',
-            backgroundColor: '#000000',
-            pixelArt: true, 
-            physics: {
-                default: 'arcade',
-                arcade: {
-                    gravity: { y: 0 }, 
-                    debug: false
-                }
-            },
+            type: Phaser.AUTO, width: SCREEN_WIDTH, height: SCREEN_HEIGHT,
+            parent: 'game-container', backgroundColor: '#000000', pixelArt: true,
+            physics: { default: 'arcade', arcade: { gravity: { y: 0 }, debug: false } },
             scene: [MainScene]
         };
-
         const game = new Phaser.Game(config);
     </script>
 </body>
