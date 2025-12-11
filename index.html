@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>A Jornada das Belas Pedras - Sala de Testes V8</title>
+    <title>A Jornada das Belas Pedras - Sala de Testes V9</title>
     <style>
         body {
             margin: 0;
@@ -264,20 +264,41 @@
                 graphics.fillCircle(16, 15, 10);
                 graphics.generateTexture('fungus', 32, 32);
 
-                // 7. Tiles / Cenário
+                // 7. Tiles / Cenário - CHÃO MADEIRA
                 graphics.clear();
                 graphics.fillStyle(0xcd853f); // Chão Madeira
                 graphics.fillRect(0, 0, 32, 32);
                 graphics.lineStyle(2, 0xa0522d);
                 graphics.strokeRect(0,0,32,32);
                 graphics.generateTexture('floor', 32, 32);
+                
+                // NOVO: Chão de Areia (Deserto)
+                graphics.clear();
+                graphics.fillStyle(0xe6c288); // Areia amarela
+                graphics.fillRect(0, 0, 32, 32);
+                // Detalhes da areia
+                graphics.fillStyle(0xd4af73); 
+                graphics.fillRect(5, 5, 2, 2);
+                graphics.fillRect(20, 15, 2, 2);
+                graphics.fillRect(10, 25, 2, 2);
+                graphics.generateTexture('sand', 32, 32);
 
+                // Paredes de Pedra
                 graphics.clear();
                 graphics.fillStyle(0x708090); // Parede Pedra
                 graphics.fillRect(0, 0, 32, 32);
                 graphics.fillStyle(0x2f4f4f);
                 graphics.fillRect(4, 4, 24, 24);
                 graphics.generateTexture('wall', 32, 32);
+
+                // NOVO: Paredes de Ruína (Deserto)
+                graphics.clear();
+                graphics.fillStyle(0x8b4513); // Marrom tijolo
+                graphics.fillRect(0, 0, 32, 32);
+                graphics.fillStyle(0xcd853f); // Tijolo mais claro
+                graphics.fillRect(4, 4, 10, 8);
+                graphics.fillRect(18, 14, 10, 8);
+                graphics.generateTexture('ruin_wall', 32, 32);
                 
                 // Portal (Novo asset para indicar a saída)
                 graphics.clear();
@@ -380,7 +401,7 @@
                 // Mensagem inicial e atualização da UI
                 this.updateInventoryUI();
                 this.time.delayedCall(1000, () => {
-                    this.triggerDialogue("Denise", "OK, voltamos. Espero que agora os gatos fiquem por perto. Vamos resolver a burocracia do Anão. \n(Dica: Orpheu (3) empurra a caixa.)");
+                    this.triggerDialogue("Denise", "OK, voltamos. Vamos resolver a burocracia do An\u00E3o Burocrata. \n(Dica: Orpheu (3) empurra a caixa.)");
                 });
             }
             
@@ -404,9 +425,6 @@
                 this.heavyBoxes = this.physics.add.group({ bounceX: 0, bounceY: 0 }); 
                 this.triggers = this.physics.add.staticGroup();
 
-                // 3. Chão (Fundo) - AGORA COBRE TODA A ÁREA DO MUNDO E ESTÁ FIXO NO MUNDO
-                this.currentBackground = this.add.tileSprite(0, 0, WORLD_WIDTH, WORLD_HEIGHT, 'floor').setOrigin(0).setDepth(0);
-
                 // 4. Reposicionar Personagens (IMPORTANTE: NÃO RECRIA!)
                 this.player.setPosition(200, 200);
                 this.assistants.forEach((cat, index) => {
@@ -418,8 +436,11 @@
                 if (roomNumber === 1) {
                     this.currentRoom = 1;
 
-                    // --- Layout da Sala 1 (De 2,2 a 20,15 = 18x13) ---
-                    this.createRoom(2, 2, 18, 13); 
+                    // 3. Chão (Fundo) - Sala 1 (Escritório/Labirinto)
+                    this.currentBackground = this.add.tileSprite(0, 0, WORLD_WIDTH, WORLD_HEIGHT, 'floor').setOrigin(0).setDepth(0);
+
+                    // --- Layout da Sala 1 ---
+                    this.createRoom(2, 2, 18, 13, 'wall'); 
                     
                     // 1. O Burocrata (Bloqueio Físico)
                     this.dwarf = this.physics.add.staticSprite(550, 240, 'dwarf');
@@ -442,28 +463,25 @@
                     
                     // 4. O Item (Formulário) - Escondido
                     this.paper = this.physics.add.staticSprite(300, 240, 'paper');
-                    // Se já pegou o item, mantém o paper desativado
                     if (this.registry.get('hasFormularioAzul')) {
                         this.paper.disableBody(true, true);
                     } else {
-                        // Se não pegou, ele está inativo e escondido, esperando a caixa se mover.
                         this.paper.disableBody(true, true); 
                     }
                     this.paper.setDepth(5);
 
-                    // 5. Fungo Luminoso (Dano)
+                    // 5. Fungo Luminoso (Dano - Representação de perigo do labirinto)
                     this.fungus = this.physics.add.staticSprite(450, 100, 'fungus'); 
                     this.fungus.name = "LuminousFungus";
                     this.fungus.setDepth(5);
                     this.tweens.add({ targets: this.fungus, alpha: 0.5, duration: 500, yoyo: true, repeat: -1 });
 
-                    // Portal de Saída (Inicialmente desativado/invisível)
+                    // Portal de Saída
                     this.exitPortal = this.physics.add.staticSprite(this.dwarf.x, this.dwarf.y + 16, 'portal');
                     
-                    // Reativa o portal se o puzzle já estiver completo
                     if (this.registry.get('hasFormularioAzul')) {
                          this.exitPortal.enableBody(true, this.dwarf.x, this.dwarf.y + 16, true, true);
-                         this.dwarf.disableBody(true, true); // Anão desaparece
+                         this.dwarf.disableBody(true, true); 
                          this.dwarf.setVisible(false);
                     } else {
                         this.exitPortal.disableBody(true, true);
@@ -472,7 +490,6 @@
                     this.exitPortal.setDepth(5);
 
                     // --- COLISÕES E OVERLAPS Sala 1 ---
-                    // CORREÇÃO: Colisão Denise vs Paredes removida daqui para ficar global no final da função
                     this.physics.add.collider(this.player, this.heavyBoxes, this.handleBoxPush, null, this);
                     
                     if (this.dwarf.active) {
@@ -492,13 +509,17 @@
                 } else if (roomNumber === 2) {
                     this.currentRoom = 2;
 
-                    // --- Layout da Sala 2 ---
-                    this.createRoom(2, 2, 18, 13);
+                    // 3. Chão (Fundo) - Sala 2 (Deserto da Arábia Saudita)
+                    this.currentBackground = this.add.tileSprite(0, 0, WORLD_WIDTH, WORLD_HEIGHT, 'sand').setOrigin(0).setDepth(0);
+
+                    // --- Layout da Sala 2 (Deserto) ---
+                    // Usa a nova textura 'ruin_wall'
+                    this.createRoom(2, 2, 18, 13, 'ruin_wall');
                     
                     // Reposicionar player na entrada da Sala 2
                     this.player.setPosition(200, 200);
 
-                    this.triggerDialogue("Denise", "Sala 2: Vencemos a burocracia! Aqui há outra caixa... e sinto um frio. \n(Novo objetivo: Encontrar a chave! Para voltar, use o portal.)");
+                    this.triggerDialogue("Denise", "Sala 2: O Deserto da Ar\u00E1bia Saudita. Que calor! \nTempestades de areia podem esconder perigos. Koffe, fique atento.");
                     
                     // Portal de Retorno (Para testes)
                     this.exitPortal = this.physics.add.staticSprite(550, 400, 'portal');
@@ -509,9 +530,8 @@
 
                 }
                 
-                // COLISÕES CONSISTENTES ENTRE SALAS (Gatos vs. Mundo e Player vs. Paredes)
-                // CORREÇÃO: Colisão Player vs Paredes movida para cá para funcionar em todas as salas
-                this.physics.add.collider(this.player, this.walls);
+                // COLISÕES CONSISTENTES ENTRE SALAS
+                this.physics.add.collider(this.player, this.walls); // Player vs Paredes
 
                 this.physics.add.collider(this.assistants, this.assistants); 
                 this.assistants.forEach(cat => {
@@ -617,7 +637,7 @@
                 if (!Phaser.Input.Keyboard.JustDown(this.keySpace)) return;
                 
                 if (this.registry.get('hasFormularioAzul')) {
-                    this.triggerDialogue("Anão Burocrata", "Ah, aqui está. Excelente! O Visto 'A' para a Sala 2 foi concedido. Por favor, prossiga.");
+                    this.triggerDialogue("An\u00E3o Burocrata", "Ah, aqui est\u00E1. Excelente! O Visto 'A' para a Sala 2 foi concedido. Por favor, prossiga.");
                     
                     dwarf.disableBody(true, true);
                     this.tweens.add({ targets: dwarf, alpha: 0, duration: 800 });
@@ -628,11 +648,11 @@
                     this.exitPortal.setDepth(5);
                     
                     this.time.delayedCall(1500, () => {
-                        this.triggerDialogue("Denise", "Uma passagem abriu-se no local do Anão. Vamos em frente!");
+                        this.triggerDialogue("Denise", "Uma passagem abriu-se no local do An\u00E3o. Vamos em frente!");
                     });
                     
                 } else {
-                    this.triggerDialogue("Anão Burocrata", "Alto lá! Onde pensa que vai sem o Formulário Azul 2B? \n\n(Dica: Selecione Orpheu (3) e tente empurrar a caixa pesada próxima.)");
+                    this.triggerDialogue("An\u00E3o Burocrata", "Alto l\u00E1! Onde pensa que vai sem o Formul\u00E1rio Azul 2B? \n\n(Dica: Selecione Orpheu (3) e tente empurrar a caixa pesada pr\u00F3xima.)");
                 }
             }
             
@@ -650,7 +670,7 @@
 
                     if (this.playerHealth <= 0) {
                         this.playerHealth = 0;
-                        this.triggerDialogue("Game Over", "Você sucumbiu ao veneno do Fungo Luminoso. Reinicie a página.");
+                        this.triggerDialogue("Game Over", "Voc\u00EA sucumbiu ao veneno do Fungo Luminoso. Reinicie a p\u00E1gina.");
                         this.scene.pause();
                     }
                 }
@@ -687,11 +707,11 @@
                     const dist = Phaser.Math.Distance.Between(this.player.x, this.player.y, cat.x, cat.y);
                     if (dist < 50) {
                         this.playerHealth = Math.min(100, this.playerHealth + 10);
-                        this.showFloatingText(cat.x, cat.y, "+10 HP ♥ (Conforto)", 0x32cd32);
+                        this.showFloatingText(cat.x, cat.y, "+10 HP \u2665 (Conforto)", 0x32cd32);
                     }
                 } 
                 else if (cat.name === "Orpheu") {
-                    this.showFloatingText(cat.x, cat.y, "GORFFF! (Força)");
+                    this.showFloatingText(cat.x, cat.y, "GORFFF! (For\u00E7a)");
                     // A habilidade do Orpheu atua principalmente na colisão com a caixa.
                 }
                 else if (cat.name === "Fiódor") {
@@ -724,7 +744,7 @@
                     // Se a caixa se mover o suficiente, revela o item
                     if (distanceMoved > 30 && !this.paper.active) {
                         this.paper.enableBody(true, box.x, box.y - 50, true, true);
-                        this.triggerDialogue("Denise", "Olha só! Alguém derrubou o Formulário Azul 2B atrás dessa caixa pesada.");
+                        this.triggerDialogue("Denise", "Olha s\u00F3! Algu\u00E9m derrubou o Formul\u00E1rio Azul 2B atr\u00E1s dessa caixa pesada.");
                     }
 
                 } else {
@@ -734,7 +754,7 @@
                     
                     // Feedback ao tentar empurrar sem Orpheu
                     if (Phaser.Input.Keyboard.JustDown(this.keySpace)) {
-                        this.triggerDialogue("Denise", "É muito pesado! Preciso de alguém forte... Talvez o Orpheu (3)?");
+                        this.triggerDialogue("Denise", "\u00C9 muito pesado! Preciso de algu\u00E9m forte... Talvez o Orpheu (3)?");
                     }
                 }
             }
@@ -753,23 +773,23 @@
             collectPaper(player, paper) {
                 paper.disableBody(true, true);
                 this.registry.set('hasFormularioAzul', true); // Define o item no inventário
-                this.triggerDialogue("Sistema", "Você obteve: Formulário Azul 2B! \n(Agora, fale com o Anão Burocrata na entrada. Pressione ESPAÇO perto dele.)");
+                this.triggerDialogue("Sistema", "Voc\u00EA obteve: Formul\u00E1rio Azul 2B! \n(Agora, fale com o An\u00E3o Burocrata na entrada. Pressione ESPA\u00C7O perto dele.)");
             }
 
             // --- UI HELPER ---
 
-            createRoom(x, y, w, h) {
+            createRoom(x, y, w, h, wallTexture = 'wall') {
                 // Cria as paredes baseadas nos tiles (x, y, w, h são coordenadas de tile)
                 
                 // Paredes Horizontais
                 for (let i = x; i < x + w; i++) {
-                    this.walls.create(i * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2, 'wall').setDepth(5); 
-                    this.walls.create(i * TILE_SIZE + TILE_SIZE / 2, (y + h) * TILE_SIZE + TILE_SIZE / 2, 'wall').setDepth(5); 
+                    this.walls.create(i * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2, wallTexture).setDepth(5); 
+                    this.walls.create(i * TILE_SIZE + TILE_SIZE / 2, (y + h) * TILE_SIZE + TILE_SIZE / 2, wallTexture).setDepth(5); 
                 }
                 // Paredes Verticais
                 for (let j = y; j <= y + h; j++) {
-                    this.walls.create(x * TILE_SIZE + TILE_SIZE / 2, j * TILE_SIZE + TILE_SIZE / 2, 'wall').setDepth(5); 
-                    this.walls.create((x + w) * TILE_SIZE + TILE_SIZE / 2, j * TILE_SIZE + TILE_SIZE / 2, 'wall').setDepth(5); 
+                    this.walls.create(x * TILE_SIZE + TILE_SIZE / 2, j * TILE_SIZE + TILE_SIZE / 2, wallTexture).setDepth(5); 
+                    this.walls.create((x + w) * TILE_SIZE + TILE_SIZE / 2, j * TILE_SIZE + TILE_SIZE / 2, wallTexture).setDepth(5); 
                 }
             }
 
@@ -846,7 +866,7 @@
 
                 if (hasFormulario) {
                     const li = document.createElement('li');
-                    li.innerText = '• Formulário Azul 2B (🔑)';
+                    li.innerText = '• Formul\u00E1rio Azul 2B (\uD83D\uDD11)';
                     inventoryList.appendChild(li);
                 } else {
                     const li = document.createElement('li');
