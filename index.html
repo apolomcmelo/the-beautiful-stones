@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>A Jornada das Belas Pedras - Sala de Testes V18</title>
+    <title>A Jornada das Belas Pedras - Sala de Testes V20</title>
     <style>
         body {
             margin: 0;
@@ -126,10 +126,60 @@
             display: none;
             z-index: 100;
         }
+
+        /* TELA DE VITÓRIA */
+        #victory-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.85);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 300;
+            color: #ffd700;
+            text-align: center;
+        }
+
+        #victory-title {
+            font-size: 40px;
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px #ff0000;
+        }
+
+        #victory-desc {
+            font-size: 18px;
+            margin-bottom: 40px;
+            color: #fff;
+            max-width: 80%;
+        }
+
+        #restart-btn {
+            padding: 15px 30px;
+            font-size: 20px;
+            background-color: #8b0000;
+            color: #fff;
+            border: 2px solid #ffd700;
+            cursor: pointer;
+            font-family: 'Courier New', Courier, monospace;
+            text-transform: uppercase;
+        }
+        #restart-btn:hover {
+            background-color: #a00000;
+        }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
 </head>
 <body>
+
+    <div id="victory-screen">
+        <div id="victory-title">JORNADA CONCLUÍDA!</div>
+        <div id="victory-desc">Denise e os seus gatos encontraram a lendária Pedra Mestra.<br>A burocracia foi vencida, o deserto atravessado e a simetria restaurada.</div>
+        <button id="restart-btn" onclick="location.reload()">Jogar Novamente</button>
+    </div>
 
     <div id="controls-hint">
         WASD/Setas: Mover<br>
@@ -243,6 +293,10 @@
                 graphics.clear(); graphics.fillStyle(0x1a1a1a); graphics.fillRect(0, 0, 32, 32); graphics.lineStyle(2, 0x4a4a4a); graphics.strokeRect(1, 1, 30, 30); graphics.fillStyle(0x2a2a2a); graphics.fillRect(4, 4, 24, 24); graphics.fillStyle(0x151515); graphics.fillRect(8, 8, 4, 4);
                 graphics.generateTexture('mine_floor', 32, 32);
 
+                // NOVO: Chão de Mármore (Santuário)
+                graphics.clear(); graphics.fillStyle(0xfdfbf7); graphics.fillRect(0, 0, 32, 32); graphics.lineStyle(1, 0xdcdde1); graphics.strokeRect(0, 0, 32, 32);
+                graphics.generateTexture('marble_floor', 32, 32);
+
                 graphics.clear(); graphics.fillStyle(0x000000, 0.4); graphics.fillEllipse(16, 16, 30, 20);
                 graphics.generateTexture('shadow', 32, 32);
                 
@@ -258,11 +312,29 @@
                 graphics.clear(); graphics.fillStyle(0x3498db); graphics.fillTriangle(16, 2, 4, 26, 28, 26); graphics.lineStyle(1, 0xffffff); graphics.strokeTriangle(16, 2, 4, 26, 28, 26);
                 graphics.generateTexture('gem_blue', 32, 32);
                 
+                // NOVO: Pedra Mestra (Correção de Bug: fillDiamond -> fillTriangle)
+                graphics.clear(); 
+                graphics.fillStyle(0xffffff); 
+                // Parte Branca Externa
+                graphics.fillTriangle(16, 4, 28, 16, 4, 16);  // Topo
+                graphics.fillTriangle(4, 16, 28, 16, 16, 28); // Fundo
+                
+                graphics.fillStyle(0xa29bfe, 0.5); 
+                // Parte Roxa Interna
+                graphics.fillTriangle(16, 8, 24, 16, 8, 16); // Topo
+                graphics.fillTriangle(8, 16, 24, 16, 16, 24); // Fundo
+                
+                graphics.generateTexture('master_stone', 32, 32);
+                
                 graphics.clear(); graphics.fillStyle(0x555555); graphics.fillRect(4, 16, 24, 16); graphics.fillStyle(0x7f8c8d); graphics.fillRect(2, 12, 28, 4); graphics.fillStyle(0xc0392b); graphics.fillCircle(16, 24, 3);
                 graphics.generateTexture('pedestal_red', 32, 32);
                 
                 graphics.clear(); graphics.fillStyle(0x555555); graphics.fillRect(4, 16, 24, 16); graphics.fillStyle(0x7f8c8d); graphics.fillRect(2, 12, 28, 4); graphics.fillStyle(0x2980b9); graphics.fillCircle(16, 24, 3);
                 graphics.generateTexture('pedestal_blue', 32, 32);
+
+                // NOVO: Pedestal Dourado (Santuário)
+                graphics.clear(); graphics.fillStyle(0xf1c40f); graphics.fillRect(2, 10, 28, 22); graphics.fillStyle(0xf39c12); graphics.fillRect(4, 12, 24, 18);
+                graphics.generateTexture('pedestal_gold', 32, 32);
 
                 graphics.clear(); graphics.fillStyle(0x555555); graphics.fillRect(0, 0, 32, 64); graphics.lineStyle(2, 0x333333); graphics.strokeRect(0, 0, 32, 64); graphics.fillStyle(0x222222); graphics.fillCircle(16, 32, 4); 
                 graphics.generateTexture('ancient_gate', 32, 64);
@@ -276,6 +348,10 @@
                 
                 graphics.clear(); graphics.fillStyle(0x1a1a1a); graphics.fillRect(0, 0, 32, 32); graphics.fillStyle(0x2d3436); graphics.fillRect(2, 2, 28, 28); graphics.lineStyle(2, 0xe0e0e0); graphics.beginPath(); graphics.moveTo(4, 28); graphics.lineTo(12, 14); graphics.lineTo(20, 18); graphics.lineTo(28, 4); graphics.strokePath(); graphics.fillStyle(0xffffff, 0.8); graphics.fillCircle(12, 14, 1); graphics.fillCircle(28, 4, 1);
                 graphics.generateTexture('mine_wall', 32, 32);
+
+                // NOVO: Paredes Douradas (Santuário)
+                graphics.clear(); graphics.fillStyle(0xffffff); graphics.fillRect(0, 0, 32, 32); graphics.fillStyle(0xf1c40f); graphics.fillRect(4, 0, 6, 32); graphics.fillRect(22, 0, 6, 32);
+                graphics.generateTexture('gold_wall', 32, 32);
 
                 graphics.clear(); graphics.fillStyle(0x1a1a1a); graphics.fillRect(0, 0, 32, 32); graphics.fillStyle(0x0984e3); graphics.fillRect(4, 0, 24, 32); graphics.fillStyle(0x74b9ff, 0.4); graphics.fillRect(8, 4, 4, 8); graphics.fillRect(20, 16, 4, 8);
                 graphics.generateTexture('stream', 32, 32);
@@ -384,6 +460,7 @@
                 if (this.exitPortal) this.exitPortal.destroy();
                 if (this.ancientGate) this.ancientGate.destroy(); 
                 if (this.sandstormOverlay) this.sandstormOverlay.destroy();
+                if (this.masterStone) this.masterStone.destroy(); // Novo
 
                 // *** CRUCIAL: Remover Colisores Antigos ***
                 if (this.wallCollider) this.physics.world.removeCollider(this.wallCollider);
@@ -414,6 +491,7 @@
                 this.crystal = { active: false, destroy: () => {} };
                 this.paper = { active: false, destroy: () => {} };
                 this.fungus = { active: false, destroy: () => {} };
+                this.masterStone = { active: false, destroy: () => {} };
 
                 // --- SALA 1 ---
                 if (roomNumber === 1) {
@@ -536,7 +614,43 @@
                     this.exitPortal.setDepth(4);
                     this.exitPortal.disableBody(true, true);
                     this.physics.add.overlap(this.player, this.exitPortal, () => {
-                         if (this.exitPortal.active) this.triggerDialogue("Fim da Demo", "Obrigado por jogar! O Vale foi organizado.");
+                         if (this.exitPortal.active) this.loadRoom(4); // Vai para Sala 4
+                    }, null, this);
+
+                // --- SALA 4: O SANTUÁRIO ---
+                } else if (roomNumber === 4) {
+                    this.currentBackground = this.add.tileSprite(0, 0, WORLD_WIDTH, WORLD_HEIGHT, 'marble_floor').setOrigin(0).setDepth(0);
+                    this.createRoom(2, 2, 18, 13, 'gold_wall');
+                    
+                    this.triggerDialogue("Denise", "Sala 4: O Santu\u00E1rio. \n\u00C9... \u00E9 lindo. A Pedra Mestra est\u00E1 logo ali!");
+
+                    // Pedestal Dourado Central
+                    const goldPed = this.pedestals.create(320, 300, 'pedestal_gold');
+                    goldPed.setDepth(5);
+                    this.physics.add.collider(this.player, goldPed);
+
+                    // A Pedra Mestra
+                    this.masterStone = this.physics.add.staticSprite(320, 280, 'master_stone');
+                    this.masterStone.setDepth(6);
+                    this.tweens.add({
+                        targets: this.masterStone,
+                        y: '-=10',
+                        duration: 1500,
+                        yoyo: true,
+                        repeat: -1,
+                        ease: 'Sine.easeInOut'
+                    });
+                    this.tweens.addCounter({
+                        from: 0, to: 360, duration: 3000, repeat: -1,
+                        onUpdate: (tween) => {
+                            const color = Phaser.Display.Color.HSVToRGB(tween.getValue() / 360, 1, 1);
+                            this.masterStone.setTint(color.color);
+                        }
+                    });
+
+                    // Colisão de Vitória
+                    this.physics.add.overlap(this.player, this.masterStone, () => {
+                        this.handleVictory();
                     }, null, this);
                 }
                 
@@ -715,6 +829,12 @@
             }
 
             // --- LÓGICA DE INTERAÇÃO (PUZZLES) ---
+            
+            handleVictory() {
+                this.physics.pause();
+                this.isDialogueOpen = true; // Bloqueia input
+                document.getElementById('victory-screen').style.display = 'flex';
+            }
 
             dwarfInteraction(player, dwarf) {
                 if (this.registry.get('hasFormularioAzul')) {
