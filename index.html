@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>A Jornada das Belas Pedras - V39 (Correção Final)</title>
+    <title>A Jornada das Belas Pedras - V42 (Boss Fix)</title>
     <style>
         body { margin: 0; padding: 0; background-color: #1a1a1a; color: #d3c6a6; font-family: 'Courier New', Courier, monospace; overflow: hidden; display: flex; justify-content: center; align-items: center; height: 100vh; }
         #game-container { position: relative; box-shadow: 0 0 30px rgba(255, 255, 255, 0.1); image-rendering: pixelated; }
@@ -17,8 +17,12 @@
         #health-fill { height: 100%; background-color: #e74c3c; width: 100%; transition: width 0.3s ease-out; }
         #inventory-display { background: rgba(0, 0, 0, 0.7); padding: 8px; border-radius: 4px; color: #fff; font-size: 12px; width: 180px; }
         #inventory-list { margin-top: 5px; list-style: none; padding: 0; }
+        
+        /* Boss & Buffs */
         #boss-health-bar { width: 300px; height: 25px; background-color: #333; border: 2px solid #ffd700; border-radius: 4px; overflow: hidden; font-size: 14px; line-height: 25px; text-align: center; color: white; position: absolute; top: 50px; left: 50%; transform: translateX(-50%); display: none; z-index: 99; }
         #boss-health-fill { height: 100%; background-color: #8b0000; width: 100%; transition: width 0.2s; }
+        #buff-container { display: flex; gap: 5px; flex-direction: column; align-items: flex-end; }
+        .buff-tag { background: rgba(0,0,0,0.6); color: yellow; padding: 2px 5px; border-radius: 3px; font-size: 10px; }
 
         /* Screens */
         .fullscreen-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: #000; display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 300; color: #d3c6a6; text-align: center; padding: 20px; box-sizing: border-box; }
@@ -64,6 +68,7 @@
 
     <div id="status-area">
         <div id="health-bar"><div id="health-fill"></div>HP: <span id="health-value">100</span></div>
+        <div id="buff-container"></div>
         <div id="inventory-display">
             <strong>Pasta de Documentos:</strong>
             <ul id="inventory-list"></ul>
@@ -73,7 +78,7 @@
     <div id="boss-health-bar"><div id="boss-health-fill"></div>DON ESCRIBÁN</div>
     <div id="game-container"></div>
     <div id="ui-layer"><div id="ui-name">???</div><div id="ui-text">...</div></div>
-    <div id="controls-hint">Teclas: 1 (Maron - Cura), 2 (Fiódor - Veloz), 3 (Orpheu - Força/Empurrar). ESPAÇO para interagir.</div>
+    <div id="controls-hint">Teclas: 1 (Maron-Cura), 2 (Fiódor-Veloz), 3 (Orpheu-Força), 4/K (Koffe-Dicas). ESPAÇO: Ação.</div>
 
     <script>
         const TILE_SIZE = 32;
@@ -106,54 +111,71 @@
                 this.lastHeatDamage = 0;
                 this.stonesPlaced = 0;
                 this.lastHealTime = 0;
+                
+                // Buffs
+                this.buffSpeed = false; // Canela
+                this.buffDefense = false; // Cravo
+                this.buffTimer = 0;
 
                 // Inputs
-                this.cursors = null; this.wasd = null; this.keys123 = null; this.keySpace = null;
+                this.cursors = null; this.wasd = null; this.keys123 = null; this.keys4K = null; this.keySpace = null;
             }
 
             preload() {
                 const g = this.make.graphics({ x: 0, y: 0, add: false });
                 
-                // Texturas
+                // Texturas Personagens
                 g.clear(); g.fillStyle(0xe0ac69); g.fillRect(8,4,16,14); g.fillStyle(0x8fbc8f); g.fillRect(8,18,16,14); g.generateTexture('denise', 32, 48);
                 g.clear(); g.fillStyle(0x1a1a1a); g.fillRect(4,12,24,16); g.generateTexture('maron', 32, 32);
                 g.clear(); g.fillStyle(0xfff8dc); g.fillRect(4,12,24,16); g.generateTexture('fiodor', 32, 32);
                 g.clear(); g.fillStyle(0xd2b48c); g.fillRect(4,12,24,16); g.generateTexture('orpheu', 32, 32);
+                g.clear(); g.fillStyle(0x8b4513); g.fillCircle(16,16,12); g.fillStyle(0xffffff); g.fillCircle(12,12,4); g.generateTexture('koffe', 32, 32); 
 
+                // NPCs e Inimigos
                 g.clear(); g.fillStyle(0x8b0000); g.fillRect(6,10,20,20); g.fillStyle(0xffd700); g.fillRect(8,2,16,6); g.generateTexture('dwarf', 32, 32); 
                 g.clear(); g.fillStyle(0xbdc3c7); g.fillRect(8,4,16,24); g.generateTexture('statue', 32, 32); 
                 g.clear(); g.fillStyle(0x800000); g.fillRect(0,0,64,80); g.fillStyle(0xffd700); g.fillRect(10,10,44,20); g.generateTexture('boss', 64, 80); 
 
+                // Itens e Gemas
                 g.clear(); g.fillStyle(0xff69b4); g.fillRect(8,8,16,16); g.generateTexture('form_pink', 32, 32); 
                 g.clear(); g.fillStyle(0x2ecc71); g.fillRect(8,8,16,16); g.generateTexture('stamp_auth', 32, 32); 
                 g.clear(); g.fillStyle(0xf1c40f); g.fillRect(4,4,24,24); g.fillStyle(0x000000); g.fillRect(6, 10, 20, 2); g.fillRect(6, 16, 20, 2); g.generateTexture('visa', 32, 32); 
+                g.clear(); g.fillStyle(0xd35400); g.fillRect(10,4,12,24); g.generateTexture('spice_cinnamon', 32, 32); 
+                g.clear(); g.fillStyle(0x2c3e50); g.fillCircle(16,12,6); g.fillRect(14,18,4,10); g.generateTexture('spice_clove', 32, 32); 
 
                 g.clear(); g.fillStyle(0xe74c3c); g.fillTriangle(16, 2, 4, 26, 28, 26); g.generateTexture('gem_red', 32, 32);
                 g.clear(); g.fillStyle(0x3498db); g.fillTriangle(16, 2, 4, 26, 28, 26); g.generateTexture('gem_blue', 32, 32);
                 g.clear(); g.fillStyle(0x555555); g.fillRect(4, 16, 24, 16); g.fillStyle(0xc0392b); g.fillCircle(16, 24, 3); g.generateTexture('pedestal_red', 32, 32);
                 g.clear(); g.fillStyle(0x555555); g.fillRect(4, 16, 24, 16); g.fillStyle(0x2980b9); g.fillCircle(16, 24, 3); g.generateTexture('pedestal_blue', 32, 32);
 
+                // Pedras e Ambiente
                 g.clear(); g.fillStyle(0x7f8c8d); g.fillRect(4,4,24,28); g.generateTexture('stone_left', 32, 32);
                 g.clear(); g.fillStyle(0x7f8c8d); g.fillRect(4,4,24,28); g.generateTexture('stone_right', 32, 32);
                 g.clear(); g.fillStyle(0x95a5a6); g.fillRect(2,10,28,12); g.generateTexture('stone_top', 32, 32);
-                
                 g.clear(); g.fillStyle(0x000000, 0.4); g.fillEllipse(16, 16, 40, 30); g.generateTexture('shadow', 48, 32);
                 g.clear(); g.fillStyle(0x7f8c8d); g.fillRect(4, 10, 24, 22); g.fillStyle(0x000000); g.fillRect(12, 20, 8, 12); g.generateTexture('tomb', 32, 32);
                 g.clear(); g.fillStyle(0x95a5a6, 0.5); g.fillRect(0, 0, 96, 32); g.generateTexture('dolmen_base', 96, 32);
 
+                // Cenário e Projéteis
                 g.clear(); g.fillStyle(0x708090); g.fillRect(0,0,32,32); g.generateTexture('wall', 32, 32);
                 g.clear(); g.fillStyle(0x2c3e50); g.fillRect(0,0,32,32); g.generateTexture('mine_floor', 32, 32);
                 g.clear(); g.fillStyle(0xecf0f1); g.fillRect(0,0,32,32); g.generateTexture('ruin_floor', 32, 32);
                 g.clear(); g.fillStyle(0xe67e22); g.fillRect(0,0,32,32); g.generateTexture('sand_floor', 32, 32);
                 g.clear(); g.fillStyle(0x00ffff); g.fillEllipse(16,16,20,28); g.generateTexture('portal', 32, 32);
-                g.clear(); g.fillStyle(0xff00ff); g.fillEllipse(16,16,20,28); g.generateTexture('portal_back', 32, 32); // Portal de Retorno
+                g.clear(); g.fillStyle(0xff00ff); g.fillEllipse(16,16,20,28); g.generateTexture('portal_back', 32, 32);
                 g.clear(); g.fillStyle(0x8b4513); g.fillRect(2,2,28,28); g.generateTexture('heavybox', 32, 32);
                 g.clear(); g.fillStyle(0xff0000); g.fillRect(0,0,24,24); g.generateTexture('projectile', 24, 24);
+                
+                // Boss Attacks
+                g.clear(); g.fillStyle(0xffffff); g.fillRect(0,0,20,10); g.lineStyle(1,0x000000); g.strokeRect(0,0,20,10); g.generateTexture('paper_attack', 20, 10);
+                g.clear(); g.fillStyle(0x000000, 0.3); g.fillCircle(32,32,30); g.generateTexture('stamp_shadow', 64, 64);
+                g.clear(); g.fillStyle(0x8b0000); g.fillCircle(32,32,28); g.fillStyle(0xffffff); g.fillRect(16, 28, 32, 6); g.fillRect(20, 36, 24, 4); g.generateTexture('stamp_giant', 64, 64);
             }
 
             create() {
                 window.gameScene = this;
                 
+                // Reset Registry
                 this.registry.set('hasFormPink', false);
                 this.registry.set('hasStamp', false);
                 this.registry.set('hasGemRed', false);
@@ -178,6 +200,7 @@
                 this.cursors = this.input.keyboard.createCursorKeys();
                 this.wasd = this.input.keyboard.addKeys('W,A,S,D');
                 this.keys123 = this.input.keyboard.addKeys('ONE,TWO,THREE');
+                this.keys4K = this.input.keyboard.addKeys({ FOUR: Phaser.Input.Keyboard.KeyCodes.FOUR, K: Phaser.Input.Keyboard.KeyCodes.K });
                 this.keySpace = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
                 this.selector = this.add.triangle(0, 0, 0, 0, 5, 10, 10, 0, 0xffff00).setDepth(20).setVisible(false);
             }
@@ -191,7 +214,8 @@
                 this.assistants = [
                     this.physics.add.sprite(80, 300, 'maron').setName("Maron"),
                     this.physics.add.sprite(60, 300, 'fiodor').setName("Fiódor"),
-                    this.physics.add.sprite(40, 300, 'orpheu').setName("Orpheu")
+                    this.physics.add.sprite(40, 300, 'orpheu').setName("Orpheu"),
+                    this.physics.add.sprite(20, 300, 'koffe').setName("Koffe") // Index 3
                 ];
                 this.assistants.forEach(c => { c.setDepth(10).setVisible(false); c.setCollideWorldBounds(true); c.setBounce(0.5); });
             }
@@ -208,14 +232,18 @@
             loadLevel(level) {
                 this.currentRoom = level;
                 this.lastHeatDamage = 0; 
+                this.buffSpeed = false;
+                this.buffDefense = false;
+                this.updateBuffUI();
                 
-                // Limpeza completa
+                // Clear all groups
                 if (this.walls) this.walls.clear(true, true);
                 if (this.bg) this.bg.destroy();
                 if (this.items) this.items.clear(true, true);
+                if (this.spices) this.spices.clear(true, true);
                 if (this.npcs) this.npcs.clear(true, true);
                 if (this.exitPortal) this.exitPortal.destroy();
-                if (this.backPortal) this.backPortal.destroy();
+                if (this.backPortal && this.backPortal.active) this.backPortal.destroy();
                 if (this.heavyBoxes) this.heavyBoxes.clear(true, true);
                 if (this.projectiles) this.projectiles.clear(true, true);
                 if (this.boss) this.boss.destroy();
@@ -224,9 +252,12 @@
                 if (this.shadows) this.shadows.clear(true, true);
                 if (this.tombs) this.tombs.clear(true, true);
                 if (this.dolmenBase) this.dolmenBase.destroy();
+                if (this.bossAttackGroup) this.bossAttackGroup.clear(true, true);
 
+                // Groups
                 this.walls = this.physics.add.staticGroup();
                 this.items = this.physics.add.staticGroup();
+                this.spices = this.physics.add.staticGroup();
                 this.npcs = this.physics.add.staticGroup();
                 this.gems = this.physics.add.staticGroup();
                 this.pedestals = this.physics.add.staticGroup();
@@ -234,8 +265,9 @@
                 this.tombs = this.physics.add.staticGroup();
                 this.heavyBoxes = this.physics.add.group({ bounceX: 0, bounceY: 0, dragX: 800, dragY: 800 });
                 this.projectiles = this.physics.add.group();
+                this.bossAttackGroup = this.physics.add.group();
 
-                // Recriar Colisões
+                // Colliders
                 this.physics.add.collider(this.player, this.walls);
                 this.physics.add.collider(this.assistants, this.walls);
                 this.physics.add.collider(this.player, this.heavyBoxes, this.pushBox, null, this);
@@ -254,32 +286,34 @@
                 this.bg = this.add.tileSprite(0, 0, WORLD_WIDTH, WORLD_HEIGHT, 'mine_floor').setOrigin(0).setDepth(0);
                 this.createWallsRect(0, 0, 25, 19); 
                 
-                // NPC
                 this.npcs.create(600, 300, 'dwarf');
                 
-                // Puzzle
                 const box = this.heavyBoxes.create(300, 200, 'heavybox').setImmovable(true);
                 this.boxStartPos = {x: 300, y: 200}; 
 
-                // Item (Se não pegou)
                 if (!this.registry.get('hasStoneL')) this.items.create(100, 500, 'stone_left');
+                const cin = this.spices.create(400, 150, 'spice_cinnamon').setData('type', 'cinnamon');
+                this.physics.add.overlap(this.player, cin, this.collectSpice, null, this);
 
-                this.triggerDialogue("Denise", "Minas de Arquivo... Onde estará esse Formulário 3B?");
+                this.triggerDialogue("Denise", "O Anão está ali. Talvez ele saiba do Formulário.");
             }
 
             setupLevel2_Ruins() {
                 this.player.setPosition(100, 300); this.assistants.forEach(a => a.setPosition(80, 300));
                 this.bg = this.add.tileSprite(0, 0, WORLD_WIDTH, WORLD_HEIGHT, 'ruin_floor').setOrigin(0).setDepth(0);
                 this.createWallsRect(0, 0, 25, 19);
-
                 this.createReturnPortal(50, 300, 1);
 
                 this.npcs.create(400, 300, 'statue');
                 
                 if (!this.registry.get('hasStamp')) this.items.create(100, 100, 'stamp_auth');
                 if (!this.registry.get('hasStoneR')) this.items.create(100, 500, 'stone_right');
+                
                 if (!this.registry.get('hasGemRed')) this.gems.create(700, 100, 'gem_red');
                 if (!this.registry.get('hasGemBlue')) this.gems.create(700, 500, 'gem_blue');
+
+                const clove = this.spices.create(600, 450, 'spice_clove').setData('type', 'clove');
+                this.physics.add.overlap(this.player, clove, this.collectSpice, null, this);
 
                 this.pedestals.create(550, 250, 'pedestal_red').setData('color', 'red');
                 this.pedestals.create(550, 350, 'pedestal_blue').setData('color', 'blue');
@@ -291,7 +325,6 @@
                 this.player.setPosition(100, 300);
                 this.bg = this.add.tileSprite(0, 0, WORLD_WIDTH, WORLD_HEIGHT, 'ruin_floor').setTint(0xffd700).setOrigin(0).setDepth(0);
                 this.createWallsRect(0, 0, 25, 19);
-
                 this.createReturnPortal(50, 300, 2);
 
                 if (!this.registry.get('hasVisa')) {
@@ -307,14 +340,12 @@
                 this.player.setPosition(100, 300);
                 this.bg = this.add.tileSprite(0, 0, WORLD_WIDTH, WORLD_HEIGHT, 'sand_floor').setOrigin(0).setDepth(0);
                 document.getElementById('boss-health-bar').style.display = 'none';
-                this.createWallsRect(0, 0, 25, 2); 
-                this.createWallsRect(0, 17, 25, 2); 
-
+                this.createWallsRect(0, 0, 25, 2); this.createWallsRect(0, 17, 25, 2); 
                 this.createReturnPortal(50, 300, 3);
 
                 this.shadows.create(200, 200, 'shadow');
                 this.shadows.create(500, 400, 'shadow');
-                this.shadows.create(100, 300, 'shadow'); // Safe spawn
+                this.shadows.create(100, 300, 'shadow'); 
 
                 this.tombs.create(300, 150, 'tomb').setData('hasStone', false).setImmovable(true);
                 this.tombs.create(400, 500, 'tomb').setData('hasStone', false).setImmovable(true);
@@ -326,58 +357,64 @@
                 this.restoreDolmenState();
             }
 
-            // ================= LÓGICA DE UPDATE E INPUT =================
+            // ================= UPDATE =================
 
             update(time, delta) {
                 if (!this.isGameStarted) return;
                 
-                // Movimento
+                let currentSpeed = 150;
+                if (this.assistants[this.activeAssistantIndex].name === "Fiódor") currentSpeed += 100;
+                if (this.buffSpeed) currentSpeed += 100;
+
                 this.player.setVelocity(0);
-                const speed = 150;
                 if (!this.isDialogueOpen) {
-                    if (this.cursors.left.isDown || this.wasd.A.isDown) this.player.setVelocityX(-speed);
-                    else if (this.cursors.right.isDown || this.wasd.D.isDown) this.player.setVelocityX(speed);
-                    if (this.cursors.up.isDown || this.wasd.W.isDown) this.player.setVelocityY(-speed);
-                    else if (this.cursors.down.isDown || this.wasd.S.isDown) this.player.setVelocityY(speed);
+                    if (this.cursors.left.isDown || this.wasd.A.isDown) this.player.setVelocityX(-currentSpeed);
+                    else if (this.cursors.right.isDown || this.wasd.D.isDown) this.player.setVelocityX(currentSpeed);
+                    if (this.cursors.up.isDown || this.wasd.W.isDown) this.player.setVelocityY(-currentSpeed);
+                    else if (this.cursors.down.isDown || this.wasd.S.isDown) this.player.setVelocityY(currentSpeed);
                 }
 
                 if (Phaser.Input.Keyboard.JustDown(this.keys123.ONE)) this.changeAssistant(0);
                 if (Phaser.Input.Keyboard.JustDown(this.keys123.TWO)) this.changeAssistant(1);
                 if (Phaser.Input.Keyboard.JustDown(this.keys123.THREE)) this.changeAssistant(2);
+                if (Phaser.Input.Keyboard.JustDown(this.keys4K.FOUR) || Phaser.Input.Keyboard.JustDown(this.keys4K.K)) this.changeAssistant(3); 
 
                 const activeCat = this.assistants[this.activeAssistantIndex];
                 if(activeCat) this.selector.setPosition(activeCat.x, activeCat.y - 25);
 
                 this.assistants.forEach((cat, i) => {
-                    const dist = Phaser.Math.Distance.Between(cat.x, cat.y, this.player.x, this.player.y);
-                    if (dist > 60 + (i*20)) this.physics.moveToObject(cat, this.player, speed * 0.9);
-                    else cat.body.setVelocity(0);
+                    if (cat.name === "Koffe" && cat.getData('mode') === 'hint') {
+                        const target = cat.getData('target');
+                        if (target) {
+                            this.physics.moveTo(cat, target.x, target.y, 200);
+                            if (Phaser.Math.Distance.Between(cat.x, cat.y, target.x, target.y) < 50) {
+                                cat.body.setVelocity(0);
+                                cat.setData('mode', 'follow');
+                                this.showFloatingText(cat.x, cat.y - 30, "Woof! Aqui!", 0xffff00);
+                            }
+                        }
+                    } else {
+                        const dist = Phaser.Math.Distance.Between(cat.x, cat.y, this.player.x, this.player.y);
+                        if (dist > 60 + (i*20)) this.physics.moveToObject(cat, this.player, currentSpeed * 0.9);
+                        else cat.body.setVelocity(0);
+                    }
                 });
 
-                // --- MANIPULAÇÃO DE INTERAÇÃO (ESPAÇO) ---
                 if (Phaser.Input.Keyboard.JustDown(this.keySpace)) {
-                    if (this.isDialogueOpen) {
-                        this.closeDialogue();
-                    } else {
-                        // Tentar interagir com o mundo
+                    if (this.isDialogueOpen) this.closeDialogue();
+                    else {
                         let interacted = this.handleInteractions();
-                        
-                        // Se não interagiu com nada, usar Habilidade do Gato
-                        if (!interacted) {
-                            this.performAssistantAction(time);
-                        }
+                        if (!interacted) this.performAssistantAction(time);
                     }
                 }
 
-                // Boss Logic
                 if (this.currentRoom === 3 && this.boss && this.boss.active) {
                     if (time > this.bossAttackTimer) {
-                        this.bossAttackTimer = time + 2000;
-                        this.fireProjectile();
+                        this.bossAttackTimer = time + 2500;
+                        this.bossAttackRoutine();
                     }
                 }
 
-                // Calor do Deserto
                 if (this.currentRoom === 4 && !this.isDialogueOpen) {
                     const isSafe = this.physics.overlap(this.player, this.shadows);
                     if (!isSafe && time > this.lastHeatDamage + 1000) {
@@ -386,105 +423,129 @@
                         this.lastHeatDamage = time;
                     }
                 }
-            }
 
-            handleInteractions() {
-                // Verificar proximidade com objetos interativos (distância < 50)
-                const px = this.player.x;
-                const py = this.player.y;
-
-                // 1. Portais de Saída (Fisica trata sobreposição, mas podemos forçar aqui se necessário. Deixamos physics overlap tratar transição)
-                // 2. NPCs
-                let npc = this.npcs.getChildren().find(n => Phaser.Math.Distance.Between(px, py, n.x, n.y) < 60);
-                if (npc) {
-                    this.handleNPC(npc); return true;
-                }
-
-                // 3. Itens
-                let item = this.items.getChildren().find(i => Phaser.Math.Distance.Between(px, py, i.x, i.y) < 40);
-                if (item) {
-                    this.collectItem(item); return true;
-                }
-                
-                // 4. Gemas
-                let gem = this.gems.getChildren().find(g => Phaser.Math.Distance.Between(px, py, g.x, g.y) < 40);
-                if (gem) {
-                    this.collectGem(gem); return true;
-                }
-
-                // 5. Pedestais
-                let ped = this.pedestals.getChildren().find(p => Phaser.Math.Distance.Between(px, py, p.x, p.y) < 40);
-                if (ped) {
-                    this.interactPedestal(ped); return true;
-                }
-
-                // 6. Tumbas
-                let tomb = this.tombs.getChildren().find(t => Phaser.Math.Distance.Between(px, py, t.x, t.y) < 50);
-                if (tomb) {
-                    this.checkTomb(tomb); return true;
-                }
-
-                // 7. Dólmen
-                if (this.dolmenBase && this.dolmenBase.active) {
-                     if (Phaser.Math.Distance.Between(px, py, this.dolmenBase.x, this.dolmenBase.y) < 60) {
-                         this.buildDolmen(); return true;
-                     }
-                }
-                
-                // 8. Boss (Ataque)
-                if (this.currentRoom === 3 && this.boss && this.boss.active) {
-                    if (Phaser.Math.Distance.Between(px, py, this.boss.x, this.boss.y) < 80) {
-                        this.attackBoss(); return true;
+                if (this.buffSpeed || this.buffDefense) {
+                    this.buffTimer -= delta;
+                    if (this.buffTimer <= 0) {
+                        this.buffSpeed = false;
+                        this.buffDefense = false;
+                        this.updateBuffUI();
+                        this.showFloatingText(this.player.x, this.player.y - 20, "Buff terminou", 0xffffff);
                     }
                 }
-
-                return false;
             }
 
             performAssistantAction(time) {
                 const activeCat = this.assistants[this.activeAssistantIndex];
                 
-                // MARON (Cura)
-                if (activeCat.name === "Maron") {
-                    if (time > this.lastHealTime + 2000) { // Cooldown 2s
+                if (activeCat.name === "Maron") { 
+                    if (time > this.lastHealTime + 2000) { 
                         this.playerHealth = Math.min(100, this.playerHealth + 10);
                         this.updateUI();
                         this.showFloatingText(activeCat.x, activeCat.y - 20, "Purr... +10 HP", 0x2ecc71);
-                        this.tweens.add({ targets: activeCat, scaleX: 1.2, scaleY: 1.2, duration: 200, yoyo: true });
                         this.lastHealTime = time;
                     }
                 }
-                // ORPHEU (Visual Feedback)
-                else if (activeCat.name === "Orpheu") {
-                    this.showFloatingText(activeCat.x, activeCat.y - 20, "GRRR! (Pronto a empurrar)", 0xffffff);
+                else if (activeCat.name === "Koffe") { this.activateKoffeHint(); }
+                else if (activeCat.name === "Fiódor") { this.showFloatingText(activeCat.x, activeCat.y - 20, "Vushhh! (Passivo)", 0x3498db); }
+                else if (activeCat.name === "Orpheu") { this.showFloatingText(activeCat.x, activeCat.y - 20, "GRRR! (Empurrar)", 0xffffff); }
+            }
+
+            activateKoffeHint() {
+                const koffe = this.assistants[3]; 
+                let target = null;
+                if (this.currentRoom === 1) {
+                    if (!this.registry.get('hasFormPink')) {
+                        if(this.boxStartPos.x !== -999) target = this.boxStartPos;
+                        else target = {x: this.player.x, y: this.player.y};
+                    }
+                } else if (this.currentRoom === 2) {
+                    if (!this.registry.get('hasStamp')) target = {x: 100, y: 100};
+                    else if (!this.registry.get('placedRed')) target = {x: 700, y: 100};
+                } else if (this.currentRoom === 4) {
+                    if (!this.registry.get('hasStoneTop')) target = {x: 600, y: 150};
                 }
-                // FIÓDOR (Visual Feedback)
-                else if (activeCat.name === "Fiódor") {
-                    this.showFloatingText(activeCat.x, activeCat.y - 20, "Zoom! (Velocidade)", 0x3498db);
+                if (target) {
+                    koffe.setData('mode', 'hint'); koffe.setData('target', target);
+                    this.showFloatingText(koffe.x, koffe.y - 20, "Sniff sniff...", 0xffff00);
+                } else {
+                    this.showFloatingText(koffe.x, koffe.y - 20, "Nada por aqui.", 0xcccccc);
                 }
             }
 
-            // ================= INTERAÇÕES ESPECÍFICAS =================
+            bossAttackRoutine() {
+                const rand = Phaser.Math.RND.integerInRange(1, 3);
+                if (rand === 1) { this.fireProjectile(); } 
+                else if (rand === 2) { 
+                    // CORREÇÃO: Usar floating text para não travar movimento
+                    this.showFloatingText(this.boss.x, this.boss.y - 50, "Afogue-se em burocracia!", 0xffffff);
+                    for (let i = 0; i < 5; i++) {
+                        const paper = this.bossAttackGroup.create(100 + (i * 100), 0, 'paper_attack');
+                        paper.setVelocityY(200); paper.setVelocityX(Phaser.Math.RND.integerInRange(-50, 50));
+                    }
+                } 
+                else if (rand === 3) { 
+                    // CORREÇÃO: Usar floating text para não travar movimento
+                    this.showFloatingText(this.boss.x, this.boss.y - 50, "REJEITADO!", 0xff0000);
+                    const shadow = this.add.image(this.player.x, this.player.y, 'stamp_shadow').setAlpha(0.5);
+                    this.tweens.add({
+                        targets: shadow, alpha: 1, scale: 0.1, duration: 1000,
+                        onComplete: () => {
+                            if (Phaser.Math.Distance.Between(this.player.x, this.player.y, shadow.x, shadow.y) < 40) { this.damagePlayer(25); }
+                            const stamp = this.add.image(shadow.x, shadow.y, 'stamp_giant');
+                            shadow.destroy(); this.time.delayedCall(500, () => stamp.destroy());
+                        }
+                    });
+                }
+                this.physics.add.overlap(this.player, this.bossAttackGroup, (p, obj) => { obj.destroy(); this.damagePlayer(15); });
+            }
+
+            collectSpice(player, spice) {
+                const type = spice.getData('type'); spice.destroy(); this.buffTimer = 15000; 
+                if (type === 'cinnamon') { this.buffSpeed = true; this.triggerDialogue("Denise", "Canela! Sinto-me leve (Velocidade UP)."); } 
+                else if (type === 'clove') { this.buffDefense = true; this.triggerDialogue("Denise", "Cravo! Sinto-me protegida (Defesa UP)."); }
+                this.updateBuffUI();
+            }
+
+            updateBuffUI() {
+                const container = document.getElementById('buff-container'); container.innerHTML = '';
+                if (this.buffSpeed) container.innerHTML += '<div class="buff-tag">⚡ Canela (Vel)</div>';
+                if (this.buffDefense) container.innerHTML += '<div class="buff-tag">🛡️ Cravo (Def)</div>';
+            }
+
+            handleInteractions() {
+                const px = this.player.x; const py = this.player.y;
+                let npc = this.npcs.getChildren().find(n => Phaser.Math.Distance.Between(px, py, n.x, n.y) < 60);
+                if (npc) { this.handleNPC(npc); return true; }
+                let item = this.items.getChildren().find(i => Phaser.Math.Distance.Between(px, py, i.x, i.y) < 40);
+                if (item) { this.collectItem(item); return true; }
+                
+                let gem = this.gems.getChildren().find(g => Phaser.Math.Distance.Between(px, py, g.x, g.y) < 40);
+                if (gem) { this.collectGem(gem); return true; }
+
+                let ped = this.pedestals.getChildren().find(p => Phaser.Math.Distance.Between(px, py, p.x, p.y) < 40);
+                if (ped) { this.interactPedestal(ped); return true; }
+                let tomb = this.tombs.getChildren().find(t => Phaser.Math.Distance.Between(px, py, t.x, t.y) < 50);
+                if (tomb) { this.checkTomb(tomb); return true; }
+                if (this.dolmenBase && this.dolmenBase.active && Phaser.Math.Distance.Between(px, py, this.dolmenBase.x, this.dolmenBase.y) < 60) { this.buildDolmen(); return true; }
+                if (this.currentRoom === 3 && this.boss && this.boss.active && Phaser.Math.Distance.Between(px, py, this.boss.x, this.boss.y) < 80) { this.attackBoss(); return true; }
+                return false;
+            }
 
             handleNPC(npc) {
-                // Lógica simplificada de NPC por fase
-                if (this.currentRoom === 1) { // Anão
+                if (this.currentRoom === 1) { 
                     if (this.registry.get('hasFormPink')) {
-                        this.triggerDialogue("Anão", "Podes passar.");
-                        npc.destroy();
-                        this.createExit(650, 300, 2);
-                    } else this.triggerDialogue("Anão", "Traga o Formulário 3B (Rosa)!");
-                } else if (this.currentRoom === 2) { // Estátua
+                        this.triggerDialogue("Anão", "Achou? Ótimo. Pode passar."); npc.destroy(); this.createExit(650, 300, 2);
+                    } else this.triggerDialogue("Anão", "Preciso do Formulário 3B. Não me pergunte onde está, use o cão.");
+                } else if (this.currentRoom === 2) { 
                     if (this.registry.get('hasStamp')) {
-                         this.triggerDialogue("Estátua", "Acesso concedido. Complete o ritual de simetria.");
-                         npc.destroy();
+                         this.triggerDialogue("Estátua", "Acesso concedido. Complete o ritual."); npc.destroy();
                     } else this.triggerDialogue("Estátua", "Precisa do Carimbo.");
                 }
             }
 
             collectItem(item) {
-                const key = item.texture.key;
-                item.destroy();
+                const key = item.texture.key; item.destroy();
                 if (key === 'stone_left') { this.registry.set('hasStoneL', true); this.triggerDialogue("Denise", "Pedra Esquerda recolhida."); }
                 else if (key === 'stone_right') { this.registry.set('hasStoneR', true); this.triggerDialogue("Denise", "Pedra Direita recolhida."); }
                 else if (key === 'stamp_auth') { this.registry.set('hasStamp', true); this.triggerDialogue("Denise", "Carimbo obtido!"); }
@@ -494,52 +555,38 @@
             collectGem(gem) {
                 if (gem.texture.key === 'gem_red') { this.registry.set('hasGemRed', true); this.triggerDialogue("Denise", "Gema Vermelha."); }
                 else { this.registry.set('hasGemBlue', true); this.triggerDialogue("Denise", "Gema Azul."); }
+                this.showFloatingText(gem.x, gem.y - 20, "Gema Apanhada!", 0xffff00);
                 gem.destroy();
             }
 
             interactPedestal(ped) {
                 const color = ped.getData('color');
                 if (color === 'red' && this.registry.get('hasGemRed') && !this.registry.get('placedRed')) {
-                    this.registry.set('placedRed', true);
-                    this.add.image(ped.x, ped.y - 10, 'gem_red').setDepth(5);
-                    this.checkPuzzle();
+                    this.registry.set('placedRed', true); this.add.image(ped.x, ped.y - 10, 'gem_red').setDepth(5); this.checkPuzzle();
                 } else if (color === 'blue' && this.registry.get('hasGemBlue') && !this.registry.get('placedBlue')) {
-                    this.registry.set('placedBlue', true);
-                    this.add.image(ped.x, ped.y - 10, 'gem_blue').setDepth(5);
-                    this.checkPuzzle();
+                    this.registry.set('placedBlue', true); this.add.image(ped.x, ped.y - 10, 'gem_blue').setDepth(5); this.checkPuzzle();
                 }
             }
-
+            
+            checkPuzzle() { if (this.registry.get('placedRed') && this.registry.get('placedBlue')) { this.createExit(650, 300, 3); this.triggerDialogue("Denise", "Portal aberto!"); } }
+            
             checkTomb(tomb) {
                 if (tomb.getData('hasStone')) {
                     if (!this.registry.get('hasStoneTop')) {
-                        this.registry.set('hasStoneTop', true);
-                        this.triggerDialogue("Denise", "Pedra de Topo encontrada!");
-                        tomb.setTint(0x555555);
+                        this.registry.set('hasStoneTop', true); this.triggerDialogue("Denise", "Pedra de Topo encontrada!"); tomb.setTint(0x555555);
                     } else this.triggerDialogue("Denise", "Já está vazia.");
                 } else this.triggerDialogue("Denise", "Apenas pó.");
             }
 
             buildDolmen() {
                 const r = this.registry;
-                if (r.get('hasStoneL') && !r.get('placedL')) {
-                    r.set('placedL', true); this.add.image(this.dolmenBase.x - 20, this.dolmenBase.y - 10, 'stone_left').setDepth(5);
-                    this.triggerDialogue("Denise", "Base Esquerda instalada.");
-                } else if (r.get('hasStoneR') && !r.get('placedR')) {
-                    r.set('placedR', true); this.add.image(this.dolmenBase.x + 20, this.dolmenBase.y - 10, 'stone_right').setDepth(5);
-                    this.triggerDialogue("Denise", "Base Direita instalada.");
-                } else if (r.get('hasStoneTop') && !r.get('placedTop') && r.get('placedL') && r.get('placedR')) {
+                if (r.get('hasStoneL') && !r.get('placedL')) { r.set('placedL', true); this.add.image(this.dolmenBase.x - 20, this.dolmenBase.y - 10, 'stone_left').setDepth(5); }
+                else if (r.get('hasStoneR') && !r.get('placedR')) { r.set('placedR', true); this.add.image(this.dolmenBase.x + 20, this.dolmenBase.y - 10, 'stone_right').setDepth(5); }
+                else if (r.get('hasStoneTop') && !r.get('placedTop') && r.get('placedL') && r.get('placedR')) {
                     r.set('placedTop', true); this.add.image(this.dolmenBase.x, this.dolmenBase.y - 32, 'stone_top').setDepth(6);
-                    this.triggerDialogue("Denise", "Dólmen completo!");
                     this.time.delayedCall(2000, this.winGame, [], this);
-                } else if (!r.get('hasStoneL') || !r.get('hasStoneR') || !r.get('hasStoneTop')) {
-                     this.triggerDialogue("Denise", "Faltam pedras! Tenho de voltar atrás.");
-                } else {
-                     this.triggerDialogue("Denise", "Já coloquei tudo o que podia.");
                 }
             }
-
-            // ================= AUXILIARES =================
 
             changeAssistant(index) {
                 this.activeAssistantIndex = index;
@@ -550,7 +597,6 @@
             pushBox(player, box) {
                 if (this.assistants[this.activeAssistantIndex].name === "Orpheu") {
                     box.setImmovable(false); box.setVelocity(player.body.velocity.x, player.body.velocity.y);
-                    // Lógica de spawn do formulário (Simplificada)
                     if (this.currentRoom === 1 && !this.registry.get('hasFormPink') && this.boxStartPos.x !== -999) {
                          if (Phaser.Math.Distance.Between(box.x, box.y, this.boxStartPos.x, this.boxStartPos.y) > 40) {
                              this.items.create(this.boxStartPos.x, this.boxStartPos.y, 'form_pink');
@@ -566,10 +612,11 @@
             attackBoss() {
                 this.bossHealth -= 20;
                 document.getElementById('boss-health-fill').style.width = this.bossHealth + '%';
-                this.triggerDialogue("Boss", "Ai! A minha imunidade diplomática!");
+                this.triggerDialogue("Boss", "Isso é um suborno?!");
                 if (this.bossHealth <= 0) {
                     this.boss.destroy();
                     this.projectiles.clear(true, true);
+                    this.bossAttackGroup.clear(true, true);
                     document.getElementById('boss-health-bar').style.display = 'none';
                     this.registry.set('hasVisa', true);
                     this.triggerDialogue("Don Escribán", "APROVADO! VÃO EMBORA!");
@@ -577,79 +624,38 @@
                 }
             }
 
-            checkPuzzle() {
-                if (this.registry.get('placedRed') && this.registry.get('placedBlue')) {
-                     this.createExit(650, 300, 3);
-                     this.triggerDialogue("Denise", "Portal aberto!");
-                }
-            }
-            
-            restorePuzzleState() {
-                if(this.registry.get('placedRed')) this.add.image(550, 250 - 10, 'gem_red').setDepth(5);
-                if(this.registry.get('placedBlue')) this.add.image(550, 350 - 10, 'gem_blue').setDepth(5);
-                if(this.registry.get('placedRed') && this.registry.get('placedBlue')) this.createExit(650, 300, 3);
-            }
-
-            restoreDolmenState() {
-                if(this.registry.get('placedL')) this.add.image(this.dolmenBase.x - 20, this.dolmenBase.y - 10, 'stone_left').setDepth(5);
-                if(this.registry.get('placedR')) this.add.image(this.dolmenBase.x + 20, this.dolmenBase.y - 10, 'stone_right').setDepth(5);
-                if(this.registry.get('placedTop')) this.add.image(this.dolmenBase.x, this.dolmenBase.y - 32, 'stone_top').setDepth(6);
-            }
-
-            createWallsRect(x, y, w, h) {
-                for (let i=x; i<x+w; i++) { this.walls.create(i*32+16, y*32+16, 'wall'); this.walls.create(i*32+16, (y+h)*32+16, 'wall'); }
-                for (let j=y; j<=y+h; j++) { this.walls.create(x*32+16, j*32+16, 'wall'); this.walls.create((x+w)*32+16, j*32+16, 'wall'); }
-            }
-
-            createExit(x, y, nextLevel) {
-                this.exitPortal = this.physics.add.sprite(x, y, 'portal');
-                this.physics.add.overlap(this.player, this.exitPortal, () => { this.loadLevel(nextLevel); });
-            }
-            
-            createReturnPortal(x, y, prevLevel) {
-                this.backPortal = this.physics.add.sprite(x, y, 'portal_back');
-                this.physics.add.overlap(this.player, this.backPortal, () => { this.loadLevel(prevLevel); });
-            }
-
-            triggerDialogue(name, text) {
-                this.isDialogueOpen = true;
-                const ui = document.getElementById('ui-layer');
-                document.getElementById('ui-name').innerText = name;
-                document.getElementById('ui-text').innerText = text;
-                ui.style.display = 'block';
-            }
-            closeDialogue() { this.isDialogueOpen = false; document.getElementById('ui-layer').style.display = 'none'; }
-            updateUI() { document.getElementById('health-fill').style.width = this.playerHealth + '%'; document.getElementById('health-value').innerText = Math.floor(this.playerHealth); }
-            showFloatingText(x, y, message, color) {
-                 const text = this.add.text(x, y, message, { fontSize: '12px', color: '#fff', stroke: '#000', strokeThickness: 2 });
-                 this.tweens.add({ targets: text, y: y - 30, alpha: 0, duration: 1000, onComplete: () => text.destroy() });
-            }
             fireProjectile() {
                 const p = this.projectiles.create(this.boss.x, this.boss.y, 'projectile');
                 this.physics.moveToObject(p, this.player, 200);
                 this.physics.add.overlap(this.player, p, () => { p.destroy(); this.damagePlayer(10); });
             }
+            
             damagePlayer(amount) {
+                if (this.buffDefense) amount = Math.floor(amount / 2); 
                 this.playerHealth = Math.max(0, this.playerHealth - amount);
                 this.updateUI();
                 if (this.playerHealth <= 0) this.scene.restart();
             }
-            updateInventoryUI() {
-                const list = document.getElementById('inventory-list'); list.innerHTML = ''; const r = this.registry;
-                if (r.get('hasFormPink')) list.innerHTML += "<li>📄 Form. Rosa</li>";
-                if (r.get('hasStoneL')) list.innerHTML += "<li>🪨 Pedra Esq.</li>";
-                if (r.get('hasStamp')) list.innerHTML += "<li>🛂 Carimbo</li>";
-                if (r.get('hasStoneR')) list.innerHTML += "<li>🪨 Pedra Dir.</li>";
-                if (r.get('hasGemRed')) list.innerHTML += "<li>🔴 Gema V.</li>";
-                if (r.get('hasGemBlue')) list.innerHTML += "<li>🔵 Gema A.</li>";
-                if (r.get('hasVisa')) list.innerHTML += "<li>✅ Visto</li>";
-                if (r.get('hasStoneTop')) list.innerHTML += "<li>🪨 Pedra Topo</li>";
+
+            restorePuzzleState() {
+                if(this.registry.get('placedRed')) this.add.image(550, 250 - 10, 'gem_red').setDepth(5);
+                if(this.registry.get('placedBlue')) this.add.image(550, 350 - 10, 'gem_blue').setDepth(5);
+                if(this.registry.get('placedRed') && this.registry.get('placedBlue')) this.createExit(650, 300, 3);
             }
-            winGame() {
-                document.getElementById('victory-screen').style.display = 'flex';
-                setTimeout(() => document.getElementById('zoom-text').style.display = 'block', 2000);
-                this.scene.pause();
+            restoreDolmenState() {
+                if(this.registry.get('placedL')) this.add.image(this.dolmenBase.x - 20, this.dolmenBase.y - 10, 'stone_left').setDepth(5);
+                if(this.registry.get('placedR')) this.add.image(this.dolmenBase.x + 20, this.dolmenBase.y - 10, 'stone_right').setDepth(5);
+                if(this.registry.get('placedTop')) this.add.image(this.dolmenBase.x, this.dolmenBase.y - 32, 'stone_top').setDepth(6);
             }
+            createWallsRect(x, y, w, h) { for (let i=x; i<x+w; i++) { this.walls.create(i*32+16, y*32+16, 'wall'); this.walls.create(i*32+16, (y+h)*32+16, 'wall'); } for (let j=y; j<=y+h; j++) { this.walls.create(x*32+16, j*32+16, 'wall'); this.walls.create((x+w)*32+16, j*32+16, 'wall'); } }
+            createExit(x, y, nextLevel) { this.exitPortal = this.physics.add.sprite(x, y, 'portal'); this.physics.add.overlap(this.player, this.exitPortal, () => { this.loadLevel(nextLevel); }); }
+            createReturnPortal(x, y, prevLevel) { this.backPortal = this.physics.add.sprite(x, y, 'portal_back'); this.physics.add.overlap(this.player, this.backPortal, () => { this.loadLevel(prevLevel); }); }
+            triggerDialogue(name, text) { this.isDialogueOpen = true; const ui = document.getElementById('ui-layer'); document.getElementById('ui-name').innerText = name; document.getElementById('ui-text').innerText = text; ui.style.display = 'block'; }
+            closeDialogue() { this.isDialogueOpen = false; document.getElementById('ui-layer').style.display = 'none'; }
+            updateUI() { document.getElementById('health-fill').style.width = this.playerHealth + '%'; document.getElementById('health-value').innerText = Math.floor(this.playerHealth); }
+            showFloatingText(x, y, message, color) { const text = this.add.text(x, y, message, { fontSize: '12px', color: '#fff', stroke: '#000', strokeThickness: 2 }); this.tweens.add({ targets: text, y: y - 30, alpha: 0, duration: 1000, onComplete: () => text.destroy() }); }
+            updateInventoryUI() { const list = document.getElementById('inventory-list'); list.innerHTML = ''; const r = this.registry; if (r.get('hasFormPink')) list.innerHTML += "<li>📄 Form. Rosa</li>"; if (r.get('hasStoneL')) list.innerHTML += "<li>🪨 Pedra Esq.</li>"; if (r.get('hasStamp')) list.innerHTML += "<li>🛂 Carimbo</li>"; if (r.get('hasStoneR')) list.innerHTML += "<li>🪨 Pedra Dir.</li>"; if (r.get('hasGemRed')) list.innerHTML += "<li>🔴 Gema V.</li>"; if (r.get('hasGemBlue')) list.innerHTML += "<li>🔵 Gema A.</li>"; if (r.get('hasVisa')) list.innerHTML += "<li>✅ Visto</li>"; if (r.get('hasStoneTop')) list.innerHTML += "<li>🪨 Pedra Topo</li>"; }
+            winGame() { document.getElementById('victory-screen').style.display = 'flex'; setTimeout(() => document.getElementById('zoom-text').style.display = 'block', 2000); this.scene.pause(); }
         }
 
         const config = { type: Phaser.AUTO, width: SCREEN_WIDTH, height: SCREEN_HEIGHT, parent: 'game-container', backgroundColor: '#000000', pixelArt: true, physics: { default: 'arcade', arcade: { gravity: { y: 0 }, debug: false } }, scene: [MainScene] };
