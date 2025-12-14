@@ -218,10 +218,16 @@
                 g.clear(); g.fillStyle(0x555555); g.fillRect(4, 16, 24, 16); g.fillStyle(0xc0392b); g.fillCircle(16, 24, 3); g.generateTexture('pedestal_red', 32, 32);
                 g.clear(); g.fillStyle(0x555555); g.fillRect(4, 16, 24, 16); g.fillStyle(0x2980b9); g.fillCircle(16, 24, 3); g.generateTexture('pedestal_blue', 32, 32);
 
-                // Pedras e Ambiente
-                g.clear(); g.fillStyle(0x7f8c8d); g.fillRect(4,4,24,28); g.generateTexture('stone_left', 32, 32);
-                g.clear(); g.fillStyle(0x7f8c8d); g.fillRect(4,4,24,28); g.generateTexture('stone_right', 32, 32);
-                g.clear(); g.fillStyle(0x95a5a6); g.fillRect(2,10,28,12); g.generateTexture('stone_top', 32, 32);
+                // Pedras e Ambiente - CORREÇÃO DE VISIBILIDADE
+                // Pedra Esquerda (Fase 1 - Fundo Escuro)
+                g.clear(); g.fillStyle(0x95a5a6); g.fillRect(4,4,24,28); g.lineStyle(2, 0xffffff); g.strokeRect(4,4,24,28); g.generateTexture('stone_left', 32, 32);
+                
+                // Pedra Direita (Fase 2 - Fundo Cinza 0x7f8c8d, agora com cor diferente e borda)
+                g.clear(); g.fillStyle(0x505050); g.fillRect(4,4,24,28); g.lineStyle(2, 0xffd700); g.strokeRect(4,4,24,28); g.generateTexture('stone_right', 32, 32);
+                
+                // Pedra Topo (Fase 4 - Fundo Areia, adicionar borda)
+                g.clear(); g.fillStyle(0x95a5a6); g.fillRect(2,10,28,12); g.lineStyle(2, 0x000000); g.strokeRect(2,10,28,12); g.generateTexture('stone_top', 32, 32);
+
                 g.clear(); g.fillStyle(0x000000, 0.4); g.fillEllipse(16, 16, 40, 30); g.generateTexture('shadow', 48, 32);
                 g.clear(); g.fillStyle(0x7f8c8d); g.fillRect(4, 10, 24, 22); g.fillStyle(0x000000); g.fillRect(12, 20, 8, 12); g.generateTexture('tomb', 32, 32);
                 g.clear(); g.fillStyle(0x95a5a6, 0.5); g.fillRect(0, 0, 96, 32); g.generateTexture('dolmen_base', 96, 32);
