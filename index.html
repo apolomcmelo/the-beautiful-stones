@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>A Jornada das Belas Pedras - V43 (Portal Fix)</title>
+    <title>A Jornada das Belas Pedras - V43 (Refactor BootScene)</title>
     <style>
         body { margin: 0; padding: 0; background-color: #1a1a1a; color: #d3c6a6; font-family: 'Courier New', Courier, monospace; overflow: hidden; display: flex; justify-content: center; align-items: center; height: 100vh; }
         #game-container { position: relative; box-shadow: 0 0 30px rgba(255, 255, 255, 0.1); image-rendering: pixelated; }
@@ -161,33 +161,10 @@
             if (window.gameScene) window.gameScene.startGameplay();
         };
 
-        class MainScene extends Phaser.Scene {
+        // --- CENA DE BOOT (CARREGAMENTO) ---
+        class BootScene extends Phaser.Scene {
             constructor() {
-                super({ key: 'MainScene' });
-                this.isGameStarted = false;
-                this.isDialogueOpen = false;
-                this.currentRoom = 1;
-                this.player = null;
-                this.assistants = [];
-                this.activeAssistantIndex = 0;
-                this.playerHealth = 100;
-                this.selector = null;
-                
-                // Variáveis de Estado
-                this.boss = null;
-                this.bossHealth = 100;
-                this.bossAttackTimer = 0;
-                this.lastHeatDamage = 0;
-                this.lastHealTime = 0;
-                this.screenFixed = false;
-                
-                // Buffs
-                this.buffSpeed = false; // Canela
-                this.buffDefense = false; // Cravo
-                this.buffTimer = 0;
-
-                // Inputs
-                this.cursors = null; this.wasd = null; this.keys123 = null; this.keys4K = null; this.keySpace = null;
+                super({ key: 'BootScene' });
             }
 
             preload() {
@@ -246,6 +223,43 @@
                 g.clear(); g.fillStyle(0x000000, 0.3); g.fillCircle(32,32,30); g.generateTexture('stamp_shadow', 64, 64);
                 g.clear(); g.fillStyle(0x8b0000); g.fillCircle(32,32,28); g.fillStyle(0xffffff); g.fillRect(16, 28, 32, 6); g.fillRect(20, 36, 24, 4); g.generateTexture('stamp_giant', 64, 64);
             }
+
+            create() {
+                // Inicia imediatamente a cena do jogo
+                this.scene.start('MainScene');
+            }
+        }
+
+        class MainScene extends Phaser.Scene {
+            constructor() {
+                super({ key: 'MainScene' });
+                this.isGameStarted = false;
+                this.isDialogueOpen = false;
+                this.currentRoom = 1;
+                this.player = null;
+                this.assistants = [];
+                this.activeAssistantIndex = 0;
+                this.playerHealth = 100;
+                this.selector = null;
+                
+                // Variáveis de Estado
+                this.boss = null;
+                this.bossHealth = 100;
+                this.bossAttackTimer = 0;
+                this.lastHeatDamage = 0;
+                this.lastHealTime = 0;
+                this.screenFixed = false;
+                
+                // Buffs
+                this.buffSpeed = false; // Canela
+                this.buffDefense = false; // Cravo
+                this.buffTimer = 0;
+
+                // Inputs
+                this.cursors = null; this.wasd = null; this.keys123 = null; this.keys4K = null; this.keySpace = null;
+            }
+
+            // O PRELOAD FOI REMOVIDO DAQUI
 
             create() {
                 window.gameScene = this;
@@ -833,7 +847,8 @@
             winGame() { document.getElementById('victory-screen').style.display = 'flex'; setTimeout(() => document.getElementById('zoom-text').style.display = 'block', 2000); this.scene.pause(); }
         }
 
-        const config = { type: Phaser.AUTO, width: SCREEN_WIDTH, height: SCREEN_HEIGHT, parent: 'game-container', backgroundColor: '#000000', pixelArt: true, physics: { default: 'arcade', arcade: { gravity: { y: 0 }, debug: false } }, scene: [MainScene] };
+        // Agora passamos BootScene e MainScene no array de cenas
+        const config = { type: Phaser.AUTO, width: SCREEN_WIDTH, height: SCREEN_HEIGHT, parent: 'game-container', backgroundColor: '#000000', pixelArt: true, physics: { default: 'arcade', arcade: { gravity: { y: 0 }, debug: false } }, scene: [BootScene, MainScene] };
         const game = new Phaser.Game(config);
     </script>
 </body>
