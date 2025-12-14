@@ -87,10 +87,7 @@
         const WORLD_WIDTH = 800;
         const WORLD_HEIGHT = 600; 
 
-        // --- DEFINIÇÃO DE MAPAS (Simulando JSON) ---
-        // 0: Chão, 1: Parede
-        
-        // FASE 1: Minas
+        // --- DEFINIÇÃO DE MAPAS ---
         const LEVEL_1_DATA = {
             width: 25, height: 19,
             layout: [
@@ -124,7 +121,6 @@
             ]
         };
 
-        // FASE 2: Sala de Espera
         const LEVEL_2_DATA = {
             width: 25, height: 19,
             layout: [
@@ -132,8 +128,8 @@
                 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
                 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
                 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-                1,1,1,1,1,1,1,1,1,1,1,0,0,0,1,1,1,1,1,1,1,1,1,1,1, // Balcão com abertura
-                1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1, // Área de atendimento (atrás do balcão)
+                1,1,1,1,1,1,1,1,1,1,1,0,0,0,1,1,1,1,1,1,1,1,1,1,1, 
+                1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1, 
                 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
                 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
                 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
@@ -150,12 +146,12 @@
             ],
             objects: [
                 { type: 'player_start', x: 2, y: 15 },
-                { type: 'password_screen', x: 13, y: 4 }, // Atrás do balcão, na parede
-                { type: 'clerk', x: 13, y: 5 }, // Atendente bloqueando a passagem ou no balcão
+                { type: 'password_screen', x: 13, y: 4 }, 
+                { type: 'clerk', x: 13, y: 5 }, 
                 { type: 'npc_queue', x: 13, y: 8 },
                 { type: 'npc_queue', x: 13, y: 10 },
                 { type: 'npc_queue', x: 13, y: 12 },
-                { type: 'stone_right', x: 22, y: 5 }, // Canto da área restrita
+                { type: 'stone_right', x: 22, y: 5 }, 
                 { type: 'spice_clove', x: 20, y: 15 }
             ]
         };
@@ -318,6 +314,7 @@
                 this.lastHeatDamage = 0; 
                 this.buffSpeed = false;
                 this.buffDefense = false;
+                this.player.setVelocity(0); // Stop movement drift
                 this.updateBuffUI();
                 
                 // Clear groups
@@ -327,8 +324,6 @@
                 if (this.spices) this.spices.clear(true, true);
                 if (this.npcs) this.npcs.clear(true, true);
                 if (this.specialObjects) this.specialObjects.clear(true, true);
-                if (this.exitPortal) this.exitPortal.destroy();
-                if (this.backPortal && this.backPortal.active) this.backPortal.destroy();
                 if (this.heavyBoxes) this.heavyBoxes.clear(true, true);
                 if (this.projectiles) this.projectiles.clear(true, true);
                 if (this.boss) this.boss.destroy();
@@ -338,6 +333,10 @@
                 if (this.tombs) this.tombs.clear(true, true);
                 if (this.dolmenBase) this.dolmenBase.destroy();
                 if (this.bossAttackGroup) this.bossAttackGroup.clear(true, true);
+                
+                // Clear Portals Group
+                if (this.portals) this.portals.clear(true, true);
+                else this.portals = this.physics.add.group();
 
                 // Init Groups
                 this.walls = this.physics.add.staticGroup();
@@ -465,7 +464,10 @@
             }
 
             setupLevel4_Desert() {
-                this.player.setPosition(100, 300);
+                // FIXED: Spawn at 200 to avoid accidental return portal overlap (at 50)
+                this.player.setPosition(200, 300);
+                this.assistants.forEach(a => a.setPosition(180, 300));
+
                 this.bg = this.add.tileSprite(0, 0, WORLD_WIDTH, WORLD_HEIGHT, 'sand_floor').setOrigin(0).setDepth(0);
                 document.getElementById('boss-health-bar').style.display = 'none';
                 this.createWallsRect(0, 0, 25, 2); this.createWallsRect(0, 17, 25, 2); 
@@ -780,8 +782,12 @@
                     this.projectiles.clear(true, true);
                     this.bossAttackGroup.clear(true, true);
                     document.getElementById('boss-health-bar').style.display = 'none';
+                    
+                    // ATUALIZAÇÃO: Concede ambos os itens ao vencer
                     this.registry.set('hasVisa', true);
-                    this.triggerDialogue("Don Escribán", "APROVADO! VÃO EMBORA!");
+                    this.registry.set('hasStoneNorth', true);
+
+                    this.triggerDialogue("Don Escribán", "APROVADO! TOME O VISTO E A PEDRA NORTE! AGORA SUMAM!");
                     this.createExit(650, 300, 4);
                 }
             }
@@ -808,8 +814,17 @@
                 if(r.get('placedTop')) this.add.image(this.dolmenBase.x, this.dolmenBase.y - 32, 'stone_top').setDepth(6);
             }
             createWallsRect(x, y, w, h) { for (let i=x; i<x+w; i++) { this.walls.create(i*32+16, y*32+16, 'wall'); this.walls.create(i*32+16, (y+h)*32+16, 'wall'); } for (let j=y; j<=y+h; j++) { this.walls.create(x*32+16, j*32+16, 'wall'); this.walls.create((x+w)*32+16, j*32+16, 'wall'); } }
-            createExit(x, y, nextLevel) { this.exitPortal = this.physics.add.sprite(x, y, 'portal'); this.physics.add.overlap(this.player, this.exitPortal, () => { this.loadLevel(nextLevel); }); }
-            createReturnPortal(x, y, prevLevel) { this.backPortal = this.physics.add.sprite(x, y, 'portal_back'); this.physics.add.overlap(this.player, this.backPortal, () => { this.loadLevel(prevLevel); }); }
+            
+            // FIX: Usar grupo para limpeza automática
+            createExit(x, y, nextLevel) { 
+                const portal = this.portals.create(x, y, 'portal'); 
+                this.physics.add.overlap(this.player, portal, () => { this.loadLevel(nextLevel); }); 
+            }
+            createReturnPortal(x, y, prevLevel) { 
+                const portal = this.portals.create(x, y, 'portal_back'); 
+                this.physics.add.overlap(this.player, portal, () => { this.loadLevel(prevLevel); }); 
+            }
+            
             triggerDialogue(name, text) { this.isDialogueOpen = true; const ui = document.getElementById('ui-layer'); document.getElementById('ui-name').innerText = name; document.getElementById('ui-text').innerText = text; ui.style.display = 'block'; }
             closeDialogue() { this.isDialogueOpen = false; document.getElementById('ui-layer').style.display = 'none'; }
             updateUI() { document.getElementById('health-fill').style.width = this.playerHealth + '%'; document.getElementById('health-value').innerText = Math.floor(this.playerHealth); }
