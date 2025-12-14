@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>A Jornada das Belas Pedras - V43 (Refactor BootScene)</title>
+    <title>A Jornada das Belas Pedras - V43 (Intro Fix)</title>
     <style>
         body { margin: 0; padding: 0; background-color: #1a1a1a; color: #d3c6a6; font-family: 'Courier New', Courier, monospace; overflow: hidden; display: flex; justify-content: center; align-items: center; height: 100vh; }
         #game-container { position: relative; box-shadow: 0 0 30px rgba(255, 255, 255, 0.1); image-rendering: pixelated; }
@@ -26,9 +26,7 @@
 
         /* Screens */
         .fullscreen-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: #000; display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 300; color: #d3c6a6; text-align: center; padding: 20px; box-sizing: border-box; }
-        #intro-screen { display: flex; } 
-        h1 { color: #e0ac69; text-shadow: 2px 2px 0 #5c3a1e; font-size: 28px; margin-bottom: 20px; }
-        p.story-text { font-size: 16px; max-width: 500px; line-height: 1.6; margin-bottom: 30px; }
+        
         button.action-btn { padding: 15px 30px; font-size: 18px; background-color: #8b5a2b; color: #fff; border: 2px solid #e0ac69; cursor: pointer; font-family: 'Courier New', Courier, monospace; text-transform: uppercase; }
         button.action-btn:hover { background-color: #a06b35; }
 
@@ -43,16 +41,6 @@
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
 </head>
 <body>
-
-    <div id="intro-screen" class="fullscreen-screen">
-        <h1>A Jornada das Belas Pedras</h1>
-        <p class="story-text">
-            Denise quer apenas escavar megálitos. Mas para sair do país, ela tem de enfrentar o maior monstro de todos: 
-            <br><br>
-            <strong>A Administração Pública Espanhola.</strong>
-        </p>
-        <button class="action-btn" onclick="startGame()">Iniciar Processo Burocrático</button>
-    </div>
 
     <div id="victory-screen" class="fullscreen-screen">
         <div id="final-scene-img">
@@ -156,11 +144,6 @@
             ]
         };
 
-        window.startGame = function() {
-            document.getElementById('intro-screen').style.display = 'none';
-            if (window.gameScene) window.gameScene.startGameplay();
-        };
-
         // --- CENA DE BOOT (CARREGAMENTO) ---
         class BootScene extends Phaser.Scene {
             constructor() {
@@ -225,8 +208,134 @@
             }
 
             create() {
-                // Inicia imediatamente a cena do jogo
-                this.scene.start('MainScene');
+                // Inicia imediatamente a cena de Intro em vez da Main
+                this.scene.start('IntroScene');
+            }
+        }
+
+        // --- CENA DE INTRO (NARRATIVA) ---
+        class IntroScene extends Phaser.Scene {
+            constructor() {
+                super({ key: 'IntroScene' });
+                this.currentSlide = 0;
+            }
+
+            create() {
+                const centerX = SCREEN_WIDTH / 2;
+                const centerY = SCREEN_HEIGHT / 2;
+                this.cameras.main.fadeIn(1000, 0, 0, 0);
+
+                // --- SLIDE 0: NARRADOR ---
+                this.slide0Group = this.add.group();
+                const text0 = this.add.text(centerX, centerY, 
+                    "Denise quer apenas escavar megálitos.\nMas para sair do país,\nela tem de enfrentar o maior monstro de todos...", 
+                    { fontFamily: 'Courier New', fontSize: '18px', color: '#d3c6a6', align: 'center' }
+                ).setOrigin(0.5);
+                this.slide0Group.add(text0);
+
+                // --- SLIDE 1: ANÕES ---
+                this.slide1Group = this.add.group();
+                const bg1 = this.add.rectangle(centerX, centerY, SCREEN_WIDTH, SCREEN_HEIGHT, 0x2c3e50);
+                const dwarf1 = this.add.image(centerX - 50, centerY + 50, 'dwarf').setScale(2);
+                const dwarf2 = this.add.image(centerX + 50, centerY + 50, 'dwarf').setScale(2).setFlipX(true);
+                const text1 = this.add.text(centerX, centerY - 50, 
+                    "ANÕES: Descobrimos megálitos novos!\nVamos convidar a humana!", 
+                    { fontFamily: 'Courier New', fontSize: '20px', color: '#fff', align: 'center', backgroundColor: '#000' }
+                ).setOrigin(0.5);
+                this.slide1Group.add(bg1); this.slide1Group.add(dwarf1); this.slide1Group.add(dwarf2); this.slide1Group.add(text1);
+                this.slide1Group.setVisible(false); // Agora chamado DEPOIS de adicionar
+
+                // --- SLIDE 2: DENISE E O CHAMADO ---
+                this.slide2Group = this.add.group();
+                const bg2 = this.add.rectangle(centerX, centerY, SCREEN_WIDTH, SCREEN_HEIGHT, 0x8b4513);
+                const denise = this.add.image(centerX, centerY + 20, 'denise').setScale(3);
+                const letter = this.add.rectangle(centerX + 10, centerY + 30, 20, 15, 0xffffff); 
+                const text2 = this.add.text(centerX, centerY - 100, 
+                    "DENISE: Um convite? Megálitos novos?\nVamos a isso!", 
+                    { fontFamily: 'Courier New', fontSize: '20px', color: '#fff', align: 'center' }
+                ).setOrigin(0.5);
+                
+                // Gatos (adicionados invisíveis mas no grupo)
+                const c1 = this.add.image(centerX - 60, centerY + 60, 'maron').setAlpha(0);
+                const c2 = this.add.image(centerX - 30, centerY + 60, 'fiodor').setAlpha(0);
+                const c3 = this.add.image(centerX + 30, centerY + 60, 'orpheu').setAlpha(0);
+                const c4 = this.add.image(centerX + 60, centerY + 60, 'koffe').setAlpha(0);
+                
+                this.slide2Group.add(bg2); this.slide2Group.add(denise); this.slide2Group.add(letter); this.slide2Group.add(text2);
+                this.slide2Group.add(c1); this.slide2Group.add(c2); this.slide2Group.add(c3); this.slide2Group.add(c4);
+                this.slide2Group.setVisible(false); // Agora chamado DEPOIS de adicionar
+
+                // Referência para animação
+                this.catsArray = [c1, c2, c3, c4];
+
+                // --- SLIDE 3: O VILÃO ---
+                this.slide3Group = this.add.group();
+                const bg3 = this.add.rectangle(centerX, centerY, SCREEN_WIDTH, SCREEN_HEIGHT, 0x8b0000);
+                const text3 = this.add.text(centerX, centerY - 20, 
+                    "O INIMIGO FINAL:\n\nA ADMINISTRAÇÃO PÚBLICA ESPANHOLA", 
+                    { fontFamily: 'Courier New', fontSize: '26px', color: '#fff', align: 'center', stroke: '#000', strokeThickness: 4 }
+                ).setOrigin(0.5);
+                
+                // Botão
+                const btnBg = this.add.rectangle(centerX, centerY + 100, 250, 50, 0x000000).setInteractive({ useHandCursor: true });
+                const btnText = this.add.text(centerX, centerY + 100, "INICIAR EXPEDIÇÃO", { fontSize: '18px', color: '#d3c6a6' }).setOrigin(0.5);
+                btnBg.setStrokeStyle(2, 0xe0ac69);
+                
+                btnBg.on('pointerdown', () => {
+                    this.cameras.main.fadeOut(500);
+                    this.time.delayedCall(500, () => this.scene.start('MainScene'));
+                });
+                
+                // Hover effect
+                btnBg.on('pointerover', () => btnBg.setFillStyle(0x333333));
+                btnBg.on('pointerout', () => btnBg.setFillStyle(0x000000));
+
+                this.slide3Group.add(bg3); this.slide3Group.add(text3); this.slide3Group.add(btnBg); this.slide3Group.add(btnText);
+                this.slide3Group.setVisible(false); // Agora chamado DEPOIS de adicionar
+
+                // --- CONTROLO DE INPUT (Avançar slides) ---
+                this.input.on('pointerdown', (pointer) => {
+                    // Ignora clique se for no botão do último slide
+                    if (this.currentSlide === 3 && pointer.y > centerY + 70 && pointer.y < centerY + 130 && pointer.x > centerX - 125 && pointer.x < centerX + 125) return;
+                    this.nextSlide();
+                });
+
+                // Texto de ajuda
+                this.add.text(SCREEN_WIDTH - 10, SCREEN_HEIGHT - 10, "(Clique para avançar)", { fontSize: '12px', color: '#666' }).setOrigin(1);
+            }
+
+            nextSlide() {
+                if (this.currentSlide === 0) {
+                    // Transição Narrador -> Anões
+                    this.slide0Group.setVisible(false);
+                    this.slide1Group.setVisible(true);
+                    this.cameras.main.fadeIn(500);
+                    this.currentSlide++;
+                } else if (this.currentSlide === 1) {
+                    // Transição Anões -> Denise
+                    this.slide1Group.setVisible(false);
+                    this.slide2Group.setVisible(true);
+                    this.cameras.main.fadeIn(500);
+                    this.currentSlide++;
+                    
+                    // Animação dos Gatos
+                    this.tweens.add({
+                        targets: this.catsArray,
+                        alpha: 1,
+                        y: '-=10',
+                        duration: 800,
+                        delay: 500, // Espera um pouco antes de aparecerem
+                        ease: 'Power2'
+                    });
+
+                } else if (this.currentSlide === 2) {
+                    // Transição Denise -> Vilão
+                    this.slide2Group.setVisible(false);
+                    this.slide3Group.setVisible(true);
+                    this.cameras.main.flash(1000, 255, 0, 0); // Flash vermelho dramático
+                    this.currentSlide++;
+                }
+                // Slide 3 aguarda clique no botão
             }
         }
 
@@ -290,6 +399,9 @@
                 this.keys4K = this.input.keyboard.addKeys({ FOUR: Phaser.Input.Keyboard.KeyCodes.FOUR, K: Phaser.Input.Keyboard.KeyCodes.K });
                 this.keySpace = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
                 this.selector = this.add.triangle(0, 0, 0, 0, 5, 10, 10, 0, 0xffff00).setDepth(20).setVisible(false);
+                
+                // Iniciar gameplay diretamente
+                this.startGameplay();
             }
 
             createPlayerAndCats() {
@@ -847,8 +959,8 @@
             winGame() { document.getElementById('victory-screen').style.display = 'flex'; setTimeout(() => document.getElementById('zoom-text').style.display = 'block', 2000); this.scene.pause(); }
         }
 
-        // Agora passamos BootScene e MainScene no array de cenas
-        const config = { type: Phaser.AUTO, width: SCREEN_WIDTH, height: SCREEN_HEIGHT, parent: 'game-container', backgroundColor: '#000000', pixelArt: true, physics: { default: 'arcade', arcade: { gravity: { y: 0 }, debug: false } }, scene: [BootScene, MainScene] };
+        // Agora passamos BootScene, IntroScene e MainScene no array de cenas
+        const config = { type: Phaser.AUTO, width: SCREEN_WIDTH, height: SCREEN_HEIGHT, parent: 'game-container', backgroundColor: '#000000', pixelArt: true, physics: { default: 'arcade', arcade: { gravity: { y: 0 }, debug: false } }, scene: [BootScene, IntroScene, MainScene] };
         const game = new Phaser.Game(config);
     </script>
 </body>
