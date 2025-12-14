@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>A Jornada das Belas Pedras - V43 (Fix Restart Error)</title>
+    <title>A Jornada das Belas Pedras - V44 (EndingScene Added)</title>
     <style>
         body { margin: 0; padding: 0; background-color: #1a1a1a; color: #d3c6a6; font-family: 'Courier New', Courier, monospace; overflow: hidden; display: flex; justify-content: center; align-items: center; height: 100vh; }
         #game-container { position: relative; box-shadow: 0 0 30px rgba(255, 255, 255, 0.1); image-rendering: pixelated; }
@@ -27,14 +27,7 @@
         /* Screens */
         .fullscreen-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: #000; display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 300; color: #d3c6a6; text-align: center; padding: 20px; box-sizing: border-box; }
         
-        button.action-btn { padding: 15px 30px; font-size: 18px; background-color: #8b5a2b; color: #fff; border: 2px solid #e0ac69; cursor: pointer; font-family: 'Courier New', Courier, monospace; text-transform: uppercase; }
-        button.action-btn:hover { background-color: #a06b35; }
-
-        /* Victory Elements */
-        #final-scene-img { width: 300px; height: 200px; background: #333; margin-bottom: 20px; display: flex; align-items: center; justify-content: center; border: 4px solid #fff; position: relative; overflow: hidden; }
-        .cake { width: 60px; height: 40px; background: pink; position: absolute; bottom: 20px; }
-        .candle { width: 5px; height: 15px; background: red; position: absolute; bottom: 60px; }
-        .zoom-face { font-size: 60px; display: none; color: white; font-weight: bold; text-shadow: 4px 4px 0 #ff0000; }
+        /* O HTML da Vitória foi removido daqui e passado para Phaser */
         
         #controls-hint { position: absolute; bottom: 10px; left: 10px; color: #888; font-size: 10px; z-index: 100; pointer-events: none; }
     </style>
@@ -42,17 +35,7 @@
 </head>
 <body>
 
-    <div id="victory-screen" class="fullscreen-screen">
-        <div id="final-scene-img">
-            <div class="cake" style="left:120px;"></div>
-            <div class="candle" style="left:148px;"></div>
-            <div style="position:absolute; top: 30px; color: gold; font-weight: bold; width: 100%; text-align: center;">PARABÉNS DENISE!</div>
-            <div class="zoom-face" id="zoom-text">FOOOOODA-SE!</div>
-        </div>
-        <div id="victory-title">A BUROCRACIA ERA UMA FESTA</div>
-        <div id="victory-desc">"Só queríamos manter-te ocupada enquanto fazíamos o bolo."</div>
-        <button class="action-btn" onclick="location.reload()">Nova Requisição</button>
-    </div>
+    <!-- HTML Victory Screen Removido -->
 
     <div id="status-area">
         <div id="health-bar"><div id="health-fill"></div>HP: <span id="health-value">100</span></div>
@@ -215,6 +198,18 @@
                 g.fillStyle(0x27ae60); g.fillCircle(200, 300, 100); // Europa/Africa Esq
                 g.fillCircle(600, 350, 120); // Arábia/Ásia Dir
                 g.generateTexture('world_map', 800, 600);
+
+                // --- TEXTURA DO BOLO (ENDING) ---
+                g.clear();
+                g.fillStyle(0xFFB6C1); // Rosa Claro (Base)
+                g.fillRect(0, 20, 64, 44);
+                g.fillStyle(0xFFFFFF); // Cobertura
+                g.fillRect(0, 20, 64, 10);
+                g.fillStyle(0xFF0000); // Vela/Cereja
+                g.fillRect(28, 0, 8, 20);
+                g.fillStyle(0xFFA500); // Chama
+                g.fillCircle(32, 0, 4);
+                g.generateTexture('cake', 64, 64);
             }
 
             create() {
@@ -361,6 +356,65 @@
                         });
                     }
                 });
+            }
+        }
+
+        // --- CENA FINAL (VITÓRIA) ---
+        class EndingScene extends Phaser.Scene {
+            constructor() {
+                super({ key: 'EndingScene' });
+            }
+
+            create() {
+                const cx = SCREEN_WIDTH / 2;
+                const cy = SCREEN_HEIGHT / 2;
+                
+                this.cameras.main.setBackgroundColor('#000000');
+                
+                // Bolo
+                this.add.image(cx, cy, 'cake').setScale(4);
+                
+                // Texto Inicial
+                this.add.text(cx, cy - 150, "PARABÉNS DENISE!", { 
+                    fontFamily: 'Courier New', fontSize: '24px', color: '#ffd700', align: 'center', stroke: '#000', strokeThickness: 2 
+                }).setOrigin(0.5);
+                
+                // Texto de Impacto (Escondido inicialmente)
+                const scream = this.add.text(cx, cy, "FOOOOODA-SE!", { 
+                    fontFamily: 'Courier New', fontSize: '64px', color: '#ffffff', stroke: '#ff0000', strokeThickness: 8 
+                }).setOrigin(0.5).setScale(0).setAlpha(0);
+
+                // Subtítulo (Escondido)
+                const sub = this.add.text(cx, cy + 150, "A BUROCRACIA ERA UMA FESTA\n'Só queríamos manter-te ocupada.'", { 
+                    fontFamily: 'Courier New', fontSize: '16px', color: '#aaaaaa', align: 'center' 
+                }).setOrigin(0.5).setAlpha(0);
+
+                // Sequência de Animação
+                this.tweens.add({
+                    targets: scream,
+                    scale: 1,
+                    alpha: 1,
+                    duration: 1000,
+                    delay: 1000,
+                    ease: 'Bounce.easeOut',
+                    onComplete: () => {
+                         this.tweens.add({ targets: sub, alpha: 1, duration: 1000 });
+                         this.createResetButton(cx, cy + 200);
+                    }
+                });
+            }
+
+            createResetButton(x, y) {
+                const btn = this.add.text(x, y, "NOVA REQUISIÇÃO", { 
+                    fontFamily: 'Courier New', fontSize: '20px', color: '#000', backgroundColor: '#e0ac69', padding: { x: 10, y: 5 } 
+                }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+                
+                btn.on('pointerdown', () => {
+                    this.scene.start('MainScene', { level: 1, newGame: true });
+                });
+                
+                btn.on('pointerover', () => btn.setStyle({ fill: '#fff' }));
+                btn.on('pointerout', () => btn.setStyle({ fill: '#000' }));
             }
         }
 
@@ -999,10 +1053,13 @@
             updateUI() { document.getElementById('health-fill').style.width = this.playerHealth + '%'; document.getElementById('health-value').innerText = Math.floor(this.playerHealth); }
             showFloatingText(x, y, message, color) { const text = this.add.text(x, y, message, { fontSize: '12px', color: '#fff', stroke: '#000', strokeThickness: 2 }); this.tweens.add({ targets: text, y: y - 30, alpha: 0, duration: 1000, onComplete: () => text.destroy() }); }
             updateInventoryUI() { const list = document.getElementById('inventory-list'); list.innerHTML = ''; const r = this.registry; if (r.get('hasFormPink')) list.innerHTML += "<li>📄 Form. Rosa</li>"; if (r.get('hasStoneWest')) list.innerHTML += "<li>🪨 Pedra Oeste</li>"; if (r.get('hasStamp')) list.innerHTML += "<li>🛂 Carimbo</li>"; if (r.get('hasStoneEast')) list.innerHTML += "<li>🪨 Pedra Leste</li>"; if (r.get('hasStoneNorth')) list.innerHTML += "<li>🪨 Pedra Norte</li>"; if (r.get('hasVisa')) list.innerHTML += "<li>✅ Visto</li>"; if (r.get('hasStoneTop')) list.innerHTML += "<li>🪨 Pedra Topo</li>"; }
-            winGame() { document.getElementById('victory-screen').style.display = 'flex'; setTimeout(() => document.getElementById('zoom-text').style.display = 'block', 2000); this.scene.pause(); }
+            winGame() { 
+                // Chama a nova EndingScene
+                this.scene.start('EndingScene'); 
+            }
         }
 
-        const config = { type: Phaser.AUTO, width: SCREEN_WIDTH, height: SCREEN_HEIGHT, parent: 'game-container', backgroundColor: '#000000', pixelArt: true, physics: { default: 'arcade', arcade: { gravity: { y: 0 }, debug: false } }, scene: [BootScene, IntroScene, TransitionScene, MainScene] };
+        const config = { type: Phaser.AUTO, width: SCREEN_WIDTH, height: SCREEN_HEIGHT, parent: 'game-container', backgroundColor: '#000000', pixelArt: true, physics: { default: 'arcade', arcade: { gravity: { y: 0 }, debug: false } }, scene: [BootScene, IntroScene, TransitionScene, MainScene, EndingScene] };
         const game = new Phaser.Game(config);
     </script>
 </body>
