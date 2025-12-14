@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>A Jornada das Belas Pedras - V43 (Intro Fix)</title>
+    <title>A Jornada das Belas Pedras - V43 (Fix Restart Error)</title>
     <style>
         body { margin: 0; padding: 0; background-color: #1a1a1a; color: #d3c6a6; font-family: 'Courier New', Courier, monospace; overflow: hidden; display: flex; justify-content: center; align-items: center; height: 100vh; }
         #game-container { position: relative; box-shadow: 0 0 30px rgba(255, 255, 255, 0.1); image-rendering: pixelated; }
@@ -205,6 +205,16 @@
                 g.clear(); g.fillStyle(0xffffff); g.fillRect(0,0,20,10); g.lineStyle(1,0x000000); g.strokeRect(0,0,20,10); g.generateTexture('paper_attack', 20, 10);
                 g.clear(); g.fillStyle(0x000000, 0.3); g.fillCircle(32,32,30); g.generateTexture('stamp_shadow', 64, 64);
                 g.clear(); g.fillStyle(0x8b0000); g.fillCircle(32,32,28); g.fillStyle(0xffffff); g.fillRect(16, 28, 32, 6); g.fillRect(20, 36, 24, 4); g.generateTexture('stamp_giant', 64, 64);
+
+                // --- NOVAS TEXTURAS (TRANSITION) ---
+                // AVIÃO
+                g.clear(); g.fillStyle(0xffffff); g.beginPath(); g.moveTo(20,0); g.lineTo(40,20); g.lineTo(20,20); g.lineTo(20,30); g.lineTo(10,30); g.lineTo(15,20); g.lineTo(0,20); g.closePath(); g.fill(); g.generateTexture('plane', 40, 30);
+                
+                // MAPA MUNDI (MUITO SIMPLIFICADO)
+                g.clear(); g.fillStyle(0x3498db); g.fillRect(0,0,800,600); // Mar
+                g.fillStyle(0x27ae60); g.fillCircle(200, 300, 100); // Europa/Africa Esq
+                g.fillCircle(600, 350, 120); // Arábia/Ásia Dir
+                g.generateTexture('world_map', 800, 600);
             }
 
             create() {
@@ -243,7 +253,7 @@
                     { fontFamily: 'Courier New', fontSize: '20px', color: '#fff', align: 'center', backgroundColor: '#000' }
                 ).setOrigin(0.5);
                 this.slide1Group.add(bg1); this.slide1Group.add(dwarf1); this.slide1Group.add(dwarf2); this.slide1Group.add(text1);
-                this.slide1Group.setVisible(false); // Agora chamado DEPOIS de adicionar
+                this.slide1Group.setVisible(false);
 
                 // --- SLIDE 2: DENISE E O CHAMADO ---
                 this.slide2Group = this.add.group();
@@ -255,7 +265,6 @@
                     { fontFamily: 'Courier New', fontSize: '20px', color: '#fff', align: 'center' }
                 ).setOrigin(0.5);
                 
-                // Gatos (adicionados invisíveis mas no grupo)
                 const c1 = this.add.image(centerX - 60, centerY + 60, 'maron').setAlpha(0);
                 const c2 = this.add.image(centerX - 30, centerY + 60, 'fiodor').setAlpha(0);
                 const c3 = this.add.image(centerX + 30, centerY + 60, 'orpheu').setAlpha(0);
@@ -263,9 +272,7 @@
                 
                 this.slide2Group.add(bg2); this.slide2Group.add(denise); this.slide2Group.add(letter); this.slide2Group.add(text2);
                 this.slide2Group.add(c1); this.slide2Group.add(c2); this.slide2Group.add(c3); this.slide2Group.add(c4);
-                this.slide2Group.setVisible(false); // Agora chamado DEPOIS de adicionar
-
-                // Referência para animação
+                this.slide2Group.setVisible(false);
                 this.catsArray = [c1, c2, c3, c4];
 
                 // --- SLIDE 3: O VILÃO ---
@@ -283,59 +290,77 @@
                 
                 btnBg.on('pointerdown', () => {
                     this.cameras.main.fadeOut(500);
-                    this.time.delayedCall(500, () => this.scene.start('MainScene'));
+                    // IMPORTANTE: Flag newGame=true para limpar inventário
+                    this.time.delayedCall(500, () => this.scene.start('MainScene', { level: 1, newGame: true }));
                 });
                 
-                // Hover effect
                 btnBg.on('pointerover', () => btnBg.setFillStyle(0x333333));
                 btnBg.on('pointerout', () => btnBg.setFillStyle(0x000000));
 
                 this.slide3Group.add(bg3); this.slide3Group.add(text3); this.slide3Group.add(btnBg); this.slide3Group.add(btnText);
-                this.slide3Group.setVisible(false); // Agora chamado DEPOIS de adicionar
+                this.slide3Group.setVisible(false);
 
-                // --- CONTROLO DE INPUT (Avançar slides) ---
                 this.input.on('pointerdown', (pointer) => {
-                    // Ignora clique se for no botão do último slide
-                    if (this.currentSlide === 3 && pointer.y > centerY + 70 && pointer.y < centerY + 130 && pointer.x > centerX - 125 && pointer.x < centerX + 125) return;
+                    if (this.currentSlide === 3 && pointer.y > centerY + 70 && pointer.y < centerY + 130) return;
                     this.nextSlide();
                 });
-
-                // Texto de ajuda
                 this.add.text(SCREEN_WIDTH - 10, SCREEN_HEIGHT - 10, "(Clique para avançar)", { fontSize: '12px', color: '#666' }).setOrigin(1);
             }
 
             nextSlide() {
                 if (this.currentSlide === 0) {
-                    // Transição Narrador -> Anões
-                    this.slide0Group.setVisible(false);
-                    this.slide1Group.setVisible(true);
-                    this.cameras.main.fadeIn(500);
-                    this.currentSlide++;
+                    this.slide0Group.setVisible(false); this.slide1Group.setVisible(true);
+                    this.cameras.main.fadeIn(500); this.currentSlide++;
                 } else if (this.currentSlide === 1) {
-                    // Transição Anões -> Denise
-                    this.slide1Group.setVisible(false);
-                    this.slide2Group.setVisible(true);
-                    this.cameras.main.fadeIn(500);
-                    this.currentSlide++;
-                    
-                    // Animação dos Gatos
-                    this.tweens.add({
-                        targets: this.catsArray,
-                        alpha: 1,
-                        y: '-=10',
-                        duration: 800,
-                        delay: 500, // Espera um pouco antes de aparecerem
-                        ease: 'Power2'
-                    });
-
+                    this.slide1Group.setVisible(false); this.slide2Group.setVisible(true);
+                    this.cameras.main.fadeIn(500); this.currentSlide++;
+                    this.tweens.add({ targets: this.catsArray, alpha: 1, y: '-=10', duration: 800, delay: 500, ease: 'Power2' });
                 } else if (this.currentSlide === 2) {
-                    // Transição Denise -> Vilão
-                    this.slide2Group.setVisible(false);
-                    this.slide3Group.setVisible(true);
-                    this.cameras.main.flash(1000, 255, 0, 0); // Flash vermelho dramático
-                    this.currentSlide++;
+                    this.slide2Group.setVisible(false); this.slide3Group.setVisible(true);
+                    this.cameras.main.flash(1000, 255, 0, 0); this.currentSlide++;
                 }
-                // Slide 3 aguarda clique no botão
+            }
+        }
+
+        // --- CENA DE TRANSIÇÃO (AVIÃO) ---
+        class TransitionScene extends Phaser.Scene {
+            constructor() {
+                super({ key: 'TransitionScene' });
+            }
+
+            create() {
+                // Background (Mapa)
+                this.add.image(SCREEN_WIDTH/2, SCREEN_HEIGHT/2, 'world_map');
+                
+                // Texto
+                this.add.text(SCREEN_WIDTH/2, 50, "A Caminho do Deserto...", {
+                    fontFamily: 'Courier New', fontSize: '24px', color: '#fff', stroke: '#000', strokeThickness: 4
+                }).setOrigin(0.5);
+
+                // Rota (Pontos) - Espanha (200, 300) -> Arabia (600, 350)
+                const graphics = this.add.graphics();
+                graphics.lineStyle(4, 0xffffff, 1);
+                const path = new Phaser.Curves.Line([200, 300, 600, 350]);
+                path.draw(graphics);
+
+                // Avião
+                const plane = this.add.image(200, 300, 'plane').setScale(2);
+                
+                // Animação
+                this.tweens.add({
+                    targets: plane,
+                    x: 600,
+                    y: 350,
+                    duration: 4000,
+                    ease: 'Sine.easeInOut',
+                    onComplete: () => {
+                        this.cameras.main.fadeOut(1000);
+                        this.time.delayedCall(1000, () => {
+                            // Inicia MainScene no nível 4 (sem resetar inventário)
+                            this.scene.start('MainScene', { level: 4, newGame: false });
+                        });
+                    }
+                });
             }
         }
 
@@ -360,31 +385,56 @@
                 this.screenFixed = false;
                 
                 // Buffs
-                this.buffSpeed = false; // Canela
-                this.buffDefense = false; // Cravo
+                this.buffSpeed = false; 
+                this.buffDefense = false; 
                 this.buffTimer = 0;
 
                 // Inputs
                 this.cursors = null; this.wasd = null; this.keys123 = null; this.keys4K = null; this.keySpace = null;
             }
 
-            // O PRELOAD FOI REMOVIDO DAQUI
+            // INIT: Recebe dados de outras cenas
+            init(data) {
+                this.startLevel = data.level || 1;
+                this.isNewGame = data.newGame || false;
+            }
 
             create() {
                 window.gameScene = this;
                 
-                // Registry Init
-                this.registry.set('hasFormPink', false);
-                this.registry.set('hasStamp', false);
-                this.registry.set('hasVisa', false);
-                this.registry.set('hasStoneWest', false);
-                this.registry.set('hasStoneEast', false);
-                this.registry.set('hasStoneNorth', false);
-                this.registry.set('hasStoneTop', false);
-                this.registry.set('placedWest', false);
-                this.registry.set('placedEast', false);
-                this.registry.set('placedNorth', false);
-                this.registry.set('placedTop', false);
+                // --- FIX: Reset phaser object references on scene start ---
+                this.walls = null;
+                this.bg = null;
+                this.items = null;
+                this.spices = null;
+                this.npcs = null;
+                this.specialObjects = null;
+                this.heavyBoxes = null;
+                this.projectiles = null;
+                this.boss = null; // Sprite
+                this.gems = null;
+                this.pedestals = null;
+                this.shadows = null;
+                this.tombs = null;
+                this.dolmenBase = null; // Sprite
+                this.bossAttackGroup = null;
+                this.portals = null;
+                // ----------------------------------------------------------
+                
+                // Registry Init: SÓ reseta se for novo jogo
+                if (this.isNewGame) {
+                    this.registry.set('hasFormPink', false);
+                    this.registry.set('hasStamp', false);
+                    this.registry.set('hasVisa', false);
+                    this.registry.set('hasStoneWest', false);
+                    this.registry.set('hasStoneEast', false);
+                    this.registry.set('hasStoneNorth', false);
+                    this.registry.set('hasStoneTop', false);
+                    this.registry.set('placedWest', false);
+                    this.registry.set('placedEast', false);
+                    this.registry.set('placedNorth', false);
+                    this.registry.set('placedTop', false);
+                }
 
                 this.registry.events.on('changedata', this.updateInventoryUI, this);
 
@@ -400,7 +450,7 @@
                 this.keySpace = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
                 this.selector = this.add.triangle(0, 0, 0, 0, 5, 10, 10, 0, 0xffff00).setDepth(20).setVisible(false);
                 
-                // Iniciar gameplay diretamente
+                // Iniciar gameplay no nível correto
                 this.startGameplay();
             }
 
@@ -431,7 +481,7 @@
                 this.player.setVisible(true);
                 this.assistants.forEach(c => c.setVisible(true));
                 this.selector.setVisible(true); 
-                this.loadLevel(1);
+                this.loadLevel(this.startLevel); // Carrega o nível passado no Init
                 this.updateInventoryUI();
             }
 
@@ -440,7 +490,7 @@
                 this.lastHeatDamage = 0; 
                 this.buffSpeed = false;
                 this.buffDefense = false;
-                this.player.setVelocity(0); // Stop movement drift
+                this.player.setVelocity(0);
                 this.updateBuffUI();
                 
                 // Clear groups
@@ -485,11 +535,9 @@
                 this.physics.add.collider(this.heavyBoxes, this.walls);
                 this.physics.add.collider(this.player, this.heavyBoxes);
                 
-                // Special Object Collisions
                 this.physics.add.collider(this.player, this.specialObjects);
                 this.physics.add.collider(this.assistants, this.specialObjects);
                 
-                // NPC Collisions
                 this.physics.add.collider(this.player, this.npcs);
                 this.physics.add.collider(this.assistants, this.npcs);
 
@@ -531,17 +579,14 @@
                 this.screenFixed = false;
                 
                 const data = LEVEL_2_DATA;
-                // Paredes
                 for (let y = 0; y < data.height; y++) {
                     for (let x = 0; x < data.width; x++) {
                         if (data.layout[y * data.width + x] === 1) this.walls.create(x * 32 + 16, y * 32 + 16, 'wall');
                     }
                 }
                 
-                // Portais
                 this.createReturnPortal(50, 300, 1);
                 
-                // Objetos
                 data.objects.forEach(obj => {
                     const pixelX = obj.x * 32 + 16; const pixelY = obj.y * 32 + 16;
                     
@@ -586,11 +631,13 @@
                     this.boss = this.physics.add.sprite(600, 300, 'boss').setImmovable(true);
                     document.getElementById('boss-health-bar').style.display = 'block';
                     this.triggerDialogue("Don Escribán", "PARADA! Onde está a Licença de Campo B7-Alfa?");
-                } else { this.createExit(650, 300, 4); }
+                } else { 
+                    // Se já tiver o Visto (ex: volta do deserto), abre saída normal
+                    this.createExit(650, 300, 4); 
+                }
             }
 
             setupLevel4_Desert() {
-                // FIXED: Spawn at 200 to avoid accidental return portal overlap (at 50)
                 this.player.setPosition(200, 300);
                 this.assistants.forEach(a => a.setPosition(180, 300));
 
@@ -613,7 +660,6 @@
                 if (!this.isGameStarted) return;
                 
                 let currentSpeed = 150;
-                // REMOVIDO: Velocidade passiva do Fiódor
                 if (this.buffSpeed) currentSpeed += 100;
 
                 this.player.setVelocity(0);
@@ -807,7 +853,6 @@
                 if (this.dolmenBase && this.dolmenBase.active && Phaser.Math.Distance.Between(px, py, this.dolmenBase.x, this.dolmenBase.y) < 60) { this.buildDolmen(); return true; }
                 if (this.currentRoom === 3 && this.boss && this.boss.active && Phaser.Math.Distance.Between(px, py, this.boss.x, this.boss.y) < 80) { this.attackBoss(); return true; }
                 
-                // NOVA LÓGICA DE INTERAÇÃO ESPECIAL
                 let special = this.specialObjects.getChildren().find(o => Phaser.Math.Distance.Between(px, py, o.x, o.y) < 50);
                 if (special) {
                     return this.handleSpecialInteraction(special);
@@ -830,9 +875,7 @@
                             if (!this.registry.get('hasStamp')) {
                                 this.registry.set('hasStamp', true);
                                 this.triggerDialogue("Atendente", "Painel a funcionar? Milagre! Aqui tem o Carimbo.");
-                                // Libertar passagem para a pedra (destruir o NPC ou mover)
-                                npc.x = 1000; // Move para longe para dar passagem à pedra atrás
-                                // FIX: Check if we have the stone to open exit immediately
+                                npc.x = 1000; 
                                 if (this.registry.get('hasStoneEast')) {
                                     this.createExit(650, 300, 3);
                                 }
@@ -852,13 +895,11 @@
                 else if (key === 'stone_right') { 
                     this.registry.set('hasStoneEast', true); 
                     this.triggerDialogue("Denise", "Pedra Leste recolhida."); 
-                    // Se já tiver carimbo e pedra, abre saída
                     if (this.registry.get('hasStamp')) this.createExit(650, 300, 3);
                 }
                 else if (key === 'stamp_auth') { this.registry.set('hasStamp', true); this.triggerDialogue("Denise", "Carimbo obtido!"); }
                 else if (key === 'form_pink') { this.registry.set('hasFormPink', true); this.triggerDialogue("Denise", "Formulário Rosa encontrado!"); }
                 
-                // Verifica saída da Fase 2 se apanhou o último item necessário
                 if (this.currentRoom === 2 && this.registry.get('hasStamp') && this.registry.get('hasStoneEast')) {
                      this.createExit(650, 300, 3);
                 }
@@ -909,12 +950,15 @@
                     this.bossAttackGroup.clear(true, true);
                     document.getElementById('boss-health-bar').style.display = 'none';
                     
-                    // ATUALIZAÇÃO: Concede ambos os itens ao vencer
                     this.registry.set('hasVisa', true);
                     this.registry.set('hasStoneNorth', true);
 
                     this.triggerDialogue("Don Escribán", "APROVADO! TOME O VISTO E A PEDRA NORTE! AGORA SUMAM!");
-                    this.createExit(650, 300, 4);
+                    
+                    // --- ATUALIZAÇÃO: Chama cena de Transição ---
+                    this.time.delayedCall(2000, () => {
+                        this.scene.start('TransitionScene');
+                    });
                 }
             }
 
@@ -941,7 +985,6 @@
             }
             createWallsRect(x, y, w, h) { for (let i=x; i<x+w; i++) { this.walls.create(i*32+16, y*32+16, 'wall'); this.walls.create(i*32+16, (y+h)*32+16, 'wall'); } for (let j=y; j<=y+h; j++) { this.walls.create(x*32+16, j*32+16, 'wall'); this.walls.create((x+w)*32+16, j*32+16, 'wall'); } }
             
-            // FIX: Usar grupo para limpeza automática
             createExit(x, y, nextLevel) { 
                 const portal = this.portals.create(x, y, 'portal'); 
                 this.physics.add.overlap(this.player, portal, () => { this.loadLevel(nextLevel); }); 
@@ -959,8 +1002,7 @@
             winGame() { document.getElementById('victory-screen').style.display = 'flex'; setTimeout(() => document.getElementById('zoom-text').style.display = 'block', 2000); this.scene.pause(); }
         }
 
-        // Agora passamos BootScene, IntroScene e MainScene no array de cenas
-        const config = { type: Phaser.AUTO, width: SCREEN_WIDTH, height: SCREEN_HEIGHT, parent: 'game-container', backgroundColor: '#000000', pixelArt: true, physics: { default: 'arcade', arcade: { gravity: { y: 0 }, debug: false } }, scene: [BootScene, IntroScene, MainScene] };
+        const config = { type: Phaser.AUTO, width: SCREEN_WIDTH, height: SCREEN_HEIGHT, parent: 'game-container', backgroundColor: '#000000', pixelArt: true, physics: { default: 'arcade', arcade: { gravity: { y: 0 }, debug: false } }, scene: [BootScene, IntroScene, TransitionScene, MainScene] };
         const game = new Phaser.Game(config);
     </script>
 </body>
