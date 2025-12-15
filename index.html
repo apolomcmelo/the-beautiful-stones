@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>A Jornada das Belas Pedras - V45 (Camera Feedback)</title>
+    <title>A Jornada das Belas Pedras - V48 (Audio Loud)</title>
     <style>
         body { margin: 0; padding: 0; background-color: #1a1a1a; color: #d3c6a6; font-family: 'Courier New', Courier, monospace; overflow: hidden; display: flex; justify-content: center; align-items: center; height: 100vh; }
         #game-container { position: relative; box-shadow: 0 0 30px rgba(255, 255, 255, 0.1); image-rendering: pixelated; }
@@ -24,9 +24,6 @@
         #buff-container { display: flex; gap: 5px; flex-direction: column; align-items: flex-end; }
         .buff-tag { background: rgba(0,0,0,0.6); color: yellow; padding: 2px 5px; border-radius: 3px; font-size: 10px; }
 
-        /* Screens */
-        .fullscreen-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: #000; display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 300; color: #d3c6a6; text-align: center; padding: 20px; box-sizing: border-box; }
-        
         #controls-hint { position: absolute; bottom: 10px; left: 10px; color: #888; font-size: 10px; z-index: 100; pointer-events: none; }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
@@ -48,6 +45,81 @@
     <div id="controls-hint">Teclas: 1 (Maron-Cura), 2 (Fiódor-Técnico), 3 (Orpheu-Porteiro), 4/K (Koffe-Dicas). ESPAÇO: Ação.</div>
 
     <script>
+        // --- MOTOR DE SOM ROBUSTO ---
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        const audioCtx = new AudioContext();
+
+        // Helper global para garantir desbloqueio do áudio no primeiro clique
+        const unlockAudio = () => {
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume().then(() => {
+                    console.log("Audio Context Resumed/Unlocked");
+                });
+            }
+        };
+        // Adiciona listener global ao documento para capturar qualquer clique inicial
+        document.addEventListener('click', unlockAudio, { once: true });
+        document.addEventListener('keydown', unlockAudio, { once: true });
+
+        // Função Geradora de Som
+        const playTone = (vol, freq, attack, decay, type = 1, slide = 0) => {
+            // Tentativa de segurança de resume se ainda estiver suspenso
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            
+            const types = ['sine', 'square', 'sawtooth', 'triangle'];
+            
+            if (type === 4) {
+                // Noise
+                const bufferSize = audioCtx.sampleRate * (attack + decay);
+                const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+                const noiseSrc = audioCtx.createBufferSource();
+                noiseSrc.buffer = buffer;
+                noiseSrc.connect(gainNode);
+                noiseSrc.start();
+            } else {
+                osc.type = types[type] || 'square';
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                if (slide !== 0) {
+                    osc.frequency.linearRampToValueAtTime(freq + slide, audioCtx.currentTime + attack + decay);
+                }
+                osc.connect(gainNode);
+                osc.start();
+                osc.stop(audioCtx.currentTime + attack + decay);
+            }
+
+            gainNode.connect(audioCtx.destination);
+            
+            const now = audioCtx.currentTime;
+            gainNode.gain.setValueAtTime(0, now);
+            // CORREÇÃO: Aumentei o volume base (removi o * 0.1 que estava a abafar o som)
+            gainNode.gain.linearRampToValueAtTime(vol, now + attack); 
+            gainNode.gain.exponentialRampToValueAtTime(0.001, now + attack + decay);
+        };
+
+        // --- PALETA DE SONS (Ajustada) ---
+        const sfx = {
+            step: () => playTone(0.1, 150, 0.01, 0.05, 3, -50),       // Passos (Volume reduzido para não incomodar)
+            collect: () => playTone(0.3, 1200, 0.01, 0.2, 1, 0),     // Ding agudo
+            hurt: () => playTone(0.4, 150, 0.05, 0.4, 2, -100),       // Dano grave
+            swap: () => playTone(0.2, 600, 0.01, 0.1, 0, 200),        // Troca
+            action: () => playTone(0.3, 400, 0.05, 0.3, 1, 400),      // Técnico
+            shoot: () => playTone(0.3, 300, 0.01, 0.2, 2, -150),      // Laser Boss
+            explosion: () => playTone(0.5, 0, 0.05, 0.5, 4),          // Explosão
+            win: () => { 
+                let now = 0;
+                [440, 554, 659, 880].forEach((f, i) => {
+                    setTimeout(() => playTone(0.3, f, 0.05, 0.3, 1), i * 150);
+                });
+            }
+        };
+
         const TILE_SIZE = 32;
         const SCREEN_WIDTH = 640;
         const SCREEN_HEIGHT = 480;
@@ -249,13 +321,18 @@
                 const btnBg = this.add.rectangle(cx, cy + 100, 250, 50, 0x000000).setInteractive({ useHandCursor: true });
                 const btnText = this.add.text(cx, cy + 100, "INICIAR EXPEDIÇÃO", { fontSize: '18px', color: '#d3c6a6' }).setOrigin(0.5);
                 btnBg.setStrokeStyle(2, 0xe0ac69);
-                btnBg.on('pointerdown', () => { this.cameras.main.fadeOut(500); this.time.delayedCall(500, () => this.scene.start('MainScene', { level: 1, newGame: true })); });
+                btnBg.on('pointerdown', () => { 
+                    unlockAudio(); 
+                    this.cameras.main.fadeOut(500); 
+                    this.time.delayedCall(500, () => this.scene.start('MainScene', { level: 1, newGame: true })); 
+                });
                 btnBg.on('pointerover', () => btnBg.setFillStyle(0x333333));
                 btnBg.on('pointerout', () => btnBg.setFillStyle(0x000000));
                 this.slide3Group.add(bg3); this.slide3Group.add(text3); this.slide3Group.add(btnBg); this.slide3Group.add(btnText);
                 this.slide3Group.setVisible(false);
 
                 this.input.on('pointerdown', (pointer) => {
+                    unlockAudio(); 
                     if (this.currentSlide === 3 && pointer.y > cy + 70 && pointer.y < cy + 130) return;
                     this.nextSlide();
                 });
@@ -286,6 +363,7 @@
         class EndingScene extends Phaser.Scene {
             constructor() { super({ key: 'EndingScene' }); }
             create() {
+                sfx.win(); // Toca música de vitória
                 const cx = SCREEN_WIDTH / 2; const cy = SCREEN_HEIGHT / 2;
                 this.cameras.main.setBackgroundColor('#000000');
                 this.add.image(cx, cy, 'cake').setScale(4);
@@ -322,6 +400,7 @@
                 this.buffSpeed = false; 
                 this.buffDefense = false; 
                 this.buffTimer = 0;
+                this.stepTimer = 0; // Timer para sons de passos
                 this.cursors = null; this.wasd = null; this.keys123 = null; this.keys4K = null; this.keySpace = null;
                 
                 // Emissores de Partículas
@@ -499,6 +578,7 @@
 
             triggerImpact(x, y) {
                 this.impactEmitter.explode(8, x, y);
+                sfx.explosion(); // Som de explosão
             }
 
             // ================= FASES (Conteúdo igual ao anterior) =================
@@ -579,11 +659,16 @@
                     else if (this.cursors.down.isDown || this.wasd.S.isDown) this.player.setVelocityY(currentSpeed);
                 }
 
-                // --- CONTROLO DA POEIRA ---
+                // --- CONTROLO DA POEIRA & SOM DE PASSOS ---
                 if (this.player.body.velocity.length() > 10) {
                     // Atualiza a posição da poeira para os pés da Denise
                     this.dustEmitter.setPosition(this.player.x, this.player.y + 20);
                     this.dustEmitter.start();
+                    // Som de passos
+                    if (time > this.stepTimer) {
+                        sfx.step();
+                        this.stepTimer = time + 300; // Intervalo entre passos
+                    }
                 } else {
                     this.dustEmitter.stop();
                 }
@@ -650,6 +735,7 @@
                     if (time > this.lastHealTime + 2000) { 
                         this.playerHealth = Math.min(100, this.playerHealth + 10);
                         this.triggerSparkles(activeCat.x, activeCat.y, 0x00ff00); // Brilho verde de cura
+                        sfx.collect(); // Som de cura (reutiliza o ding)
                         this.updateUI(); this.showFloatingText(activeCat.x, activeCat.y - 20, "Purr... +10 HP", 0x2ecc71);
                         this.lastHealTime = time;
                     }
@@ -666,6 +752,7 @@
                 if (type === 'door' && activeCat.name === 'Orpheu') {
                     this.triggerDialogue("Orpheu", "Miau! (Porta Aberta)");
                     this.triggerSparkles(target.x, target.y, 0xffffff); // Brilho branco
+                    sfx.action(); // Som de ação
                     target.disableBody(true, true);
                     target.destroy(); 
                     return true;
@@ -679,6 +766,7 @@
                         this.triggerDialogue("Fiódor", "Vushhh... (Ecrã consertado!)");
                         this.cameras.main.flash(400); // Flash ao consertar
                         this.triggerSparkles(target.x, target.y, 0x00ffff); // Brilho ciano
+                        sfx.action(); // Som de ação
                         target.setData('fixed', true);
                         target.setTint(0x00ff00);
                         this.screenFixed = true;
@@ -709,6 +797,7 @@
                 
                 if (target) {
                     koffe.setData('mode', 'hint'); koffe.setData('target', target);
+                    sfx.collect(); // Som de dica
                     this.showFloatingText(koffe.x, koffe.y - 20, "Sniff sniff...", 0xffff00);
                 } else {
                     this.showFloatingText(koffe.x, koffe.y - 20, "Nada por aqui.", 0xcccccc);
@@ -744,6 +833,7 @@
             collectSpice(player, spice) {
                 const type = spice.getData('type'); spice.destroy(); this.buffTimer = 15000; 
                 this.triggerSparkles(player.x, player.y, 0x00ff00); // Brilho verde para especiarias
+                sfx.collect(); // Som de coleta
                 if (type === 'cinnamon') { this.buffSpeed = true; this.triggerDialogue("Denise", "Canela! Sinto-me leve (Velocidade UP)."); } 
                 else if (type === 'clove') { this.buffDefense = true; this.triggerDialogue("Denise", "Cravo! Sinto-me protegida (Defesa UP)."); }
                 this.updateBuffUI();
@@ -795,6 +885,7 @@
                                 this.registry.set('hasStamp', true);
                                 this.triggerDialogue("Atendente", "Painel a funcionar? Milagre! Aqui tem o Carimbo.");
                                 this.triggerSparkles(npc.x, npc.y, 0x00ff00); // Brilho de sucesso
+                                sfx.collect(); // Som de item importante
                                 npc.x = 1000; 
                                 if (this.registry.get('hasStoneEast')) {
                                     this.createExit(650, 300, 3);
@@ -812,6 +903,7 @@
             collectItem(item) {
                 const key = item.texture.key; 
                 this.triggerSparkles(item.x, item.y, 0xffff00); // Brilho amarelo
+                sfx.collect(); // Som de coleta
                 item.destroy();
 
                 // Flash ao coletar itens importantes
@@ -845,6 +937,7 @@
                     if (!this.registry.get('hasStoneTop')) {
                         this.registry.set('hasStoneTop', true); this.triggerDialogue("Denise", "Pedra de Topo encontrada!"); tomb.setTint(0x555555);
                         this.triggerSparkles(tomb.x, tomb.y, 0xffd700); // Ouro
+                        sfx.collect();
                     } else this.triggerDialogue("Denise", "Já está vazia.");
                 } else this.triggerDialogue("Denise", "Apenas pó.");
             }
@@ -854,18 +947,22 @@
                 if (r.get('hasStoneWest') && !r.get('placedWest')) { 
                     r.set('placedWest', true); this.add.image(this.dolmenBase.x - 30, this.dolmenBase.y - 10, 'stone_left').setDepth(5); 
                     this.triggerSparkles(this.dolmenBase.x - 30, this.dolmenBase.y, 0xffffff);
+                    sfx.action();
                 }
                 else if (r.get('hasStoneEast') && !r.get('placedEast')) { 
                     r.set('placedEast', true); this.add.image(this.dolmenBase.x + 30, this.dolmenBase.y - 10, 'stone_right').setDepth(5); 
                     this.triggerSparkles(this.dolmenBase.x + 30, this.dolmenBase.y, 0xffffff);
+                    sfx.action();
                 }
                 else if (r.get('hasStoneNorth') && !r.get('placedNorth')) {
                      r.set('placedNorth', true); this.add.image(this.dolmenBase.x, this.dolmenBase.y - 10, 'stone_left').setDepth(4).setTint(0x888888); 
                      this.triggerSparkles(this.dolmenBase.x, this.dolmenBase.y, 0xffffff);
+                     sfx.action();
                 }
                 else if (r.get('hasStoneTop') && !r.get('placedTop') && r.get('placedWest') && r.get('placedEast') && r.get('placedNorth')) {
                     r.set('placedTop', true); this.add.image(this.dolmenBase.x, this.dolmenBase.y - 32, 'stone_top').setDepth(6);
                     this.triggerSparkles(this.dolmenBase.x, this.dolmenBase.y - 32, 0xffff00);
+                    sfx.win(); // Fanfarra
                     this.time.delayedCall(2000, this.winGame, [], this);
                 }
             }
@@ -873,6 +970,7 @@
             changeAssistant(index) {
                 this.activeAssistantIndex = index;
                 const cat = this.assistants[index];
+                sfx.swap(); // Som de troca
                 this.tweens.add({ targets: cat, y: cat.y - 10, duration: 100, yoyo: true });
             }
 
@@ -889,6 +987,7 @@
                     document.getElementById('boss-health-bar').style.display = 'none';
                     
                     this.cameras.main.flash(1000); // Grande flash ao vencer
+                    sfx.win(); // Fanfarra de vitória
 
                     this.registry.set('hasVisa', true);
                     this.registry.set('hasStoneNorth', true);
@@ -903,6 +1002,7 @@
 
             fireProjectile() {
                 const p = this.projectiles.create(this.boss.x, this.boss.y, 'projectile');
+                sfx.shoot(); // Som de tiro
                 this.physics.moveToObject(p, this.player, 200);
                 this.physics.add.overlap(this.player, p, () => { p.destroy(); this.damagePlayer(10); this.triggerImpact(this.player.x, this.player.y); });
             }
@@ -911,6 +1011,7 @@
                 if (this.buffDefense) amount = Math.floor(amount / 2); 
                 this.playerHealth = Math.max(0, this.playerHealth - amount);
                 this.updateUI();
+                sfx.hurt(); // Som de dano
                 this.cameras.main.shake(200, 0.01); // Shake da Câmera (Juice)
                 if (this.playerHealth <= 0) this.scene.restart();
             }
