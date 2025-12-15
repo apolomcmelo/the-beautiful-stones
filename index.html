@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>A Jornada das Belas Pedras - V44 (Visual Juice Fixed)</title>
+    <title>A Jornada das Belas Pedras - V45 (Camera Feedback)</title>
     <style>
         body { margin: 0; padding: 0; background-color: #1a1a1a; color: #d3c6a6; font-family: 'Courier New', Courier, monospace; overflow: hidden; display: flex; justify-content: center; align-items: center; height: 100vh; }
         #game-container { position: relative; box-shadow: 0 0 30px rgba(255, 255, 255, 0.1); image-rendering: pixelated; }
@@ -498,7 +498,6 @@
             }
 
             triggerImpact(x, y) {
-                this.cameras.main.shake(100, 0.01); // Shake
                 this.impactEmitter.explode(8, x, y);
             }
 
@@ -678,6 +677,7 @@
                 if (type === 'broken_screen' && activeCat.name === 'Fiódor') {
                     if (!target.getData('fixed')) {
                         this.triggerDialogue("Fiódor", "Vushhh... (Ecrã consertado!)");
+                        this.cameras.main.flash(400); // Flash ao consertar
                         this.triggerSparkles(target.x, target.y, 0x00ffff); // Brilho ciano
                         target.setData('fixed', true);
                         target.setTint(0x00ff00);
@@ -813,6 +813,12 @@
                 const key = item.texture.key; 
                 this.triggerSparkles(item.x, item.y, 0xffff00); // Brilho amarelo
                 item.destroy();
+
+                // Flash ao coletar itens importantes
+                if (['stone_left', 'stone_right', 'stone_top', 'stamp_auth', 'form_pink', 'visa'].includes(key)) {
+                    this.cameras.main.flash(400);
+                }
+
                 if (key === 'stone_left') { this.registry.set('hasStoneWest', true); this.triggerDialogue("Denise", "Pedra Oeste recolhida."); }
                 else if (key === 'stone_right') { 
                     this.registry.set('hasStoneEast', true); 
@@ -882,6 +888,8 @@
                     this.bossAttackGroup.clear(true, true);
                     document.getElementById('boss-health-bar').style.display = 'none';
                     
+                    this.cameras.main.flash(1000); // Grande flash ao vencer
+
                     this.registry.set('hasVisa', true);
                     this.registry.set('hasStoneNorth', true);
 
@@ -903,6 +911,7 @@
                 if (this.buffDefense) amount = Math.floor(amount / 2); 
                 this.playerHealth = Math.max(0, this.playerHealth - amount);
                 this.updateUI();
+                this.cameras.main.shake(200, 0.01); // Shake da Câmera (Juice)
                 if (this.playerHealth <= 0) this.scene.restart();
             }
 
