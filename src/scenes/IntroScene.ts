@@ -3,76 +3,161 @@ import { SCREEN_WIDTH, SCREEN_HEIGHT } from '../consts';
 import { unlockAudio } from '../utils/audio';
 
 export class IntroScene extends Phaser.Scene {
-    private currentSlide: number = 0;
-    private slide0Group!: Phaser.GameObjects.Group;
-    private slide1Group!: Phaser.GameObjects.Group;
-    private slide2Group!: Phaser.GameObjects.Group;
-    private slide3Group!: Phaser.GameObjects.Group;
-    private catsArray: Phaser.GameObjects.Image[] = [];
+    private currentSlideIndex: number = 0;
+    private slideGroup!: Phaser.GameObjects.Group;
+    private slides: any[];
 
-    constructor() { super({ key: 'IntroScene' }); }
+    constructor() {
+        super({ key: 'IntroScene' });
+        this.slides = [
+            {
+                image: 'slide1',
+                text: "Nas profundezas da terra, os Anões encontraram os fragmentos de um monumento esquecido. Artefatos de uma era perdida... complexos demais até para os maiores sábios de pedra. As pedras chamam umas pelas outras, desejando ser reunidas sob o céu aberto... mas uma força terrível as mantém presas na escuridão."
+            },
+            {
+                image: 'slide2',
+                text: "Este artefato é tão interessante! Tão complexo. E pah! Precisamos da Senhora dos Megálitos. Rezem para que os estafetas não percam este pedido de ajuda no caminho."
+            },
+            {
+                image: 'slide3',
+                text: "Então:?... A sério? Pedras e mais pedras? Parece-me fun. Vamos a isso!"
+            },
+            {
+                image: 'slide4',
+                text: "Mas a Senhora dos Monólitos não sabia... O desafio não eram orcs, nem dragões, nem a língua negra."
+            },
+            {
+                image: 'slide5',
+                text: "Diante dela, erguia-se a criatura feita de sombra e fogo, que devora a esperança e o tempo:",
+                fadeOutText: true
+            },
+            {
+                image: null, // Black screen
+                text: "A Burocracia Espanhola.",
+                surprise: true
+            }
+        ];
+    }
 
     create() {
-        const cx = SCREEN_WIDTH / 2; const cy = SCREEN_HEIGHT / 2;
-        this.cameras.main.fadeIn(1000, 0, 0, 0);
+        this.slideGroup = this.add.group();
+        this.showSlide(0);
 
-        // SLIDE 0
-        this.slide0Group = this.add.group();
-        const text0 = this.add.text(cx, cy, "Denise quer apenas escavar megálitos.\nMas para sair do país,\nela tem de enfrentar o maior monstro de todos...", { fontFamily: 'Courier New', fontSize: '18px', color: '#d3c6a6', align: 'center' }).setOrigin(0.5);
-        this.slide0Group.add(text0);
-
-        // SLIDE 1
-        this.slide1Group = this.add.group();
-        const bg1 = this.add.rectangle(cx, cy, SCREEN_WIDTH, SCREEN_HEIGHT, 0x2c3e50);
-        const dwarf1 = this.add.image(cx - 50, cy + 50, 'dwarf').setScale(2);
-        const dwarf2 = this.add.image(cx + 50, cy + 50, 'dwarf').setScale(2).setFlipX(true);
-        const text1 = this.add.text(cx, cy - 50, "ANÕES: Descobrimos megálitos novos!\nVamos convidar a humana!", { fontFamily: 'Courier New', fontSize: '20px', color: '#fff', align: 'center', backgroundColor: '#000' }).setOrigin(0.5);
-        this.slide1Group.add(bg1); this.slide1Group.add(dwarf1); this.slide1Group.add(dwarf2); this.slide1Group.add(text1);
-        this.slide1Group.setVisible(false);
-
-        // SLIDE 2
-        this.slide2Group = this.add.group();
-        const bg2 = this.add.rectangle(cx, cy, SCREEN_WIDTH, SCREEN_HEIGHT, 0x8b4513);
-        const denise = this.add.image(cx, cy + 20, 'denise').setScale(3);
-        const letter = this.add.rectangle(cx + 10, cy + 30, 20, 15, 0xffffff);
-        const text2 = this.add.text(cx, cy - 100, "DENISE: Um convite? Megálitos novos?\nVamos a isso!", { fontFamily: 'Courier New', fontSize: '20px', color: '#fff', align: 'center' }).setOrigin(0.5);
-        const c1 = this.add.image(cx - 60, cy + 60, 'maron').setAlpha(0);
-        const c2 = this.add.image(cx - 30, cy + 60, 'fiodor').setAlpha(0);
-        const c3 = this.add.image(cx + 30, cy + 60, 'orpheu').setAlpha(0);
-        const c4 = this.add.image(cx + 60, cy + 60, 'koffe').setAlpha(0);
-        this.slide2Group.add(bg2); this.slide2Group.add(denise); this.slide2Group.add(letter); this.slide2Group.add(text2);
-        this.slide2Group.add(c1); this.slide2Group.add(c2); this.slide2Group.add(c3); this.slide2Group.add(c4);
-        this.slide2Group.setVisible(false);
-        this.catsArray = [c1, c2, c3, c4];
-
-        // SLIDE 3
-        this.slide3Group = this.add.group();
-        const bg3 = this.add.rectangle(cx, cy, SCREEN_WIDTH, SCREEN_HEIGHT, 0x8b0000);
-        const text3 = this.add.text(cx, cy - 20, "O INIMIGO FINAL:\n\nA ADMINISTRAÇÃO PÚBLICA ESPANHOLA", { fontFamily: 'Courier New', fontSize: '26px', color: '#fff', align: 'center', stroke: '#000', strokeThickness: 4 }).setOrigin(0.5);
-        const btnBg = this.add.rectangle(cx, cy + 100, 250, 50, 0x000000).setInteractive({ useHandCursor: true });
-        const btnText = this.add.text(cx, cy + 100, "INICIAR EXPEDIÇÃO", { fontSize: '18px', color: '#d3c6a6' }).setOrigin(0.5);
-        btnBg.setStrokeStyle(2, 0xe0ac69);
-        btnBg.on('pointerdown', () => {
+        this.input.on('pointerdown', () => {
             unlockAudio();
-            this.cameras.main.fadeOut(500);
-            this.time.delayedCall(500, () => this.scene.start('MainScene', { level: 1, newGame: true }));
-        });
-        btnBg.on('pointerover', () => btnBg.setFillStyle(0x333333));
-        btnBg.on('pointerout', () => btnBg.setFillStyle(0x000000));
-        this.slide3Group.add(bg3); this.slide3Group.add(text3); this.slide3Group.add(btnBg); this.slide3Group.add(btnText);
-        this.slide3Group.setVisible(false);
-
-        this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
-            unlockAudio();
-            if (this.currentSlide === 3 && pointer.y > cy + 70 && pointer.y < cy + 130) return;
             this.nextSlide();
         });
+
         this.add.text(SCREEN_WIDTH - 10, SCREEN_HEIGHT - 10, "(Clique para avançar)", { fontSize: '12px', color: '#666' }).setOrigin(1);
     }
 
+    showSlide(index: number) {
+        this.slideGroup.clear(true, true);
+
+        if (index >= this.slides.length) {
+            this.cameras.main.fadeOut(500);
+            this.time.delayedCall(500, () => {
+                this.scene.start('MainScene', { level: 1, newGame: true });
+            });
+            return;
+        }
+
+        const slide = this.slides[index];
+        const cx = SCREEN_WIDTH / 2;
+        const cy = SCREEN_HEIGHT / 2;
+
+        let dialogHeight = 0;
+        let textObj: Phaser.GameObjects.Text | null = null;
+
+        // 1. Create Text first to measure it
+        if (slide.text) {
+            const textStyle = {
+                fontFamily: 'Courier New',
+                fontSize: '18px',
+                color: '#fff',
+                align: 'center',
+                wordWrap: { width: SCREEN_WIDTH - 40 }
+            };
+
+            if (!slide.image) {
+                textStyle.fontSize = '22px';
+            }
+
+            // Create text
+            textObj = this.add.text(cx, 0, slide.text, textStyle).setOrigin(0.5);
+
+            if (slide.image) {
+                // Calculate needed height
+                const textHeight = textObj.height;
+                dialogHeight = textHeight + 40; // Padding
+                dialogHeight = Math.max(dialogHeight, 80); // Min height
+            }
+        }
+
+        const imageAreaHeight = SCREEN_HEIGHT - dialogHeight;
+
+        // 2. Setup Image and Backgrounds
+        if (slide.image) {
+            // Image
+            const img = this.add.image(cx, imageAreaHeight / 2, slide.image);
+            const scaleX = SCREEN_WIDTH / img.width;
+            const scaleY = imageAreaHeight / img.height;
+            const scale = Math.max(scaleX, scaleY);
+            img.setScale(scale);
+            this.slideGroup.add(img);
+
+            // Dialog Box
+            const dialogBg = this.add.rectangle(cx, SCREEN_HEIGHT - (dialogHeight / 2), SCREEN_WIDTH, dialogHeight, 0x000000);
+            this.slideGroup.add(dialogBg);
+
+            // Border
+            const border = this.add.rectangle(cx, imageAreaHeight, SCREEN_WIDTH, 2, 0xffffff);
+            this.slideGroup.add(border);
+
+            // Position Text
+            if (textObj) {
+                textObj.setPosition(cx, SCREEN_HEIGHT - (dialogHeight / 2));
+            }
+        } else {
+            // No image
+            const bg = this.add.rectangle(cx, cy, SCREEN_WIDTH, SCREEN_HEIGHT, 0x000000);
+            this.slideGroup.add(bg);
+
+            if (textObj) {
+                textObj.setPosition(cx, cy);
+            }
+        }
+
+        // 3. Add Text to Group and Effects
+        if (textObj) {
+            textObj.setDepth(10);
+            this.slideGroup.add(textObj);
+
+            if (slide.fadeOutText) {
+                this.tweens.add({
+                    targets: textObj,
+                    alpha: 0,
+                    duration: 2000,
+                    delay: 3000
+                });
+            }
+
+            if (slide.surprise) {
+                textObj.setAlpha(0);
+                this.tweens.add({
+                    targets: textObj,
+                    alpha: 1,
+                    duration: 500,
+                    delay: 1000
+                });
+            }
+        }
+
+        this.cameras.main.fadeIn(500);
+    }
+
     nextSlide() {
-        if (this.currentSlide === 0) { this.slide0Group.setVisible(false); this.slide1Group.setVisible(true); this.cameras.main.fadeIn(500); this.currentSlide++; }
-        else if (this.currentSlide === 1) { this.slide1Group.setVisible(false); this.slide2Group.setVisible(true); this.cameras.main.fadeIn(500); this.currentSlide++; this.tweens.add({ targets: this.catsArray, alpha: 1, y: '-=10', duration: 800, delay: 500, ease: 'Power2' }); }
-        else if (this.currentSlide === 2) { this.slide2Group.setVisible(false); this.slide3Group.setVisible(true); this.cameras.main.flash(1000, 255, 0, 0); this.currentSlide++; }
+        this.currentSlideIndex++;
+        this.showSlide(this.currentSlideIndex);
     }
 }

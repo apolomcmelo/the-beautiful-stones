@@ -1,4 +1,9 @@
 import Phaser from 'phaser';
+import slide1 from '../resources/cutscenes/slide1-the-cave-warm.png';
+import slide2 from '../resources/cutscenes/slide2-the-dwarf-warm.png';
+import slide3 from '../resources/cutscenes/slide3-the-invitation.png';
+import slide4 from '../resources/cutscenes/slide4-the-gate.png';
+import slide5 from '../resources/cutscenes/slide5-the-monster.png';
 
 export class BootScene extends Phaser.Scene {
     constructor() {
@@ -6,6 +11,12 @@ export class BootScene extends Phaser.Scene {
     }
 
     preload() {
+        this.load.image('slide1', slide1);
+        this.load.image('slide2', slide2);
+        this.load.image('slide3', slide3);
+        this.load.image('slide4', slide4);
+        this.load.image('slide5', slide5);
+
         const g = this.make.graphics({ x: 0, y: 0 });
 
         // --- ARTE ---
