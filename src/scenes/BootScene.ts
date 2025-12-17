@@ -4,6 +4,7 @@ import slide2 from '../resources/cutscenes/slide2-the-dwarf-warm.png';
 import slide3 from '../resources/cutscenes/slide3-the-invitation.png';
 import slide4 from '../resources/cutscenes/slide4-the-gate.png';
 import slide5 from '../resources/cutscenes/slide5-the-monster.png';
+import cover from '../resources/cover/cover.png';
 
 export class BootScene extends Phaser.Scene {
     constructor() {
@@ -16,6 +17,7 @@ export class BootScene extends Phaser.Scene {
         this.load.image('slide3', slide3);
         this.load.image('slide4', slide4);
         this.load.image('slide5', slide5);
+        this.load.image('cover', cover);
 
         const g = this.make.graphics({ x: 0, y: 0 });
 

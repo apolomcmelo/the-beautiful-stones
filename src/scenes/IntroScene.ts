@@ -35,6 +35,10 @@ export class IntroScene extends Phaser.Scene {
                 image: null, // Black screen
                 text: "A Burocracia Espanhola.",
                 surprise: true
+            },
+            {
+                image: 'cover',
+                isTitleScreen: true
             }
         ];
     }
@@ -45,6 +49,8 @@ export class IntroScene extends Phaser.Scene {
 
         this.input.on('pointerdown', () => {
             unlockAudio();
+            const currentSlide = this.slides[this.currentSlideIndex];
+            if (currentSlide && currentSlide.isTitleScreen) return;
             this.nextSlide();
         });
 
@@ -55,16 +61,61 @@ export class IntroScene extends Phaser.Scene {
         this.slideGroup.clear(true, true);
 
         if (index >= this.slides.length) {
-            this.cameras.main.fadeOut(500);
-            this.time.delayedCall(500, () => {
-                this.scene.start('MainScene', { level: 1, newGame: true });
-            });
+            // Should not happen if last slide is title screen, but good fallback
+            this.scene.start('MainScene', { level: 1, newGame: true });
             return;
         }
 
         const slide = this.slides[index];
         const cx = SCREEN_WIDTH / 2;
         const cy = SCREEN_HEIGHT / 2;
+
+        if (slide.isTitleScreen) {
+            // Title Screen Layout
+            const img = this.add.image(cx, cy, slide.image);
+            const scaleX = SCREEN_WIDTH / img.width;
+            const scaleY = SCREEN_HEIGHT / img.height;
+            const scale = Math.max(scaleX, scaleY);
+            img.setScale(scale);
+            this.slideGroup.add(img);
+
+            // Title
+            const titleText = this.add.text(cx, cy - 50, "A Jornada das\nBelas Pedras", {
+                fontFamily: 'Courier New',
+                fontSize: '40px',
+                color: '#ffffff',
+                align: 'center',
+                stroke: '#000000',
+                strokeThickness: 6,
+                shadow: { offsetX: 2, offsetY: 2, color: '#000', blur: 0, stroke: true, fill: true }
+            }).setOrigin(0.5);
+            this.slideGroup.add(titleText);
+
+            // Button
+            const btnBg = this.add.rectangle(cx, cy + 100, 220, 50, 0x000000).setInteractive({ useHandCursor: true });
+            btnBg.setStrokeStyle(2, 0xffffff);
+            const btnText = this.add.text(cx, cy + 100, "INICIAR EXPEDIÇÃO", {
+                fontFamily: 'Courier New',
+                fontSize: '20px',
+                color: '#ffffff'
+            }).setOrigin(0.5);
+
+            this.slideGroup.add(btnBg);
+            this.slideGroup.add(btnText);
+
+            btnBg.on('pointerover', () => btnBg.setFillStyle(0x333333));
+            btnBg.on('pointerout', () => btnBg.setFillStyle(0x000000));
+            btnBg.on('pointerdown', () => {
+                unlockAudio();
+                this.cameras.main.fadeOut(500);
+                this.time.delayedCall(500, () => {
+                    this.scene.start('MainScene', { level: 1, newGame: true });
+                });
+            });
+
+            this.cameras.main.fadeIn(500);
+            return;
+        }
 
         let dialogHeight = 0;
         let textObj: Phaser.GameObjects.Text | null = null;
