@@ -64,6 +64,15 @@ export class MainScene extends Phaser.Scene {
     create() {
         (window as any).gameScene = this;
 
+        // Create Animations for Fiódor
+        if (!this.anims.exists('fiodor-walk-down')) {
+            this.anims.create({ key: 'fiodor-walk-down', frames: this.anims.generateFrameNumbers('fiodor', { start: 0, end: 3 }), frameRate: 10, repeat: -1 });
+            this.anims.create({ key: 'fiodor-walk-right', frames: this.anims.generateFrameNumbers('fiodor', { start: 4, end: 7 }), frameRate: 10, repeat: -1 });
+            this.anims.create({ key: 'fiodor-walk-up', frames: this.anims.generateFrameNumbers('fiodor', { start: 8, end: 11 }), frameRate: 10, repeat: -1 });
+            this.anims.create({ key: 'fiodor-walk-left', frames: this.anims.generateFrameNumbers('fiodor', { start: 12, end: 15 }), frameRate: 10, repeat: -1 });
+            this.anims.create({ key: 'fiodor-idle-down', frames: this.anims.generateFrameNumbers('fiodor', { start: 16, end: 19 }), frameRate: 5, repeat: -1 });
+        }
+
         // Reset de referências
         this.walls = null as any;
         this.bg = null as any;
@@ -355,6 +364,23 @@ export class MainScene extends Phaser.Scene {
                 const dist = Phaser.Math.Distance.Between(cat.x, cat.y, this.player.x, this.player.y);
                 if (dist > 60 + (i * 20)) this.physics.moveToObject(cat, this.player, currentSpeed * 0.9);
                 else (cat.body as Phaser.Physics.Arcade.Body).setVelocity(0);
+            }
+
+            // Animation Logic for Fiódor
+            if (cat.name === "Fiódor") {
+                const vel = (cat.body as Phaser.Physics.Arcade.Body).velocity;
+                if (vel.length() > 5) {
+                    if (Math.abs(vel.x) > Math.abs(vel.y)) {
+                        if (vel.x > 0) cat.play('fiodor-walk-right', true);
+                        else cat.play('fiodor-walk-left', true);
+                    } else {
+                        if (vel.y > 0) cat.play('fiodor-walk-down', true);
+                        else cat.play('fiodor-walk-up', true);
+                    }
+                } else {
+                    // cat.stop(); // Don't stop animation completely, play idle
+                    cat.play('fiodor-idle-down', true);
+                }
             }
         });
 
