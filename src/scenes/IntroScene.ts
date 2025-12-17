@@ -12,15 +12,15 @@ export class IntroScene extends Phaser.Scene {
         this.slides = [
             {
                 image: 'slide1',
-                text: "Nas profundezas da terra, os Anões encontraram os fragmentos de um monumento esquecido. Artefatos de uma era perdida... complexos demais até para os maiores sábios de pedra. As pedras chamam umas pelas outras, desejando ser reunidas sob o céu aberto... mas uma força terrível as mantém presas na escuridão."
+                text: "Nas profundezas da terra, os Anões encontraram os fragmentos de um monumento esquecido. Artefatos de uma era perdida... complexos demais até para os maiores sábios de pedra.\nAs pedras chamam umas pelas outras, desejando ser reunidas sob o céu aberto... mas uma força terrível as mantém presas na escuridão."
             },
             {
                 image: 'slide2',
-                text: "Este artefato é tão interessante! Tão complexo. E pah! Precisamos da Senhora dos Megálitos. Rezem para que os estafetas não percam este pedido de ajuda no caminho."
+                text: "Este artefato é tão interessante! Tão complexo.\nE pah! Precisamos da Senhora dos Megálitos.\nRezem para que os estafetas não percam este pedido de ajuda no caminho."
             },
             {
                 image: 'slide3',
-                text: "Então:?... A sério? Pedras e mais pedras? Parece-me fun. Vamos a isso!"
+                text: "Então?... A sério? Pedras e mais pedras? Parece-me fun. Vamos a isso!"
             },
             {
                 image: 'slide4',
@@ -73,14 +73,14 @@ export class IntroScene extends Phaser.Scene {
         if (slide.text) {
             const textStyle = {
                 fontFamily: 'Courier New',
-                fontSize: '18px',
+                fontSize: '16px',
                 color: '#fff',
                 align: 'center',
                 wordWrap: { width: SCREEN_WIDTH - 40 }
             };
 
             if (!slide.image) {
-                textStyle.fontSize = '22px';
+                textStyle.fontSize = '20px';
             }
 
             // Create text
@@ -135,7 +135,7 @@ export class IntroScene extends Phaser.Scene {
 
             if (slide.fadeOutText) {
                 this.tweens.add({
-                    targets: textObj,
+                    targets: this.slideGroup.getChildren(),
                     alpha: 0,
                     duration: 2000,
                     delay: 3000
