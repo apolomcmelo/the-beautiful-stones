@@ -8,6 +8,7 @@ import gameOverImg from '../resources/cutscenes/game-over.png';
 import cover from '../resources/cover/cover.png';
 import fiodorSprite from '../resources/sprites/characters-sprites.png';
 import consumablesSprite from '../resources/sprites/consumables-sprites.png';
+import itemsSprite from '../resources/sprites/items-sprites.png';
 
 export class BootScene extends Phaser.Scene {
     constructor() {
@@ -24,6 +25,7 @@ export class BootScene extends Phaser.Scene {
         this.load.image('cover', cover);
         this.load.spritesheet('fiodor', fiodorSprite, { frameWidth: 32, frameHeight: 32 });
         this.load.spritesheet('consumables', consumablesSprite, { frameWidth: 32, frameHeight: 32 });
+        this.load.spritesheet('items', itemsSprite, { frameWidth: 32, frameHeight: 32 });
 
         const g = this.make.graphics({ x: 0, y: 0 });
 
@@ -49,8 +51,7 @@ export class BootScene extends Phaser.Scene {
         g.clear(); g.fillStyle(0x800000); g.fillRect(0, 0, 64, 80); g.fillStyle(0xffd700); g.fillRect(10, 10, 44, 20); g.generateTexture('boss', 64, 80);
 
         // ITENS
-        g.clear(); g.fillStyle(0xff69b4); g.fillRect(8, 8, 16, 16); g.generateTexture('form_pink', 32, 32);
-        g.clear(); g.fillStyle(0x5dade2); g.fillRect(8, 8, 16, 16); g.generateTexture('form_blue', 32, 32);
+        // texturas de formulário agora vêm do spritesheet 'items' (frames configurados na MainScene)
         g.clear(); g.fillStyle(0x2ecc71); g.fillRect(8, 8, 16, 16); g.generateTexture('stamp_auth', 32, 32);
         g.clear(); g.fillStyle(0xf1c40f); g.fillRect(4, 4, 24, 24); g.fillStyle(0x000000); g.fillRect(6, 10, 20, 2); g.fillRect(6, 16, 20, 2); g.generateTexture('visa', 32, 32);
 

@@ -2,6 +2,13 @@ import Phaser from 'phaser';
 import { LEVEL_1_DATA, LEVEL_2_DATA, WORLD_WIDTH, WORLD_HEIGHT } from '../consts';
 import { sfx } from '../utils/audio';
 
+const STONE_FRAMES = {
+    west: 0,   // 1ª coluna, 1ª fileira
+    east: 3,   // 1ª coluna, 2ª fileira
+    north: 6,  // 1ª coluna, 3ª fileira (boss)
+    top: 9     // 1ª coluna, 4ª fileira
+};
+
 export class MainScene extends Phaser.Scene {
     private isGameStarted: boolean = false;
     private isDialogueOpen: boolean = false;
@@ -68,8 +75,31 @@ export class MainScene extends Phaser.Scene {
     private bossAttackGroup!: Phaser.Physics.Arcade.Group;
     private portals!: Phaser.Physics.Arcade.Group;
 
+    private stoneSprites: { west?: Phaser.GameObjects.Sprite; east?: Phaser.GameObjects.Sprite; north?: Phaser.GameObjects.Sprite; top?: Phaser.GameObjects.Sprite; final?: Phaser.GameObjects.Sprite } = {};
+
     constructor() {
         super({ key: 'MainScene' });
+    }
+
+    private playStoneAnim(frameStart: number, depth: number, x: number, y: number): Phaser.GameObjects.Sprite {
+        const animKey = `stone-anim-${frameStart}`;
+        if (!this.anims.exists(animKey)) {
+            this.anims.create({
+                key: animKey,
+                frames: this.anims.generateFrameNumbers('items', { start: frameStart, end: frameStart + 2 }),
+                frameRate: 6,
+                repeat: -1
+            });
+        }
+        const sprite = this.add.sprite(x, y, 'items', frameStart).setDepth(depth);
+        sprite.play(animKey);
+        return sprite;
+    }
+
+    private stopStoneAnim(sprite?: Phaser.GameObjects.Sprite) {
+        if (sprite && sprite.anims.isPlaying) {
+            sprite.anims.pause(sprite.anims.currentAnim?.frames[0]);
+        }
     }
 
     init(data: { level?: number, newGame?: boolean }) {
@@ -296,14 +326,29 @@ export class MainScene extends Phaser.Scene {
         data.objects.forEach(obj => {
             const pixelX = obj.x * 32 + 16; const pixelY = obj.y * 32 + 16;
             if (obj.type === 'player_start') { this.player.setPosition(pixelX, pixelY); this.assistants.forEach(a => a.setPosition(pixelX - 20, pixelY)); }
-            else if (obj.type === 'stone_left') { if (!this.registry.get('hasStoneWest')) this.items.create(pixelX, pixelY, 'stone_left'); }
+            else if (obj.type === 'stone_left') {
+                if (!this.registry.get('hasStoneWest')) {
+                    const stone = this.items.create(pixelX, pixelY, 'items', STONE_FRAMES.west);
+                    stone.setData('type', 'stone_left');
+                }
+            }
             else if (obj.type === 'spice_cinnamon') { const cin = this.spices.create(pixelX, pixelY, 'consumables', 0).setData('type', 'cinnamon'); this.physics.add.overlap(this.player, cin, this.collectSpice, undefined, this); }
             else if (obj.type === 'guard_gate') { const npc = this.npcs.create(pixelX, pixelY, 'dwarf'); npc.setData('type', 'guard_gate'); }
             else if (obj.type === 'guard_room2') { const npc = this.npcs.create(pixelX, pixelY, 'dwarf'); npc.setTint(0xffd700); npc.setData('type', 'guard_room2'); }
             else if (obj.type === 'door_room1') { const door = this.specialObjects.create(pixelX, pixelY, 'door'); door.setData('type', 'door_room1'); }
             else if (obj.type === 'door_room2') { const door = this.specialObjects.create(pixelX, pixelY, 'door'); door.setData('type', 'door_room2'); }
-            else if (obj.type === 'form_blue') { if (!this.registry.get('hasFormBlue')) this.items.create(pixelX, pixelY, 'form_blue'); }
-            else if (obj.type === 'form_pink') { if (!this.registry.get('hasFormPink')) this.items.create(pixelX, pixelY, 'form_pink'); }
+            else if (obj.type === 'form_blue') {
+                if (!this.registry.get('hasFormBlue')) {
+                    const form = this.items.create(pixelX, pixelY, 'items', 15);
+                    form.setData('type', 'form_blue');
+                }
+            }
+            else if (obj.type === 'form_pink') {
+                if (!this.registry.get('hasFormPink')) {
+                    const form = this.items.create(pixelX, pixelY, 'items', 16);
+                    form.setData('type', 'form_pink');
+                }
+            }
         });
         // Construir salas fechadas (exceto no tile da porta) para manter formulários dentro
         buildRoom(4, 8, 4, 8, 6, 8);   // Sala 1 (form 1B azul)
@@ -329,7 +374,12 @@ export class MainScene extends Phaser.Scene {
             else if (obj.type === 'password_screen') { const screen = this.specialObjects.create(pixelX, pixelY, 'password_screen'); screen.setData('type', 'broken_screen'); screen.setData('fixed', false); }
             else if (obj.type === 'clerk') { const npc = this.npcs.create(pixelX, pixelY, 'statue'); npc.setImmovable(true); npc.setData('type', 'clerk'); }
             else if (obj.type === 'npc_queue') { const npc = this.npcs.create(pixelX, pixelY, 'statue'); npc.setImmovable(true); npc.setTint(0x888888); npc.setData('type', 'queue'); }
-            else if (obj.type === 'stone_right') { if (!this.registry.get('hasStoneEast')) this.items.create(pixelX, pixelY, 'stone_right'); }
+            else if (obj.type === 'stone_right') {
+                if (!this.registry.get('hasStoneEast')) {
+                    const stone = this.items.create(pixelX, pixelY, 'items', STONE_FRAMES.east);
+                    stone.setData('type', 'stone_right');
+                }
+            }
             else if (obj.type === 'spice_clove') { const clove = this.spices.create(pixelX, pixelY, 'consumables', 1).setData('type', 'clove'); this.physics.add.overlap(this.player, clove, this.collectSpice, undefined, this); }
         });
         this.triggerDialogue("Denise", "Que sala de espera... A senha parou no AA04?");
@@ -713,7 +763,7 @@ export class MainScene extends Phaser.Scene {
     }
 
     collectItem(item: Phaser.Physics.Arcade.Sprite) {
-        const key = item.texture.key;
+        const key = (item.getData('type') as string) || item.texture.key;
         this.triggerSparkles(item.x, item.y, 0xffff00); // Brilho amarelo
         sfx.collect(); // Som de coleta
         item.destroy();
@@ -761,25 +811,55 @@ export class MainScene extends Phaser.Scene {
     buildDolmen() {
         const r = this.registry;
         if (r.get('hasStoneWest') && !r.get('placedWest')) {
-            r.set('placedWest', true); this.add.image(this.dolmenBase.x - 30, this.dolmenBase.y - 10, 'stone_left').setDepth(5);
+            r.set('placedWest', true);
+            if (this.stoneSprites.west) this.stoneSprites.west.destroy();
+            this.stoneSprites.west = this.playStoneAnim(STONE_FRAMES.west, 5, this.dolmenBase.x - 30, this.dolmenBase.y - 10);
             this.triggerSparkles(this.dolmenBase.x - 30, this.dolmenBase.y, 0xffffff);
             sfx.action();
+            this.time.delayedCall(3000, () => this.stopStoneAnim(this.stoneSprites.west));
         }
         else if (r.get('hasStoneEast') && !r.get('placedEast')) {
-            r.set('placedEast', true); this.add.image(this.dolmenBase.x + 30, this.dolmenBase.y - 10, 'stone_right').setDepth(5);
+            r.set('placedEast', true);
+            if (this.stoneSprites.east) this.stoneSprites.east.destroy();
+            this.stoneSprites.east = this.playStoneAnim(STONE_FRAMES.east, 5, this.dolmenBase.x + 30, this.dolmenBase.y - 10);
             this.triggerSparkles(this.dolmenBase.x + 30, this.dolmenBase.y, 0xffffff);
             sfx.action();
+            this.time.delayedCall(3000, () => this.stopStoneAnim(this.stoneSprites.east));
         }
         else if (r.get('hasStoneNorth') && !r.get('placedNorth')) {
-            r.set('placedNorth', true); this.add.image(this.dolmenBase.x, this.dolmenBase.y - 10, 'stone_left').setDepth(4).setTint(0x888888);
+            r.set('placedNorth', true);
+            if (this.stoneSprites.north) this.stoneSprites.north.destroy();
+            this.stoneSprites.north = this.playStoneAnim(STONE_FRAMES.north, 4, this.dolmenBase.x, this.dolmenBase.y - 10);
             this.triggerSparkles(this.dolmenBase.x, this.dolmenBase.y, 0xffffff);
             sfx.action();
+            this.time.delayedCall(3000, () => this.stopStoneAnim(this.stoneSprites.north));
         }
         else if (r.get('hasStoneTop') && !r.get('placedTop') && r.get('placedWest') && r.get('placedEast') && r.get('placedNorth')) {
-            r.set('placedTop', true); this.add.image(this.dolmenBase.x, this.dolmenBase.y - 32, 'stone_top').setDepth(6);
+            r.set('placedTop', true);
+            if (this.stoneSprites.top) this.stoneSprites.top.destroy();
+            this.stoneSprites.top = this.playStoneAnim(STONE_FRAMES.top, 6, this.dolmenBase.x, this.dolmenBase.y - 32);
             this.triggerSparkles(this.dolmenBase.x, this.dolmenBase.y - 32, 0xffff00);
-            sfx.win(); // Fanfarra
-            this.time.delayedCall(2000, this.winGame, [], this);
+            sfx.win(); // Fanfarra inicial
+            this.time.delayedCall(3000, () => {
+                // remover pedras antigas
+                ['west', 'east', 'north', 'top'].forEach(k => {
+                    const key = k as keyof typeof this.stoneSprites;
+                    if (this.stoneSprites[key]) { this.stoneSprites[key]!.destroy(); this.stoneSprites[key] = undefined; }
+                });
+                // pedra final (5ª fileira) frames 12-14
+                const finalAnimStart = 12;
+                const finalKey = `stone-anim-${finalAnimStart}`;
+                if (!this.anims.exists(finalKey)) {
+                    this.anims.create({ key: finalKey, frames: this.anims.generateFrameNumbers('items', { start: finalAnimStart, end: finalAnimStart + 2 }), frameRate: 6, repeat: -1 });
+                }
+                if (this.stoneSprites.final) this.stoneSprites.final.destroy();
+                this.stoneSprites.final = this.add.sprite(this.dolmenBase.x, this.dolmenBase.y - 32, 'items', finalAnimStart).setDepth(6);
+                this.stoneSprites.final.play(finalKey);
+                this.time.delayedCall(3000, () => {
+                    this.stoneSprites.final?.anims.pause(this.stoneSprites.final.anims.currentAnim?.frames[0]);
+                    this.winGame();
+                });
+            });
         }
     }
 
@@ -911,10 +991,10 @@ export class MainScene extends Phaser.Scene {
     restorePuzzleState() { }
     restoreDolmenState() {
         const r = this.registry;
-        if (r.get('placedWest')) this.add.image(this.dolmenBase.x - 30, this.dolmenBase.y - 10, 'stone_left').setDepth(5);
-        if (r.get('placedEast')) this.add.image(this.dolmenBase.x + 30, this.dolmenBase.y - 10, 'stone_right').setDepth(5);
-        if (r.get('placedNorth')) this.add.image(this.dolmenBase.x, this.dolmenBase.y - 10, 'stone_left').setDepth(4).setTint(0x888888);
-        if (r.get('placedTop')) this.add.image(this.dolmenBase.x, this.dolmenBase.y - 32, 'stone_top').setDepth(6);
+        if (r.get('placedWest')) this.stoneSprites.west = this.add.sprite(this.dolmenBase.x - 30, this.dolmenBase.y - 10, 'items', STONE_FRAMES.west).setDepth(5);
+        if (r.get('placedEast')) this.stoneSprites.east = this.add.sprite(this.dolmenBase.x + 30, this.dolmenBase.y - 10, 'items', STONE_FRAMES.east).setDepth(5);
+        if (r.get('placedNorth')) this.stoneSprites.north = this.add.sprite(this.dolmenBase.x, this.dolmenBase.y - 10, 'items', STONE_FRAMES.north).setDepth(4);
+        if (r.get('placedTop')) this.stoneSprites.top = this.add.sprite(this.dolmenBase.x, this.dolmenBase.y - 32, 'items', STONE_FRAMES.top).setDepth(6);
     }
     createWallsRect(x: number, y: number, w: number, h: number) { for (let i = x; i < x + w; i++) { this.walls.create(i * 32 + 16, y * 32 + 16, 'wall'); this.walls.create(i * 32 + 16, (y + h) * 32 + 16, 'wall'); } for (let j = y; j <= y + h; j++) { this.walls.create(x * 32 + 16, j * 32 + 16, 'wall'); this.walls.create((x + w) * 32 + 16, j * 32 + 16, 'wall'); } }
     createExit(x: number, y: number, nextLevel: number) { const portal = this.portals.create(x, y, 'portal'); this.physics.add.overlap(this.player, portal, () => { this.loadLevel(nextLevel); }); }
