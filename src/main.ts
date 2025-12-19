@@ -4,6 +4,7 @@ import { IntroScene } from './scenes/IntroScene';
 import { TransitionScene } from './scenes/TransitionScene';
 import { MainScene } from './scenes/MainScene';
 import { EndingScene } from './scenes/EndingScene';
+import { GameOverScene } from './scenes/GameOverScene';
 import { SCREEN_WIDTH, SCREEN_HEIGHT } from './consts';
 import { unlockAudio } from './utils/audio';
 
@@ -21,7 +22,7 @@ const config: Phaser.Types.Core.GameConfig = {
             debug: false
         }
     },
-    scene: [BootScene, IntroScene, TransitionScene, MainScene, EndingScene]
+    scene: [BootScene, IntroScene, TransitionScene, MainScene, EndingScene, GameOverScene]
 };
 
 new Phaser.Game(config);

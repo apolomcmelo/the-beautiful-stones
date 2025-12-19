@@ -21,6 +21,7 @@ export class MainScene extends Phaser.Scene {
     private buffDefense: boolean = false;
     private buffTimer: number = 0;
     private stepTimer: number = 0; // Timer para sons de passos
+    private isGameOver: boolean = false;
     private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
     private wasd!: any;
     private keys123!: any;
@@ -59,6 +60,7 @@ export class MainScene extends Phaser.Scene {
     init(data: { level?: number, newGame?: boolean }) {
         this.startLevel = data.level || 1;
         this.isNewGame = data.newGame || false;
+        this.isGameOver = false;
     }
 
     create() {
@@ -707,7 +709,16 @@ export class MainScene extends Phaser.Scene {
         this.updateUI();
         sfx.hurt(); // Som de dano
         this.cameras.main.shake(200, 0.01); // Shake da Câmera (Juice)
-        if (this.playerHealth <= 0) this.scene.restart();
+        if (this.playerHealth <= 0) this.handleGameOver();
+    }
+
+    private handleGameOver() {
+        if (this.isGameOver) return;
+        this.isGameOver = true;
+        this.cameras.main.fadeOut(400);
+        this.cameras.main.once('camerafadeoutcomplete', () => {
+            this.scene.start('GameOverScene');
+        });
     }
 
     // ... helpers ...
