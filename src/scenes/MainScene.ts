@@ -34,6 +34,14 @@ export class MainScene extends Phaser.Scene {
     private keys123!: any;
     private keys4K!: any;
     private keySpace!: Phaser.Input.Keyboard.Key;
+    private keyZ!: Phaser.Input.Keyboard.Key;
+    private keyX!: Phaser.Input.Keyboard.Key;
+    private keyC!: Phaser.Input.Keyboard.Key;
+
+    // Consumíveis em inventário
+    private cinnamonCount = 0;
+    private cloveCount = 0;
+    private pastelCount = 0;
 
     // Emissores de Partículas
     private dustEmitter!: Phaser.GameObjects.Particles.ParticleEmitter;
@@ -74,6 +82,9 @@ export class MainScene extends Phaser.Scene {
         this.doorRoom2Opened = false;
         this.gateOpened = false;
         this.gateBlock = null;
+        this.cinnamonCount = 0;
+        this.cloveCount = 0;
+        this.pastelCount = 0;
     }
 
     create() {
@@ -158,6 +169,9 @@ export class MainScene extends Phaser.Scene {
         this.keys123 = this.input.keyboard!.addKeys('ONE,TWO,THREE');
         this.keys4K = this.input.keyboard!.addKeys({ FOUR: Phaser.Input.Keyboard.KeyCodes.FOUR, K: Phaser.Input.Keyboard.KeyCodes.K });
         this.keySpace = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+        this.keyZ = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.Z);
+        this.keyX = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.X);
+        this.keyC = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.C);
         this.selector = this.add.triangle(0, 0, 0, 0, 5, 10, 10, 0, 0xffff00).setDepth(20).setVisible(false);
 
         this.startGameplay();
@@ -348,8 +362,8 @@ export class MainScene extends Phaser.Scene {
         this.tombs.create(600, 150, 'tomb').setData('hasStone', true).setImmovable(true);
         this.dolmenBase = this.physics.add.staticSprite(600, 300, 'dolmen_base');
         const pastel = this.spices.create(500, 350, 'consumables', 2).setData('type', 'pastel');
+        pastel.setFrame(2); // Garante o frame correto do pastel de nata
         this.physics.add.overlap(this.player, pastel, this.collectSpice, undefined, this);
-        this.triggerDialogue("Denise", "Que calor! Preciso de sombras... E da última pedra.");
         this.restoreDolmenState();
     }
 
@@ -386,6 +400,9 @@ export class MainScene extends Phaser.Scene {
         if (Phaser.Input.Keyboard.JustDown(this.keys123.TWO)) this.changeAssistant(1);
         if (Phaser.Input.Keyboard.JustDown(this.keys123.THREE)) this.changeAssistant(2);
         if (Phaser.Input.Keyboard.JustDown(this.keys4K.FOUR) || Phaser.Input.Keyboard.JustDown(this.keys4K.K)) this.changeAssistant(3);
+        if (Phaser.Input.Keyboard.JustDown(this.keyZ)) this.useConsumable('cinnamon');
+        if (Phaser.Input.Keyboard.JustDown(this.keyX)) this.useConsumable('clove');
+        if (Phaser.Input.Keyboard.JustDown(this.keyC)) this.useConsumable('pastel');
 
         const activeCat = this.assistants[this.activeAssistantIndex];
         if (activeCat) this.selector.setPosition(activeCat.x, activeCat.y - 25);
@@ -581,24 +598,26 @@ export class MainScene extends Phaser.Scene {
 
     collectSpice(player: any, spice: any) {
         const type = spice.getData('type'); spice.destroy();
-        this.triggerSparkles(player.x, player.y, 0x00ff00); // Brilho verde para especiarias
-        sfx.collect(); // Som de coleta
+        this.triggerSparkles(player.x, player.y, 0x00ff00);
+        sfx.collect();
 
         if (type === 'cinnamon') {
-            this.buffSpeed = true;
-            this.buffTimer = 15000;
-            this.triggerDialogue("Denise", "Canela! Sinto-me leve (Velocidade UP).");
-            this.updateBuffUI();
+            this.cinnamonCount++;
+            this.showFloatingText(player.x, player.y - 20, "+1 Canela", 0xffff00);
+            this.triggerDialogue("Denise", "Canela coletada! Para usar, pressione Z.");
+            this.updateInventoryUI();
         }
         else if (type === 'clove') {
-            this.buffDefense = true;
-            this.buffTimer = 15000;
-            this.triggerDialogue("Denise", "Cravo! Sinto-me protegida (Defesa UP).");
-            this.updateBuffUI();
+            this.cloveCount++;
+            this.showFloatingText(player.x, player.y - 20, "+1 Cravo", 0xffff00);
+            this.triggerDialogue("Denise", "Cravo coletado! Para usar, pressione X.");
+            this.updateInventoryUI();
         }
         else if (type === 'pastel') {
-            this.triggerInvincibility(5000);
-            this.showFloatingText(player.x, player.y - 20, "Invencível!", 0xffff00);
+            this.pastelCount++;
+            this.showFloatingText(player.x, player.y - 20, "+1 Pastel de Nata", 0xffff00);
+            this.triggerDialogue("Denise", "Pastel de Nata coletado! Para usar, pressione C.");
+            this.updateInventoryUI();
         }
     }
 
@@ -860,6 +879,34 @@ export class MainScene extends Phaser.Scene {
         if (this.player) this.player.setAlpha(1);
     }
 
+    private useConsumable(type: 'cinnamon' | 'clove' | 'pastel') {
+        if (type === 'cinnamon') {
+            if (this.cinnamonCount <= 0) return;
+            this.cinnamonCount--;
+            this.buffSpeed = true;
+            this.buffTimer = 15000;
+            this.updateBuffUI();
+            this.showFloatingText(this.player.x, this.player.y - 20, "Velocidade!", 0xffff00);
+            this.updateInventoryUI();
+        }
+        else if (type === 'clove') {
+            if (this.cloveCount <= 0) return;
+            this.cloveCount--;
+            this.buffDefense = true;
+            this.buffTimer = 15000;
+            this.updateBuffUI();
+            this.showFloatingText(this.player.x, this.player.y - 20, "Defesa!", 0x00ffff);
+            this.updateInventoryUI();
+        }
+        else if (type === 'pastel') {
+            if (this.pastelCount <= 0) return;
+            this.pastelCount--;
+            this.triggerInvincibility(5000);
+            this.showFloatingText(this.player.x, this.player.y - 20, "Invencível!", 0xffff00);
+            this.updateInventoryUI();
+        }
+    }
+
     // ... helpers ...
     restorePuzzleState() { }
     restoreDolmenState() {
@@ -912,6 +959,29 @@ export class MainScene extends Phaser.Scene {
         if (r.get('hasStoneNorth')) list.innerHTML += "<li>🪨 Pedra Norte</li>";
         if (r.get('hasVisa')) list.innerHTML += "<li>✅ Visto</li>";
         if (r.get('hasStoneTop')) list.innerHTML += "<li>🪨 Pedra Topo</li>";
+
+        const grid = document.getElementById('consumable-grid');
+        if (grid) {
+            const totalConsumables = this.cinnamonCount + this.cloveCount + this.pastelCount;
+            grid.style.display = totalConsumables >= 1 ? 'grid' : 'none';
+            grid.innerHTML = '';
+
+            const consumables = [
+                { className: 'slot-cinnamon', count: this.cinnamonCount },
+                { className: 'slot-clove', count: this.cloveCount },
+                { className: 'slot-pastel', count: this.pastelCount }
+            ].filter(c => c.count > 0);
+
+            consumables.forEach(c => {
+                const slot = document.createElement('div');
+                slot.className = `consumable-slot ${c.className}`;
+                const countEl = document.createElement('span');
+                countEl.className = 'slot-count';
+                countEl.textContent = c.count.toString();
+                slot.appendChild(countEl);
+                grid.appendChild(slot);
+            });
+        }
     }
     winGame() { this.scene.start('EndingScene'); }
 }
