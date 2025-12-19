@@ -7,6 +7,7 @@ import slide5 from '../resources/cutscenes/slide5-the-monster-warm.png';
 import gameOverImg from '../resources/cutscenes/game-over.png';
 import cover from '../resources/cover/cover.png';
 import fiodorSprite from '../resources/sprites/characters-sprites.png';
+import consumablesSprite from '../resources/sprites/consumables-sprites.png';
 
 export class BootScene extends Phaser.Scene {
     constructor() {
@@ -22,6 +23,7 @@ export class BootScene extends Phaser.Scene {
         this.load.image('gameOver', gameOverImg);
         this.load.image('cover', cover);
         this.load.spritesheet('fiodor', fiodorSprite, { frameWidth: 32, frameHeight: 32 });
+        this.load.spritesheet('consumables', consumablesSprite, { frameWidth: 32, frameHeight: 32 });
 
         const g = this.make.graphics({ x: 0, y: 0 });
 
@@ -51,8 +53,6 @@ export class BootScene extends Phaser.Scene {
         g.clear(); g.fillStyle(0x5dade2); g.fillRect(8, 8, 16, 16); g.generateTexture('form_blue', 32, 32);
         g.clear(); g.fillStyle(0x2ecc71); g.fillRect(8, 8, 16, 16); g.generateTexture('stamp_auth', 32, 32);
         g.clear(); g.fillStyle(0xf1c40f); g.fillRect(4, 4, 24, 24); g.fillStyle(0x000000); g.fillRect(6, 10, 20, 2); g.fillRect(6, 16, 20, 2); g.generateTexture('visa', 32, 32);
-        g.clear(); g.fillStyle(0xd35400); g.fillRect(10, 4, 12, 24); g.generateTexture('spice_cinnamon', 32, 32);
-        g.clear(); g.fillStyle(0x2c3e50); g.fillCircle(16, 12, 6); g.fillRect(14, 18, 4, 10); g.generateTexture('spice_clove', 32, 32);
 
         // OBJETOS ESPECIAIS
         g.clear(); g.fillStyle(0x8b4513); g.fillRect(0, 0, 32, 32); g.fillStyle(0xcd853f); g.fillRect(4, 4, 24, 24); g.fillStyle(0x000000); g.fillCircle(24, 16, 2); g.generateTexture('door', 32, 32);

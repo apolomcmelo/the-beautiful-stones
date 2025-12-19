@@ -22,6 +22,9 @@ export class MainScene extends Phaser.Scene {
     private buffTimer: number = 0;
     private stepTimer: number = 0; // Timer para sons de passos
     private isGameOver: boolean = false;
+    private isInvincible: boolean = false;
+    private invincibleTimer: Phaser.Time.TimerEvent | null = null;
+    private invincibleTween: Phaser.Tweens.Tween | null = null;
     private doorRoom1Opened: boolean = false;
     private doorRoom2Opened: boolean = false;
     private gateOpened: boolean = false;
@@ -65,6 +68,8 @@ export class MainScene extends Phaser.Scene {
         this.startLevel = data.level || 1;
         this.isNewGame = data.newGame || false;
         this.isGameOver = false;
+        this.isInvincible = false;
+        this.clearInvincibility();
         this.doorRoom1Opened = false;
         this.doorRoom2Opened = false;
         this.gateOpened = false;
@@ -278,7 +283,7 @@ export class MainScene extends Phaser.Scene {
             const pixelX = obj.x * 32 + 16; const pixelY = obj.y * 32 + 16;
             if (obj.type === 'player_start') { this.player.setPosition(pixelX, pixelY); this.assistants.forEach(a => a.setPosition(pixelX - 20, pixelY)); }
             else if (obj.type === 'stone_left') { if (!this.registry.get('hasStoneWest')) this.items.create(pixelX, pixelY, 'stone_left'); }
-            else if (obj.type === 'spice_cinnamon') { const cin = this.spices.create(pixelX, pixelY, 'spice_cinnamon').setData('type', 'cinnamon'); this.physics.add.overlap(this.player, cin, this.collectSpice, undefined, this); }
+            else if (obj.type === 'spice_cinnamon') { const cin = this.spices.create(pixelX, pixelY, 'consumables', 0).setData('type', 'cinnamon'); this.physics.add.overlap(this.player, cin, this.collectSpice, undefined, this); }
             else if (obj.type === 'guard_gate') { const npc = this.npcs.create(pixelX, pixelY, 'dwarf'); npc.setData('type', 'guard_gate'); }
             else if (obj.type === 'guard_room2') { const npc = this.npcs.create(pixelX, pixelY, 'dwarf'); npc.setTint(0xffd700); npc.setData('type', 'guard_room2'); }
             else if (obj.type === 'door_room1') { const door = this.specialObjects.create(pixelX, pixelY, 'door'); door.setData('type', 'door_room1'); }
@@ -311,7 +316,7 @@ export class MainScene extends Phaser.Scene {
             else if (obj.type === 'clerk') { const npc = this.npcs.create(pixelX, pixelY, 'statue'); npc.setImmovable(true); npc.setData('type', 'clerk'); }
             else if (obj.type === 'npc_queue') { const npc = this.npcs.create(pixelX, pixelY, 'statue'); npc.setImmovable(true); npc.setTint(0x888888); npc.setData('type', 'queue'); }
             else if (obj.type === 'stone_right') { if (!this.registry.get('hasStoneEast')) this.items.create(pixelX, pixelY, 'stone_right'); }
-            else if (obj.type === 'spice_clove') { const clove = this.spices.create(pixelX, pixelY, 'spice_clove').setData('type', 'clove'); this.physics.add.overlap(this.player, clove, this.collectSpice, undefined, this); }
+            else if (obj.type === 'spice_clove') { const clove = this.spices.create(pixelX, pixelY, 'consumables', 1).setData('type', 'clove'); this.physics.add.overlap(this.player, clove, this.collectSpice, undefined, this); }
         });
         this.triggerDialogue("Denise", "Que sala de espera... A senha parou no AA04?");
     }
@@ -342,6 +347,8 @@ export class MainScene extends Phaser.Scene {
         this.tombs.create(400, 500, 'tomb').setData('hasStone', false).setImmovable(true);
         this.tombs.create(600, 150, 'tomb').setData('hasStone', true).setImmovable(true);
         this.dolmenBase = this.physics.add.staticSprite(600, 300, 'dolmen_base');
+        const pastel = this.spices.create(500, 350, 'consumables', 2).setData('type', 'pastel');
+        this.physics.add.overlap(this.player, pastel, this.collectSpice, undefined, this);
         this.triggerDialogue("Denise", "Que calor! Preciso de sombras... E da última pedra.");
         this.restoreDolmenState();
     }
@@ -470,6 +477,10 @@ export class MainScene extends Phaser.Scene {
         const targetSprite = target as Phaser.Physics.Arcade.Sprite;
 
         if (type === 'door_room1') {
+            if (this.doorRoom1Opened) {
+                this.triggerDialogue("Denise", "A porta já está aberta.");
+                return true;
+            }
             if (activeCat.name === 'Orpheu') {
                 this.doorRoom1Opened = true;
                 this.triggerDialogue("Orpheu", "Miau! (Porta aberta)");
@@ -569,12 +580,26 @@ export class MainScene extends Phaser.Scene {
     }
 
     collectSpice(player: any, spice: any) {
-        const type = spice.getData('type'); spice.destroy(); this.buffTimer = 15000;
+        const type = spice.getData('type'); spice.destroy();
         this.triggerSparkles(player.x, player.y, 0x00ff00); // Brilho verde para especiarias
         sfx.collect(); // Som de coleta
-        if (type === 'cinnamon') { this.buffSpeed = true; this.triggerDialogue("Denise", "Canela! Sinto-me leve (Velocidade UP)."); }
-        else if (type === 'clove') { this.buffDefense = true; this.triggerDialogue("Denise", "Cravo! Sinto-me protegida (Defesa UP)."); }
-        this.updateBuffUI();
+
+        if (type === 'cinnamon') {
+            this.buffSpeed = true;
+            this.buffTimer = 15000;
+            this.triggerDialogue("Denise", "Canela! Sinto-me leve (Velocidade UP).");
+            this.updateBuffUI();
+        }
+        else if (type === 'clove') {
+            this.buffDefense = true;
+            this.buffTimer = 15000;
+            this.triggerDialogue("Denise", "Cravo! Sinto-me protegida (Defesa UP).");
+            this.updateBuffUI();
+        }
+        else if (type === 'pastel') {
+            this.triggerInvincibility(5000);
+            this.showFloatingText(player.x, player.y - 20, "Invencível!", 0xffff00);
+        }
     }
 
     updateBuffUI() {
@@ -784,6 +809,7 @@ export class MainScene extends Phaser.Scene {
     }
 
     damagePlayer(amount: number) {
+        if (this.isInvincible) return;
         if (this.buffDefense) amount = Math.floor(amount / 2);
         this.playerHealth = Math.max(0, this.playerHealth - amount);
         this.updateUI();
@@ -806,6 +832,32 @@ export class MainScene extends Phaser.Scene {
         const targetY = tileY * 32 + 16;
         const wall = this.walls.getChildren().find(w => (w as any).x === targetX && (w as any).y === targetY) as Phaser.Physics.Arcade.Sprite | undefined;
         if (wall) wall.destroy();
+    }
+
+    private triggerInvincibility(duration: number = 5000) {
+        this.isInvincible = true;
+        if (this.invincibleTimer) this.invincibleTimer.remove(false);
+        if (this.invincibleTween) this.invincibleTween.stop();
+        this.player.setAlpha(1);
+
+        this.invincibleTween = this.tweens.add({
+            targets: this.player,
+            alpha: 0.3,
+            duration: 100,
+            yoyo: true,
+            repeat: -1
+        });
+
+        this.invincibleTimer = this.time.delayedCall(duration, () => {
+            this.clearInvincibility();
+        });
+    }
+
+    private clearInvincibility() {
+        this.isInvincible = false;
+        if (this.invincibleTimer) { this.invincibleTimer.remove(false); this.invincibleTimer = null; }
+        if (this.invincibleTween) { this.invincibleTween.stop(); this.invincibleTween = null; }
+        if (this.player) this.player.setAlpha(1);
     }
 
     // ... helpers ...
