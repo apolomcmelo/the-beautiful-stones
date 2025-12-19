@@ -22,6 +22,10 @@ export class MainScene extends Phaser.Scene {
     private buffTimer: number = 0;
     private stepTimer: number = 0; // Timer para sons de passos
     private isGameOver: boolean = false;
+    private doorRoom1Opened: boolean = false;
+    private doorRoom2Opened: boolean = false;
+    private gateOpened: boolean = false;
+    private gateBlock: Phaser.Physics.Arcade.Sprite | null = null;
     private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
     private wasd!: any;
     private keys123!: any;
@@ -61,6 +65,10 @@ export class MainScene extends Phaser.Scene {
         this.startLevel = data.level || 1;
         this.isNewGame = data.newGame || false;
         this.isGameOver = false;
+        this.doorRoom1Opened = false;
+        this.doorRoom2Opened = false;
+        this.gateOpened = false;
+        this.gateBlock = null;
     }
 
     create() {
@@ -94,7 +102,7 @@ export class MainScene extends Phaser.Scene {
         this.portals = null as any;
 
         if (this.isNewGame) {
-            this.registry.set('hasFormPink', false); this.registry.set('hasStamp', false); this.registry.set('hasVisa', false);
+            this.registry.set('hasFormBlue', false); this.registry.set('hasFormPink', false); this.registry.set('hasStamp', false); this.registry.set('hasVisa', false);
             this.registry.set('hasStoneWest', false); this.registry.set('hasStoneEast', false); this.registry.set('hasStoneNorth', false); this.registry.set('hasStoneTop', false);
             this.registry.set('placedWest', false); this.registry.set('placedEast', false); this.registry.set('placedNorth', false); this.registry.set('placedTop', false);
         }
@@ -255,16 +263,39 @@ export class MainScene extends Phaser.Scene {
         this.bg = this.add.tileSprite(0, 0, WORLD_WIDTH, WORLD_HEIGHT, 'mine_floor').setOrigin(0).setDepth(0);
         const data = LEVEL_1_DATA;
         for (let y = 0; y < data.height; y++) { for (let x = 0; x < data.width; x++) { if (data.layout[y * data.width + x] === 1) this.walls.create(x * 32 + 16, y * 32 + 16, 'wall'); } }
+
+        const buildRoom = (x1: number, x2: number, y1: number, y2: number, doorX: number, doorY: number) => {
+            for (let x = x1; x <= x2; x++) {
+                for (let y = y1; y <= y2; y++) {
+                    const isPerimeter = x === x1 || x === x2 || y === y1 || y === y2;
+                    if (isPerimeter && !(x === doorX && y === doorY)) {
+                        this.walls.create(x * 32 + 16, y * 32 + 16, 'wall');
+                    }
+                }
+            }
+        };
         data.objects.forEach(obj => {
             const pixelX = obj.x * 32 + 16; const pixelY = obj.y * 32 + 16;
             if (obj.type === 'player_start') { this.player.setPosition(pixelX, pixelY); this.assistants.forEach(a => a.setPosition(pixelX - 20, pixelY)); }
-            else if (obj.type === 'dwarf') this.npcs.create(pixelX, pixelY, 'dwarf');
             else if (obj.type === 'stone_left') { if (!this.registry.get('hasStoneWest')) this.items.create(pixelX, pixelY, 'stone_left'); }
             else if (obj.type === 'spice_cinnamon') { const cin = this.spices.create(pixelX, pixelY, 'spice_cinnamon').setData('type', 'cinnamon'); this.physics.add.overlap(this.player, cin, this.collectSpice, undefined, this); }
-            else if (obj.type === 'door') { const door = this.specialObjects.create(pixelX, pixelY, 'door'); door.setData('type', 'door'); }
+            else if (obj.type === 'guard_gate') { const npc = this.npcs.create(pixelX, pixelY, 'dwarf'); npc.setData('type', 'guard_gate'); }
+            else if (obj.type === 'guard_room2') { const npc = this.npcs.create(pixelX, pixelY, 'dwarf'); npc.setTint(0xffd700); npc.setData('type', 'guard_room2'); }
+            else if (obj.type === 'door_room1') { const door = this.specialObjects.create(pixelX, pixelY, 'door'); door.setData('type', 'door_room1'); }
+            else if (obj.type === 'door_room2') { const door = this.specialObjects.create(pixelX, pixelY, 'door'); door.setData('type', 'door_room2'); }
+            else if (obj.type === 'form_blue') { if (!this.registry.get('hasFormBlue')) this.items.create(pixelX, pixelY, 'form_blue'); }
             else if (obj.type === 'form_pink') { if (!this.registry.get('hasFormPink')) this.items.create(pixelX, pixelY, 'form_pink'); }
         });
-        this.triggerDialogue("Denise", "O Anão está ali. Talvez ele saiba do Formulário.");
+        // Construir salas fechadas (exceto no tile da porta) para manter formulários dentro
+        buildRoom(4, 8, 4, 8, 6, 8);   // Sala 1 (form 1B azul)
+        buildRoom(10, 14, 6, 9, 12, 9); // Sala 2 (anão + form 2B rosa)
+        this.removeWallAt(6, 8);  // Tile da porta da sala 1
+        this.removeWallAt(6, 7);  // Tile interno logo atrás da porta 1
+        this.removeWallAt(12, 9); // Tile da porta da sala 2
+
+        // Bloqueio do portão até liberação
+        this.gateBlock = this.walls.create(21 * 32 + 16, 9 * 32 + 16, 'wall');
+        this.triggerDialogue("Denise", "Koffe, encontre a porta trancada sem guarda...");
     }
 
     setupLevel2_Ruins() {
@@ -438,15 +469,27 @@ export class MainScene extends Phaser.Scene {
         const type = target.getData('type');
         const targetSprite = target as Phaser.Physics.Arcade.Sprite;
 
-        if (type === 'door' && activeCat.name === 'Orpheu') {
-            this.triggerDialogue("Orpheu", "Miau! (Porta Aberta)");
-            this.triggerSparkles(targetSprite.x, targetSprite.y, 0xffffff); // Brilho branco
-            sfx.action(); // Som de ação
-            targetSprite.disableBody(true, true);
-            targetSprite.destroy();
+        if (type === 'door_room1') {
+            if (activeCat.name === 'Orpheu') {
+                this.doorRoom1Opened = true;
+                this.triggerDialogue("Orpheu", "Miau! (Porta aberta)");
+                this.triggerSparkles(targetSprite.x, targetSprite.y, 0xffffff);
+                sfx.action();
+                targetSprite.disableBody(true, true);
+                targetSprite.destroy();
+                this.removeWallAt(6, 8);
+                this.removeWallAt(6, 7);
+            } else {
+                this.triggerDialogue("Denise", "Trancada. O Orpheu consegue abrir.");
+            }
             return true;
-        } else if (type === 'door') {
-            this.triggerDialogue("Denise", "Trancada. O Orpheu consegue abrir.");
+        }
+
+        if (type === 'door_room2') {
+            if (this.doorRoom2Opened) {
+                return false;
+            }
+            this.triggerDialogue("Denise", "O anão tem a chave. Preciso entregar o 1B.");
             return true;
         }
 
@@ -474,8 +517,13 @@ export class MainScene extends Phaser.Scene {
         const koffe = this.assistants[3];
         let target: { x: number, y: number } | null = null;
         if (this.currentRoom === 1) {
-            if (!this.registry.get('hasFormPink')) { target = { x: 7 * 32 + 16, y: 5 * 32 + 16 }; }
-            else { target = { x: 20 * 32 + 16, y: 9 * 32 + 16 }; }
+            if (!this.registry.get('hasFormBlue')) {
+                target = { x: 6 * 32 + 16, y: 8 * 32 + 16 }; // Porta sem guarda
+            } else if (!this.registry.get('hasFormPink')) {
+                target = { x: 12 * 32 + 16, y: 9 * 32 + 16 }; // Porta com anão 1B
+            } else {
+                target = { x: 20 * 32 + 16, y: 9 * 32 + 16 }; // Anão do portão
+            }
         } else if (this.currentRoom === 2) {
             if (!this.screenFixed) target = { x: 13 * 32 + 16, y: 4 * 32 + 16 };
             else if (!this.registry.get('hasStamp')) target = { x: 13 * 32 + 16, y: 5 * 32 + 16 };
@@ -564,9 +612,37 @@ export class MainScene extends Phaser.Scene {
 
     handleNPC(npc: Phaser.Physics.Arcade.Sprite) {
         if (this.currentRoom === 1) {
-            if (this.registry.get('hasFormPink')) {
-                this.triggerDialogue("Anão", "Achou? Ótimo. Pode passar."); npc.destroy(); this.createExit(650, 300, 2);
-            } else this.triggerDialogue("Anão", "Preciso do Formulário 3B. Não me pergunte onde está, use o cão.");
+            const type = npc.getData('type');
+            if (type === 'guard_room2') {
+                if (this.doorRoom2Opened) {
+                    this.triggerDialogue("Anão", "A porta já está aberta.");
+                    return;
+                }
+                if (this.registry.get('hasFormBlue')) {
+                    this.doorRoom2Opened = true;
+                    this.triggerDialogue("Anão", "Formulário 1B recebido. Porta liberada!");
+                    sfx.action();
+                    const door = this.specialObjects.getChildren().find(o => o.getData('type') === 'door_room2') as Phaser.Physics.Arcade.Sprite;
+                    if (door) { door.disableBody(true, true); door.destroy(); }
+                    this.removeWallAt(12, 9);
+                } else {
+                    this.triggerDialogue("Anão", "Sem o formulário 1B não abro a porta.");
+                }
+            } else if (type === 'guard_gate') {
+                if (this.gateOpened) {
+                    this.triggerDialogue("Anão", "O portão já está aberto.");
+                    return;
+                }
+                if (this.registry.get('hasFormPink')) {
+                    this.gateOpened = true;
+                    this.triggerDialogue("Anão do Portão", "Formulário 2B? Aprovado. Abrindo o portão.");
+                    sfx.action();
+                    this.createExit(650, 300, 2);
+                    if (this.gateBlock) { this.gateBlock.destroy(); this.gateBlock = null; }
+                } else {
+                    this.triggerDialogue("Anão do Portão", "Traga o formulário 2B e eu abro.");
+                }
+            }
         } else if (this.currentRoom === 2) {
             const type = npc.getData('type');
             if (type === 'queue') {
@@ -599,7 +675,7 @@ export class MainScene extends Phaser.Scene {
         item.destroy();
 
         // Flash ao coletar itens importantes
-        if (['stone_left', 'stone_right', 'stone_top', 'stamp_auth', 'form_pink', 'visa'].includes(key)) {
+        if (['stone_left', 'stone_right', 'stone_top', 'stamp_auth', 'form_pink', 'form_blue', 'visa'].includes(key)) {
             this.cameras.main.flash(400);
         }
 
@@ -610,9 +686,13 @@ export class MainScene extends Phaser.Scene {
             if (this.registry.get('hasStamp')) this.createExit(650, 300, 3);
         }
         else if (key === 'stamp_auth') { this.registry.set('hasStamp', true); this.triggerDialogue("Denise", "Carimbo obtido!"); }
+        else if (key === 'form_blue') {
+            this.registry.set('hasFormBlue', true);
+            this.triggerDialogue("Denise", "Formulário 1B (azul) em mãos!");
+        }
         else if (key === 'form_pink') {
-            this.triggerSparkles(item.x, item.y, 0xff69b4); // Brilho rosa para o form
-            this.registry.set('hasFormPink', true); this.triggerDialogue("Denise", "Formulário Rosa encontrado!");
+            this.triggerSparkles(item.x, item.y, 0xff69b4);
+            this.registry.set('hasFormPink', true); this.triggerDialogue("Denise", "Formulário 2B (rosa) encontrado!");
         }
 
         if (this.currentRoom === 2 && this.registry.get('hasStamp') && this.registry.get('hasStoneEast')) {
@@ -721,6 +801,13 @@ export class MainScene extends Phaser.Scene {
         });
     }
 
+    private removeWallAt(tileX: number, tileY: number) {
+        const targetX = tileX * 32 + 16;
+        const targetY = tileY * 32 + 16;
+        const wall = this.walls.getChildren().find(w => (w as any).x === targetX && (w as any).y === targetY) as Phaser.Physics.Arcade.Sprite | undefined;
+        if (wall) wall.destroy();
+    }
+
     // ... helpers ...
     restorePuzzleState() { }
     restoreDolmenState() {
@@ -766,6 +853,7 @@ export class MainScene extends Phaser.Scene {
         list.innerHTML = '';
         const r = this.registry;
         if (r.get('hasFormPink')) list.innerHTML += "<li>📄 Form. Rosa</li>";
+        if (r.get('hasFormBlue')) list.innerHTML += "<li>📄 Form. Azul</li>";
         if (r.get('hasStoneWest')) list.innerHTML += "<li>🪨 Pedra Oeste</li>";
         if (r.get('hasStamp')) list.innerHTML += "<li>🛂 Carimbo</li>";
         if (r.get('hasStoneEast')) list.innerHTML += "<li>🪨 Pedra Leste</li>";

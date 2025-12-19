@@ -29,11 +29,14 @@ export const LEVEL_1_DATA = {
     ],
     objects: [
         { type: 'player_start', x: 2, y: 10 },
-        { type: 'dwarf', x: 20, y: 9 },
         { type: 'stone_left', x: 2, y: 15 },
         { type: 'spice_cinnamon', x: 12, y: 12 },
-        { type: 'door', x: 7, y: 7 },
-        { type: 'form_pink', x: 7, y: 5 }
+        { type: 'door_room1', x: 6, y: 8 },
+        { type: 'form_blue', x: 6, y: 6 },
+        { type: 'guard_room2', x: 12, y: 11 },
+        { type: 'door_room2', x: 12, y: 9 },
+        { type: 'form_pink', x: 12, y: 7 },
+        { type: 'guard_gate', x: 20, y: 9 }
     ]
 };
 

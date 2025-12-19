@@ -48,6 +48,7 @@ export class BootScene extends Phaser.Scene {
 
         // ITENS
         g.clear(); g.fillStyle(0xff69b4); g.fillRect(8, 8, 16, 16); g.generateTexture('form_pink', 32, 32);
+        g.clear(); g.fillStyle(0x5dade2); g.fillRect(8, 8, 16, 16); g.generateTexture('form_blue', 32, 32);
         g.clear(); g.fillStyle(0x2ecc71); g.fillRect(8, 8, 16, 16); g.generateTexture('stamp_auth', 32, 32);
         g.clear(); g.fillStyle(0xf1c40f); g.fillRect(4, 4, 24, 24); g.fillStyle(0x000000); g.fillRect(6, 10, 20, 2); g.fillRect(6, 16, 20, 2); g.generateTexture('visa', 32, 32);
         g.clear(); g.fillStyle(0xd35400); g.fillRect(10, 4, 12, 24); g.generateTexture('spice_cinnamon', 32, 32);
