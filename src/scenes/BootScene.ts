@@ -1,9 +1,9 @@
 import Phaser from 'phaser';
 import slide1 from '../resources/cutscenes/slide1-the-cave-warm.png';
 import slide2 from '../resources/cutscenes/slide2-the-dwarf-warm.png';
-import slide3 from '../resources/cutscenes/slide3-the-invitation.png';
-import slide4 from '../resources/cutscenes/slide4-the-gate.png';
-import slide5 from '../resources/cutscenes/slide5-the-monster.png';
+import slide3 from '../resources/cutscenes/slide3-the-invitation-warm.png';
+import slide4 from '../resources/cutscenes/slide4-the-gate-warm.png';
+import slide5 from '../resources/cutscenes/slide5-the-monster-warm.png';
 import cover from '../resources/cover/cover.png';
 import fiodorSprite from '../resources/sprites/characters-sprites.png';
 

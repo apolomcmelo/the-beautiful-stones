@@ -6,6 +6,9 @@ export class IntroScene extends Phaser.Scene {
     private currentSlideIndex: number = 0;
     private slideGroup!: Phaser.GameObjects.Group;
     private slides: any[];
+    private isTransitioning = false;
+    private advanceHint: Phaser.GameObjects.Text | null = null;
+    private hintTimer: Phaser.Time.TimerEvent | null = null;
 
     constructor() {
         super({ key: 'IntroScene' });
@@ -16,15 +19,15 @@ export class IntroScene extends Phaser.Scene {
             },
             {
                 image: 'slide2',
-                text: "Este artefato é tão interessante! Tão complexo.\nE pah! Precisamos da Senhora dos Megálitos.\nRezem para que os estafetas não percam este pedido de ajuda no caminho."
+                text: "E pah! Precisamos da Senhora dos Megálitos para nos ajudar com isso.\nRezem para que os estafetas não percam este pedido de ajuda no caminho."
             },
             {
                 image: 'slide3',
-                text: "Então?... A sério? Pedras e mais pedras? Parece-me fun. Vamos a isso!"
+                text: "Então?... A sério? Pedras e mais pedras? Parece-me fun.\nVamos a isso!"
             },
             {
                 image: 'slide4',
-                text: "Mas a Senhora dos Monólitos não sabia... O desafio não eram orcs, nem dragões, nem a língua negra."
+                text: "Mas a Senhora dos Monólitos não sabia...\nO desafio não eram orcs, nem dragões, nem nazgûls."
             },
             {
                 image: 'slide5',
@@ -48,17 +51,36 @@ export class IntroScene extends Phaser.Scene {
         this.showSlide(0);
 
         this.input.on('pointerdown', () => {
+            if (this.isTransitioning) return;
             unlockAudio();
             const currentSlide = this.slides[this.currentSlideIndex];
             if (currentSlide && currentSlide.isTitleScreen) return;
+
+            if (currentSlide && currentSlide.fadeOutText) {
+                // Slide 5: start a fade to transition to the next slide only after click
+                this.isTransitioning = true;
+                this.cameras.main.once('camerafadeoutcomplete', () => {
+                    this.nextSlide();
+                });
+                this.cameras.main.fadeOut(500);
+                return;
+            }
+
             this.nextSlide();
         });
 
-        this.add.text(SCREEN_WIDTH - 10, SCREEN_HEIGHT - 10, "(Clique para avançar)", { fontSize: '12px', color: '#666' }).setOrigin(1);
+        this.advanceHint = this.add.text(SCREEN_WIDTH - 10, SCREEN_HEIGHT - 10, "(Clique para avançar)", {
+            fontSize: '12px',
+            color: '#666'
+        }).setOrigin(1).setDepth(200);
     }
 
     showSlide(index: number) {
         this.slideGroup.clear(true, true);
+        if (this.hintTimer) {
+            this.hintTimer.remove(false);
+            this.hintTimer = null;
+        }
 
         if (index >= this.slides.length) {
             // Should not happen if last slide is title screen, but good fallback
@@ -67,6 +89,14 @@ export class IntroScene extends Phaser.Scene {
         }
 
         const slide = this.slides[index];
+        if (this.advanceHint) {
+            this.advanceHint.setVisible(false);
+            if (!slide.isTitleScreen) {
+                this.hintTimer = this.time.delayedCall(2000, () => {
+                    this.advanceHint?.setVisible(true);
+                });
+            }
+        }
         const cx = SCREEN_WIDTH / 2;
         const cy = SCREEN_HEIGHT / 2;
 
@@ -184,15 +214,6 @@ export class IntroScene extends Phaser.Scene {
             textObj.setDepth(10);
             this.slideGroup.add(textObj);
 
-            if (slide.fadeOutText) {
-                this.tweens.add({
-                    targets: this.slideGroup.getChildren(),
-                    alpha: 0,
-                    duration: 2000,
-                    delay: 3000
-                });
-            }
-
             if (slide.surprise) {
                 textObj.setAlpha(0);
                 this.tweens.add({
@@ -205,6 +226,9 @@ export class IntroScene extends Phaser.Scene {
         }
 
         this.cameras.main.fadeIn(500);
+        this.cameras.main.once('camerafadeincomplete', () => {
+            this.isTransitioning = false;
+        });
     }
 
     nextSlide() {
