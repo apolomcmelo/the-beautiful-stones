@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { LEVEL_1_DATA, LEVEL_2_DATA, WORLD_WIDTH, WORLD_HEIGHT } from '../consts';
-import { sfx } from '../utils/audio';
+import { sfx, playAssistantVoice } from '../utils/audio';
 
 const STONE_FRAMES = {
     west: 0,   // 1ª coluna, 1ª fileira
@@ -539,6 +539,7 @@ export class MainScene extends Phaser.Scene {
 
     performAssistantAction(time: number) {
         const activeCat = this.assistants[this.activeAssistantIndex];
+        playAssistantVoice(activeCat.name);
         if (activeCat.name === "Maron") {
             if (time > this.lastHealTime + 2000) {
                 this.playerHealth = Math.min(100, this.playerHealth + 10);
@@ -565,6 +566,7 @@ export class MainScene extends Phaser.Scene {
             }
             if (activeCat.name === 'Orpheu') {
                 this.doorRoom1Opened = true;
+                playAssistantVoice('Orpheu');
                 this.triggerDialogue("Orpheu", "Miau! (Porta aberta)");
                 this.triggerSparkles(targetSprite.x, targetSprite.y, 0xffffff);
                 sfx.action();
@@ -588,6 +590,7 @@ export class MainScene extends Phaser.Scene {
 
         if (type === 'broken_screen' && activeCat.name === 'Fiódor') {
             if (!target.getData('fixed')) {
+                playAssistantVoice('Fiódor');
                 this.triggerDialogue("Fiódor", "Vushhh... (Ecrã consertado!)");
                 this.cameras.main.flash(400); // Flash ao consertar
                 this.triggerSparkles(targetSprite.x, targetSprite.y, 0x00ffff); // Brilho ciano
