@@ -33,6 +33,7 @@ export class MainScene extends Phaser.Scene {
     private invincibleTimer: Phaser.Time.TimerEvent | null = null;
     private invincibleTween: Phaser.Tweens.Tween | null = null;
     private pendingTransition: boolean = false;
+    private dialogueQueue: { name: string; text: string }[] = [];
     private doorRoom1Opened: boolean = false;
     private doorRoom2Opened: boolean = false;
     private gateOpened: boolean = false;
@@ -157,6 +158,7 @@ export class MainScene extends Phaser.Scene {
         if (this.isNewGame) {
             this.registry.set('hasFormBlue', false); this.registry.set('hasFormPink', false); this.registry.set('hasStamp', false); this.registry.set('hasVisa', false);
             this.registry.set('hasStoneWest', false); this.registry.set('hasStoneEast', false); this.registry.set('hasStoneNorth', false); this.registry.set('hasStoneTop', false);
+            this.registry.set('hasFormBlueAuth', false);
             this.registry.set('placedWest', false); this.registry.set('placedEast', false); this.registry.set('placedNorth', false); this.registry.set('placedTop', false);
         }
 
@@ -341,8 +343,8 @@ export class MainScene extends Phaser.Scene {
                 }
             }
             else if (obj.type === 'spice_cinnamon') { const cin = this.spices.create(pixelX, pixelY, 'consumables', 0).setData('type', 'cinnamon'); this.physics.add.overlap(this.player, cin, this.collectSpice, undefined, this); }
-            else if (obj.type === 'guard_gate') { const npc = this.npcs.create(pixelX, pixelY, 'dwarf'); npc.setData('type', 'guard_gate'); }
-            else if (obj.type === 'guard_room2') { const npc = this.npcs.create(pixelX, pixelY, 'dwarf'); npc.setTint(0xffd700); npc.setData('type', 'guard_room2'); }
+            else if (obj.type === 'guard_gate') { const npc = this.npcs.create(pixelX, pixelY, 'dwarf'); npc.setData('type', 'guard_gate'); npc.setName('Analista de Políticas de Inmigración'); }
+            else if (obj.type === 'guard_room2') { const npc = this.npcs.create(pixelX, pixelY, 'dwarf'); npc.setTint(0xffd700); npc.setData('type', 'guard_room2'); npc.setName('Axente de Visados'); }
             else if (obj.type === 'door_room1') { const door = this.specialObjects.create(pixelX, pixelY, 'door'); door.setData('type', 'door_room1'); }
             else if (obj.type === 'door_room2') { const door = this.specialObjects.create(pixelX, pixelY, 'door'); door.setData('type', 'door_room2'); }
             else if (obj.type === 'form_blue') {
@@ -584,7 +586,7 @@ export class MainScene extends Phaser.Scene {
             if (this.doorRoom2Opened) {
                 return false;
             }
-            this.triggerDialogue("Denise", "O anão tem a chave. Preciso entregar o 1B.");
+            this.triggerDialogue("Denise", "O Axente de Visados tem a chave. Preciso passar por ele.");
             return true;
         }
 
@@ -615,10 +617,12 @@ export class MainScene extends Phaser.Scene {
         if (this.currentRoom === 1) {
             if (!this.registry.get('hasFormBlue')) {
                 target = { x: 6 * 32 + 16, y: 8 * 32 + 16 }; // Porta sem guarda
+            } else if (!this.registry.get('hasFormBlueAuth')) {
+                target = { x: 20 * 32 + 16, y: 9 * 32 + 16 }; // Analista para autenticar 1B
             } else if (!this.registry.get('hasFormPink')) {
-                target = { x: 12 * 32 + 16, y: 9 * 32 + 16 }; // Porta com anão 1B
+                target = { x: 12 * 32 + 16, y: 9 * 32 + 16 }; // Axente para liberar 2B
             } else {
-                target = { x: 20 * 32 + 16, y: 9 * 32 + 16 }; // Anão do portão
+                target = { x: 20 * 32 + 16, y: 9 * 32 + 16 }; // Analista abre portal
             }
         } else if (this.currentRoom === 2) {
             if (!this.screenFixed) target = { x: 13 * 32 + 16, y: 4 * 32 + 16 };
@@ -727,33 +731,59 @@ export class MainScene extends Phaser.Scene {
             const type = npc.getData('type');
             if (type === 'guard_room2') {
                 if (this.doorRoom2Opened) {
-                    this.triggerDialogue("Anão", "A porta já está aberta.");
+                    this.triggerDialogue("Axente de Visados", "A porta já está aberta. Anda lá.");
                     return;
                 }
-                if (this.registry.get('hasFormBlue')) {
+                if (!this.registry.get('hasFormBlue')) {
+                    this.triggerDialogue("Axente de Visados", "Tráz-me o formulário 1B.");
+                    return;
+                }
+
+                if (this.registry.get('hasFormBlue') && !this.registry.get('hasFormBlueAuth')) {
+                    this.startDialogueSequence([
+                        { name: "Axente de Visados", text: "Preciso do 1B autenticado." },
+                        { name: "Denise", text: "Você não disse isso antes!" },
+                        { name: "Axente de Visados", text: "Esse é o processo. Autentica com o Analista de Políticas de Inmigración." },
+                        { name: "Denise", text: "C'um carago. Isso só pode ser galego." }
+                    ]);
+                    return;
+                }
+
+                if (this.registry.get('hasFormBlueAuth') && !this.registry.get('hasFormPink')) {
                     this.doorRoom2Opened = true;
-                    this.triggerDialogue("Anão", "Formulário 1B recebido. Porta liberada!");
+                    this.triggerDialogue("Axente de Visados", "Agora sim. Porta liberada para o 2B.");
                     sfx.action();
                     const door = this.specialObjects.getChildren().find(o => o.getData('type') === 'door_room2') as Phaser.Physics.Arcade.Sprite;
                     if (door) { door.disableBody(true, true); door.destroy(); }
                     this.removeWallAt(12, 9);
-                } else {
-                    this.triggerDialogue("Anão", "Sem o formulário 1B não abro a porta.");
-                }
-            } else if (type === 'guard_gate') {
-                if (this.gateOpened) {
-                    this.triggerDialogue("Anão", "O portão já está aberto.");
                     return;
                 }
+
+                this.triggerDialogue("Axente de Visados", "Já tens o 2B? Então avança.");
+            } else if (type === 'guard_gate') {
+                const name = npc.name || "Analista de Políticas de Inmigración";
+                if (this.gateOpened) {
+                    this.triggerDialogue(name, "O portão já está aberto.");
+                    return;
+                }
+
                 if (this.registry.get('hasFormPink')) {
                     this.gateOpened = true;
-                    this.triggerDialogue("Anão do Portão", "Formulário 2B? Aprovado. Abrindo o portão.");
+                    this.triggerDialogue(name, "Formulário 2B? Aprovado. Abrindo o portão.");
                     sfx.action();
                     this.createExit(650, 300, 2);
                     if (this.gateBlock) { this.gateBlock.destroy(); this.gateBlock = null; }
-                } else {
-                    this.triggerDialogue("Anão do Portão", "Traga o formulário 2B e eu abro.");
+                    return;
                 }
+
+                if (this.registry.get('hasFormBlue') && !this.registry.get('hasFormBlueAuth')) {
+                    this.registry.set('hasFormBlueAuth', true);
+                    this.triggerDialogue(name, "Formulário 1B autenticado. Agora traga o 2B.");
+                    sfx.collect();
+                    return;
+                }
+
+                this.triggerDialogue(name, "Traga o formulário 2B para abrir o portal.");
             }
         } else if (this.currentRoom === 2) {
             const type = npc.getData('type');
@@ -1044,18 +1074,39 @@ export class MainScene extends Phaser.Scene {
     createWallsRect(x: number, y: number, w: number, h: number) { for (let i = x; i < x + w; i++) { this.walls.create(i * 32 + 16, y * 32 + 16, 'wall'); this.walls.create(i * 32 + 16, (y + h) * 32 + 16, 'wall'); } for (let j = y; j <= y + h; j++) { this.walls.create(x * 32 + 16, j * 32 + 16, 'wall'); this.walls.create((x + w) * 32 + 16, j * 32 + 16, 'wall'); } }
     createExit(x: number, y: number, nextLevel: number) { const portal = this.portals.create(x, y, 'portal'); this.physics.add.overlap(this.player, portal, () => { this.loadLevel(nextLevel); }); }
     createReturnPortal(x: number, y: number, prevLevel: number) { const portal = this.portals.create(x, y, 'portal_back'); this.physics.add.overlap(this.player, portal, () => { this.loadLevel(prevLevel); }); }
-    triggerDialogue(name: string, text: string) {
+    private showDialogueEntry(entry: { name: string; text: string }) {
         this.isDialogueOpen = true;
         const ui = document.getElementById('ui-layer');
         const uiName = document.getElementById('ui-name');
         const uiText = document.getElementById('ui-text');
         if (ui && uiName && uiText) {
-            uiName.innerText = name;
-            uiText.innerText = text;
+            uiName.innerText = entry.name;
+            uiText.innerText = entry.text;
             ui.style.display = 'block';
         }
     }
+
+    triggerDialogue(name: string, text: string) {
+        this.dialogueQueue = [];
+        this.showDialogueEntry({ name, text });
+    }
+
+    private startDialogueSequence(dialogues: { name: string; text: string }[]) {
+        if (!dialogues.length) return;
+        const [first, ...rest] = dialogues;
+        this.dialogueQueue = rest;
+        this.showDialogueEntry(first);
+    }
+
     closeDialogue() {
+        if (this.dialogueQueue.length > 0) {
+            const next = this.dialogueQueue.shift();
+            if (next) {
+                this.showDialogueEntry(next);
+                return;
+            }
+        }
+
         this.isDialogueOpen = false;
         const ui = document.getElementById('ui-layer');
         if (ui) ui.style.display = 'none';
