@@ -140,9 +140,10 @@ export const sfx = {
     }
 };
 
-export const playAssistantVoice = (name: string) => {
+export const playAssistantVoice = (name: string): Promise<void> | void => {
     if (name === 'Maron') return playClip(maronMeow, 0.9);
     if (name === 'Fiódor' || name === 'Fiodor') return playClip(fiodorMeow, 0.9);
     if (name === 'Orpheu' || name === 'Orphew') return playClip(orphewMeow, 0.9);
     if (name === 'Koffe') return playClip(koffeBark, 0.9);
+    return;
 };
