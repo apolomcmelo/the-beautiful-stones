@@ -791,10 +791,10 @@ export class MainScene extends Phaser.Scene {
             this.cameras.main.flash(400);
         }
 
-        if (key === 'stone_left') { this.registry.set('hasStoneWest', true); this.triggerDialogue("Denise", "Pedra Oeste recolhida."); }
+        if (key === 'stone_left') { this.registry.set('hasStoneWest', true); this.announceStoneCollection(); }
         else if (key === 'stone_right') {
             this.registry.set('hasStoneEast', true);
-            this.triggerDialogue("Denise", "Pedra Leste recolhida.");
+            this.announceStoneCollection();
             if (this.registry.get('hasStamp')) this.createExit(650, 300, 3);
         }
         else if (key === 'stamp_auth') { this.registry.set('hasStamp', true); this.triggerDialogue("Denise", "Carimbo obtido!"); }
@@ -820,7 +820,9 @@ export class MainScene extends Phaser.Scene {
     checkTomb(tomb: Phaser.Physics.Arcade.Sprite) {
         if (tomb.getData('hasStone')) {
             if (!this.registry.get('hasStoneTop')) {
-                this.registry.set('hasStoneTop', true); this.triggerDialogue("Denise", "Pedra de Topo encontrada!"); tomb.setTint(0x555555);
+                this.registry.set('hasStoneTop', true);
+                this.announceStoneCollection();
+                tomb.setTint(0x555555);
                 this.triggerSparkles(tomb.x, tomb.y, 0xffd700); // Ouro
                 sfx.collect();
             } else this.triggerDialogue("Denise", "Já está vazia.");
@@ -897,6 +899,24 @@ export class MainScene extends Phaser.Scene {
         this.tweens.add({ targets: cat, y: cat.y - 10, duration: 100, yoyo: true });
     }
 
+    private getStoneCount(): number {
+        const r = this.registry;
+        const flags = ['hasStoneWest', 'hasStoneEast', 'hasStoneNorth', 'hasStoneTop'] as const;
+        return flags.reduce((acc, key) => acc + (r.get(key) ? 1 : 0), 0);
+    }
+
+    private getStoneLine(count: number): string | null {
+        if (count === 1) return "Essa é uma beeela pedra.";
+        if (count === 2) return "Outra bela pedra";
+        if (count === 4) return "Mas que bela pedra. Uma beela pedra";
+        return null;
+    }
+
+    private announceStoneCollection() {
+        const msg = this.getStoneLine(this.getStoneCount());
+        if (msg) this.triggerDialogue("Denise", msg);
+    }
+
     attackBoss() {
         if (!this.boss) return;
         this.bossHealth -= 20;
@@ -920,6 +940,7 @@ export class MainScene extends Phaser.Scene {
 
             this.pendingTransition = true;
             this.triggerDialogue("Don Escribán", "APROVADO! TOME O VISTO E A PEDRA NORTE! AGORA SUMAM!");
+            this.announceStoneCollection();
         }
     }
 
