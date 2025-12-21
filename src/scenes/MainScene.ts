@@ -49,6 +49,7 @@ export class MainScene extends Phaser.Scene {
     private cinnamonCount = 0;
     private cloveCount = 0;
     private pastelCount = 0;
+    private iconCache: Map<string, string> = new Map();
 
     // Emissores de Partículas
     private dustEmitter!: Phaser.GameObjects.Particles.ParticleEmitter;
@@ -112,9 +113,11 @@ export class MainScene extends Phaser.Scene {
         this.doorRoom2Opened = false;
         this.gateOpened = false;
         this.gateBlock = null;
-        this.cinnamonCount = 0;
-        this.cloveCount = 0;
-        this.pastelCount = 0;
+        if (this.isNewGame) {
+            this.cinnamonCount = 0;
+            this.cloveCount = 0;
+            this.pastelCount = 0;
+        }
     }
 
     create() {
@@ -788,6 +791,7 @@ export class MainScene extends Phaser.Scene {
             this.triggerSparkles(item.x, item.y, 0xff69b4);
             this.registry.set('hasFormPink', true); this.triggerDialogue("Denise", "Formulário 2B (rosa) encontrado!");
         }
+        this.updateInventoryUI();
 
         if (this.currentRoom === 2 && this.registry.get('hasStamp') && this.registry.get('hasStoneEast')) {
             this.createExit(650, 300, 3);
@@ -812,34 +816,42 @@ export class MainScene extends Phaser.Scene {
         const r = this.registry;
         if (r.get('hasStoneWest') && !r.get('placedWest')) {
             r.set('placedWest', true);
+            r.set('hasStoneWest', false);
             if (this.stoneSprites.west) this.stoneSprites.west.destroy();
             this.stoneSprites.west = this.playStoneAnim(STONE_FRAMES.west, 5, this.dolmenBase.x - 30, this.dolmenBase.y - 10);
             this.triggerSparkles(this.dolmenBase.x - 30, this.dolmenBase.y, 0xffffff);
             sfx.action();
             this.time.delayedCall(3000, () => this.stopStoneAnim(this.stoneSprites.west));
+            this.updateInventoryUI();
         }
         else if (r.get('hasStoneEast') && !r.get('placedEast')) {
             r.set('placedEast', true);
+            r.set('hasStoneEast', false);
             if (this.stoneSprites.east) this.stoneSprites.east.destroy();
             this.stoneSprites.east = this.playStoneAnim(STONE_FRAMES.east, 5, this.dolmenBase.x + 30, this.dolmenBase.y - 10);
             this.triggerSparkles(this.dolmenBase.x + 30, this.dolmenBase.y, 0xffffff);
             sfx.action();
             this.time.delayedCall(3000, () => this.stopStoneAnim(this.stoneSprites.east));
+            this.updateInventoryUI();
         }
         else if (r.get('hasStoneNorth') && !r.get('placedNorth')) {
             r.set('placedNorth', true);
+            r.set('hasStoneNorth', false);
             if (this.stoneSprites.north) this.stoneSprites.north.destroy();
             this.stoneSprites.north = this.playStoneAnim(STONE_FRAMES.north, 4, this.dolmenBase.x, this.dolmenBase.y - 10);
             this.triggerSparkles(this.dolmenBase.x, this.dolmenBase.y, 0xffffff);
             sfx.action();
             this.time.delayedCall(3000, () => this.stopStoneAnim(this.stoneSprites.north));
+            this.updateInventoryUI();
         }
         else if (r.get('hasStoneTop') && !r.get('placedTop') && r.get('placedWest') && r.get('placedEast') && r.get('placedNorth')) {
             r.set('placedTop', true);
+            r.set('hasStoneTop', false);
             if (this.stoneSprites.top) this.stoneSprites.top.destroy();
             this.stoneSprites.top = this.playStoneAnim(STONE_FRAMES.top, 6, this.dolmenBase.x, this.dolmenBase.y - 32);
             this.triggerSparkles(this.dolmenBase.x, this.dolmenBase.y - 32, 0xffff00);
             sfx.win(); // Fanfarra inicial
+            this.updateInventoryUI();
             this.time.delayedCall(3000, () => {
                 // remover pedras antigas
                 ['west', 'east', 'north', 'top'].forEach(k => {
@@ -1026,42 +1038,62 @@ export class MainScene extends Phaser.Scene {
         const text = this.add.text(x, y, message, { fontSize: '12px', color: colorStr, stroke: '#000', strokeThickness: 2 });
         this.tweens.add({ targets: text, y: y - 30, alpha: 0, duration: 1000, onComplete: () => text.destroy() });
     }
+    private getFrameDataURL(textureKey: string, frameIndex: number): string | null {
+        const cacheKey = `${textureKey}-${frameIndex}`;
+        if (this.iconCache.has(cacheKey)) return this.iconCache.get(cacheKey)!;
+
+        const texture = this.textures.exists(textureKey) ? this.textures.get(textureKey) : null;
+        if (!texture) return null;
+        const frame = texture.get(frameIndex);
+        const source = texture.getSourceImage() as HTMLImageElement | HTMLCanvasElement | undefined;
+        if (!frame || !source) return null;
+
+        const canvas = document.createElement('canvas');
+        canvas.width = frame.cutWidth;
+        canvas.height = frame.cutHeight;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return null;
+        ctx.imageSmoothingEnabled = false;
+        ctx.drawImage(source, frame.cutX, frame.cutY, frame.cutWidth, frame.cutHeight, 0, 0, frame.cutWidth, frame.cutHeight);
+        const dataUrl = canvas.toDataURL();
+        this.iconCache.set(cacheKey, dataUrl);
+        return dataUrl;
+    }
+
     updateInventoryUI() {
-        const list = document.getElementById('inventory-list');
-        if (!list) return;
-        list.innerHTML = '';
+        const grid = document.getElementById('inventory-grid');
+        if (!grid) return;
+        grid.innerHTML = '';
+
         const r = this.registry;
-        if (r.get('hasFormPink')) list.innerHTML += "<li>📄 Form. Rosa</li>";
-        if (r.get('hasFormBlue')) list.innerHTML += "<li>📄 Form. Azul</li>";
-        if (r.get('hasStoneWest')) list.innerHTML += "<li>🪨 Pedra Oeste</li>";
-        if (r.get('hasStamp')) list.innerHTML += "<li>🛂 Carimbo</li>";
-        if (r.get('hasStoneEast')) list.innerHTML += "<li>🪨 Pedra Leste</li>";
-        if (r.get('hasStoneNorth')) list.innerHTML += "<li>🪨 Pedra Norte</li>";
-        if (r.get('hasVisa')) list.innerHTML += "<li>✅ Visto</li>";
-        if (r.get('hasStoneTop')) list.innerHTML += "<li>🪨 Pedra Topo</li>";
+        const items = [
+            { key: 'cinnamon', label: 'Canela', collected: this.cinnamonCount > 0, frame: { texture: 'consumables', index: 0 }, count: this.cinnamonCount },
+            { key: 'clove', label: 'Cravo', collected: this.cloveCount > 0, frame: { texture: 'consumables', index: 1 }, count: this.cloveCount },
+            { key: 'pastel', label: 'Pastel de Nata', collected: this.pastelCount > 0, frame: { texture: 'consumables', index: 2 }, count: this.pastelCount },
+            { key: 'form_blue', label: 'Formulário 1B (Azul)', collected: r.get('hasFormBlue'), frame: { texture: 'items', index: 15 } },
+            { key: 'form_pink', label: 'Formulário 2B (Rosa)', collected: r.get('hasFormPink'), frame: { texture: 'items', index: 16 } },
+            { key: 'stone_west', label: 'Pedra Oeste', collected: r.get('hasStoneWest'), frame: { texture: 'items', index: STONE_FRAMES.west } },
+            { key: 'stone_east', label: 'Pedra Leste', collected: r.get('hasStoneEast'), frame: { texture: 'items', index: STONE_FRAMES.east } },
+            { key: 'stone_north', label: 'Pedra Norte', collected: r.get('hasStoneNorth'), frame: { texture: 'items', index: STONE_FRAMES.north } },
+            { key: 'stone_top', label: 'Pedra Topo', collected: r.get('hasStoneTop'), frame: { texture: 'items', index: STONE_FRAMES.top } }
+        ];
 
-        const grid = document.getElementById('consumable-grid');
-        if (grid) {
-            const totalConsumables = this.cinnamonCount + this.cloveCount + this.pastelCount;
-            grid.style.display = totalConsumables >= 1 ? 'grid' : 'none';
-            grid.innerHTML = '';
+        items.filter(item => item.collected).forEach(item => {
+            const slot = document.createElement('div');
+            slot.className = 'inventory-slot';
+            slot.title = item.label;
+            const icon = this.getFrameDataURL(item.frame.texture, item.frame.index);
+            if (icon) slot.style.backgroundImage = `url(${icon})`;
 
-            const consumables = [
-                { className: 'slot-cinnamon', count: this.cinnamonCount },
-                { className: 'slot-clove', count: this.cloveCount },
-                { className: 'slot-pastel', count: this.pastelCount }
-            ].filter(c => c.count > 0);
-
-            consumables.forEach(c => {
-                const slot = document.createElement('div');
-                slot.className = `consumable-slot ${c.className}`;
+            if (item.count && item.count > 0) {
                 const countEl = document.createElement('span');
                 countEl.className = 'slot-count';
-                countEl.textContent = c.count.toString();
+                countEl.textContent = item.count.toString();
                 slot.appendChild(countEl);
-                grid.appendChild(slot);
-            });
-        }
+            }
+
+            grid.appendChild(slot);
+        });
     }
     winGame() { this.scene.start('EndingScene'); }
 }

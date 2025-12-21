@@ -89,50 +89,6 @@
             transition: width 0.3s ease-out;
         }
 
-        #consumable-grid {
-            display: none;
-            grid-template-columns: repeat(auto-fit, 40px);
-            gap: 6px;
-            margin-top: 6px;
-        }
-
-        .consumable-slot {
-            position: relative;
-            width: 40px;
-            height: 40px;
-            border: 1px solid #777;
-            background: #111;
-            border-radius: 4px;
-            image-rendering: pixelated;
-            overflow: hidden;
-        }
-
-        .consumable-slot::before {
-            content: '';
-            position: absolute;
-            inset: 4px;
-            background-image: url('/src/resources/sprites/consumables-sprites.png');
-            background-repeat: no-repeat;
-            image-rendering: pixelated;
-        }
-
-        .slot-cinnamon::before {
-            background-position: 0 0;
-        }
-
-        .slot-clove::before {
-            background-position: -32px 0;
-        }
-
-        .slot-pastel::before {
-            background-position: -64px 0;
-        }
-
-        .consumable-slot.empty {
-            filter: grayscale(1);
-            opacity: 0.35;
-        }
-
         .slot-count {
             position: absolute;
             right: 2px;
@@ -147,17 +103,34 @@
 
         #inventory-display {
             background: rgba(0, 0, 0, 0.7);
-            padding: 8px;
+            padding: 6px;
             border-radius: 4px;
             color: #fff;
             font-size: 12px;
-            width: 180px;
+            display: inline-block;
+            width: max-content;
         }
 
-        #inventory-list {
-            margin-top: 5px;
-            list-style: none;
-            padding: 0;
+        #inventory-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 42px);
+            grid-auto-rows: 42px;
+            gap: 6px;
+            margin-top: 0;
+        }
+
+        .inventory-slot {
+            position: relative;
+            width: 42px;
+            height: 42px;
+            border: 1px solid #777;
+            background: #0f0f0f;
+            border-radius: 4px;
+            background-size: 32px 32px;
+            background-repeat: no-repeat;
+            background-position: center;
+            image-rendering: pixelated;
+            overflow: hidden;
         }
 
         /* Boss & Buffs */
@@ -220,15 +193,9 @@
         <div id="health-bar">
             <div id="health-fill"></div>HP: <span id="health-value">100</span>
         </div>
-        <div id="consumable-grid">
-            <div id="slot-cinnamon" class="consumable-slot slot-cinnamon empty"><span class="slot-count">0</span></div>
-            <div id="slot-clove" class="consumable-slot slot-clove empty"><span class="slot-count">0</span></div>
-            <div id="slot-pastel" class="consumable-slot slot-pastel empty"><span class="slot-count">0</span></div>
-        </div>
         <div id="buff-container"></div>
         <div id="inventory-display">
-            <strong>Pasta de Documentos:</strong>
-            <ul id="inventory-list"></ul>
+            <div id="inventory-grid"></div>
         </div>
     </div>
 
