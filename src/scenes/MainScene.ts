@@ -32,6 +32,7 @@ export class MainScene extends Phaser.Scene {
     private isInvincible: boolean = false;
     private invincibleTimer: Phaser.Time.TimerEvent | null = null;
     private invincibleTween: Phaser.Tweens.Tween | null = null;
+    private pendingTransition: boolean = false;
     private doorRoom1Opened: boolean = false;
     private doorRoom2Opened: boolean = false;
     private gateOpened: boolean = false;
@@ -113,10 +114,13 @@ export class MainScene extends Phaser.Scene {
         this.doorRoom2Opened = false;
         this.gateOpened = false;
         this.gateBlock = null;
+        this.pendingTransition = false;
         if (this.isNewGame) {
             this.cinnamonCount = 0;
             this.cloveCount = 0;
             this.pastelCount = 0;
+            this.playerHealth = 100;
+            this.bossHealth = 100;
         }
     }
 
@@ -237,6 +241,7 @@ export class MainScene extends Phaser.Scene {
         this.selector.setVisible(true);
         this.loadLevel(this.startLevel);
         this.updateInventoryUI();
+        this.updateUI();
     }
 
     loadLevel(level: number) {
@@ -390,13 +395,20 @@ export class MainScene extends Phaser.Scene {
 
     setupLevel3_Boss() {
         this.player.setPosition(100, 300);
+        this.playerHealth = 100;
+        this.updateUI();
         this.bg = this.add.tileSprite(0, 0, WORLD_WIDTH, WORLD_HEIGHT, 'ruin_floor').setTint(0xffd700).setOrigin(0).setDepth(0);
         this.createWallsRect(0, 0, 25, 19);
         this.createReturnPortal(50, 300, 2);
         if (!this.registry.get('hasVisa')) {
+            this.bossHealth = 100;
             this.boss = this.physics.add.sprite(600, 300, 'boss').setImmovable(true);
             const bossHealthBar = document.getElementById('boss-health-bar');
-            if (bossHealthBar) bossHealthBar.style.display = 'block';
+            if (bossHealthBar) {
+                bossHealthBar.style.display = 'block';
+                const bossHealthFill = document.getElementById('boss-health-fill');
+                if (bossHealthFill) bossHealthFill.style.width = this.bossHealth + '%';
+            }
             this.triggerDialogue("Don Escribán", "PARADA! Onde está a Licença de Campo B7-Alfa?");
         } else { this.createExit(650, 300, 4); }
     }
@@ -502,11 +514,11 @@ export class MainScene extends Phaser.Scene {
             }
         }
 
-        if (this.currentRoom === 3 && this.boss && this.boss.active) {
+        if (this.currentRoom === 3 && this.boss && this.boss.active && !this.isDialogueOpen) {
             if (time > this.bossAttackTimer) { this.bossAttackTimer = time + 2500; this.bossAttackRoutine(); }
         }
 
-        if (this.currentRoom === 4 && !this.isDialogueOpen) {
+        if (this.currentRoom === 4 && !this.isDialogueOpen && !this.registry.get('placedTop')) {
             const isSafe = this.physics.overlap(this.player, this.shadows);
             if (!isSafe && time > this.lastHeatDamage + 1000) {
                 this.damagePlayer(2);
@@ -903,11 +915,8 @@ export class MainScene extends Phaser.Scene {
             this.registry.set('hasVisa', true);
             this.registry.set('hasStoneNorth', true);
 
+            this.pendingTransition = true;
             this.triggerDialogue("Don Escribán", "APROVADO! TOME O VISTO E A PEDRA NORTE! AGORA SUMAM!");
-
-            this.time.delayedCall(2000, () => {
-                this.scene.start('TransitionScene');
-            });
         }
     }
 
@@ -1026,6 +1035,15 @@ export class MainScene extends Phaser.Scene {
         this.isDialogueOpen = false;
         const ui = document.getElementById('ui-layer');
         if (ui) ui.style.display = 'none';
+        if (this.currentRoom === 3 && this.boss && this.boss.active) {
+            this.bossAttackTimer = this.time.now + 1500; // pausa breve após diálogo
+        }
+        if (this.pendingTransition) {
+            this.pendingTransition = false;
+            this.time.delayedCall(200, () => {
+                this.scene.start('TransitionScene');
+            });
+        }
     }
     updateUI() {
         const healthFill = document.getElementById('health-fill');
