@@ -156,9 +156,9 @@ export class MainScene extends Phaser.Scene {
         this.portals = null as any;
 
         if (this.isNewGame) {
-            this.registry.set('hasFormBlue', false); this.registry.set('hasFormPink', false); this.registry.set('hasStamp', false); this.registry.set('hasVisa', false);
+            this.registry.set('hasFormGreen', false); this.registry.set('hasFormRed', false); this.registry.set('hasStamp', false); this.registry.set('hasVisa', false);
             this.registry.set('hasStoneWest', false); this.registry.set('hasStoneEast', false); this.registry.set('hasStoneNorth', false); this.registry.set('hasStoneTop', false);
-            this.registry.set('hasFormBlueAuth', false);
+            this.registry.set('hasFormGreenAuth', false);
             this.registry.set('placedWest', false); this.registry.set('placedEast', false); this.registry.set('placedNorth', false); this.registry.set('placedTop', false);
         }
 
@@ -347,16 +347,16 @@ export class MainScene extends Phaser.Scene {
             else if (obj.type === 'guard_room2') { const npc = this.npcs.create(pixelX, pixelY, 'dwarf'); npc.setTint(0xffd700); npc.setData('type', 'guard_room2'); npc.setName('Axente de Visados'); }
             else if (obj.type === 'door_room1') { const door = this.specialObjects.create(pixelX, pixelY, 'door'); door.setData('type', 'door_room1'); }
             else if (obj.type === 'door_room2') { const door = this.specialObjects.create(pixelX, pixelY, 'door'); door.setData('type', 'door_room2'); }
-            else if (obj.type === 'form_blue') {
-                if (!this.registry.get('hasFormBlue')) {
+            else if (obj.type === 'form_green') {
+                if (!this.registry.get('hasFormGreen')) {
                     const form = this.items.create(pixelX, pixelY, 'items', 15);
-                    form.setData('type', 'form_blue');
+                    form.setData('type', 'form_green');
                 }
             }
-            else if (obj.type === 'form_pink') {
-                if (!this.registry.get('hasFormPink')) {
+            else if (obj.type === 'form_red') {
+                if (!this.registry.get('hasFormRed')) {
                     const form = this.items.create(pixelX, pixelY, 'items', 16);
-                    form.setData('type', 'form_pink');
+                    form.setData('type', 'form_red');
                 }
             }
         });
@@ -552,8 +552,8 @@ export class MainScene extends Phaser.Scene {
             }
         }
         else if (activeCat.name === "Koffe") { this.activateKoffeHint(); }
-        else if (activeCat.name === "Fiódor") { this.showFloatingText(activeCat.x, activeCat.y - 20, "Preciso de algo para consertar...", 0x3498db); }
-        else if (activeCat.name === "Orpheu") { this.showFloatingText(activeCat.x, activeCat.y - 20, "Preciso de uma porta trancada...", 0xffffff); }
+        //else if (activeCat.name === "Fiódor") { this.showFloatingText(activeCat.x, activeCat.y - 20, "Preciso de algo para consertar...", 0x3498db); }
+        //else if (activeCat.name === "Orpheu") { this.showFloatingText(activeCat.x, activeCat.y - 20, "Preciso de uma porta trancada...", 0xffffff); }
     }
 
     handleSpecialInteraction(target: Phaser.GameObjects.GameObject) {
@@ -569,7 +569,6 @@ export class MainScene extends Phaser.Scene {
             if (activeCat.name === 'Orpheu') {
                 this.doorRoom1Opened = true;
                 playAssistantVoice('Orpheu');
-                this.triggerDialogue("Orpheu", "Miau! (Porta aberta)");
                 this.triggerSparkles(targetSprite.x, targetSprite.y, 0xffffff);
                 sfx.action();
                 targetSprite.disableBody(true, true);
@@ -577,7 +576,7 @@ export class MainScene extends Phaser.Scene {
                 this.removeWallAt(6, 8);
                 this.removeWallAt(6, 7);
             } else {
-                this.triggerDialogue("Denise", "Trancada. O Orpheu consegue abrir.");
+                this.triggerDialogue("Denise", "Não alcanço essa maçaneta. Se eu tivesse alguém que conseguisse abrir portas pulando...");
             }
             return true;
         }
@@ -593,7 +592,6 @@ export class MainScene extends Phaser.Scene {
         if (type === 'broken_screen' && activeCat.name === 'Fiódor') {
             if (!target.getData('fixed')) {
                 playAssistantVoice('Fiódor');
-                this.triggerDialogue("Fiódor", "Vushhh... (Ecrã consertado!)");
                 this.cameras.main.flash(400); // Flash ao consertar
                 this.triggerSparkles(targetSprite.x, targetSprite.y, 0x00ffff); // Brilho ciano
                 sfx.action(); // Som de ação
@@ -604,7 +602,7 @@ export class MainScene extends Phaser.Scene {
             }
         } else if (type === 'broken_screen') {
             if (!target.getData('fixed')) {
-                this.triggerDialogue("Denise", "Ecrã quebrado. O Fiódor pode consertar.");
+                this.triggerDialogue("Denise", "Esse ecrã parece estar quebrado. E tem muitas peças mecânicas com óleo...");
                 return true;
             }
         }
@@ -615,11 +613,11 @@ export class MainScene extends Phaser.Scene {
         const koffe = this.assistants[3];
         let target: { x: number, y: number } | null = null;
         if (this.currentRoom === 1) {
-            if (!this.registry.get('hasFormBlue')) {
+            if (!this.registry.get('hasFormGreen')) {
                 target = { x: 6 * 32 + 16, y: 8 * 32 + 16 }; // Porta sem guarda
-            } else if (!this.registry.get('hasFormBlueAuth')) {
+            } else if (!this.registry.get('hasFormGreenAuth')) {
                 target = { x: 20 * 32 + 16, y: 9 * 32 + 16 }; // Analista para autenticar 1B
-            } else if (!this.registry.get('hasFormPink')) {
+            } else if (!this.registry.get('hasFormRed')) {
                 target = { x: 12 * 32 + 16, y: 9 * 32 + 16 }; // Axente para liberar 2B
             } else {
                 target = { x: 20 * 32 + 16, y: 9 * 32 + 16 }; // Analista abre portal
@@ -734,14 +732,14 @@ export class MainScene extends Phaser.Scene {
                     this.triggerDialogue("Axente de Visados", "A porta já está aberta. Anda lá.");
                     return;
                 }
-                if (!this.registry.get('hasFormBlue')) {
-                    this.triggerDialogue("Axente de Visados", "Tráz-me o formulário 1B.");
+                if (!this.registry.get('hasFormGreen')) {
+                    this.triggerDialogue("Axente de Visados", "Tráz-me o Formulário Verde.");
                     return;
                 }
 
-                if (this.registry.get('hasFormBlue') && !this.registry.get('hasFormBlueAuth')) {
+                if (this.registry.get('hasFormGreen') && !this.registry.get('hasFormGreenAuth')) {
                     this.startDialogueSequence([
-                        { name: "Axente de Visados", text: "Preciso do 1B autenticado." },
+                        { name: "Axente de Visados", text: "Preciso do Formulário Verde autenticado." },
                         { name: "Denise", text: "Você não disse isso antes!" },
                         { name: "Axente de Visados", text: "Esse é o processo. Autentica com o Analista de Políticas de Inmigración." },
                         { name: "Denise", text: "C'um carago. Isso só pode ser galego." }
@@ -749,9 +747,9 @@ export class MainScene extends Phaser.Scene {
                     return;
                 }
 
-                if (this.registry.get('hasFormBlueAuth') && !this.registry.get('hasFormPink')) {
+                if (this.registry.get('hasFormGreenAuth') && !this.registry.get('hasFormRed')) {
                     this.doorRoom2Opened = true;
-                    this.triggerDialogue("Axente de Visados", "Agora sim. Porta liberada para o 2B.");
+                    this.triggerDialogue("Axente de Visados", "Agora sim. Pode passar.");
                     sfx.action();
                     const door = this.specialObjects.getChildren().find(o => o.getData('type') === 'door_room2') as Phaser.Physics.Arcade.Sprite;
                     if (door) { door.disableBody(true, true); door.destroy(); }
@@ -759,7 +757,7 @@ export class MainScene extends Phaser.Scene {
                     return;
                 }
 
-                this.triggerDialogue("Axente de Visados", "Já tens o 2B? Então avança.");
+                this.triggerDialogue("Axente de Visados", "Já tens o Formulário Vermelho? Então avança.");
             } else if (type === 'guard_gate') {
                 const name = npc.name || "Analista de Políticas de Inmigración";
                 if (this.gateOpened) {
@@ -767,23 +765,23 @@ export class MainScene extends Phaser.Scene {
                     return;
                 }
 
-                if (this.registry.get('hasFormPink')) {
+                if (this.registry.get('hasFormRed')) {
                     this.gateOpened = true;
-                    this.triggerDialogue(name, "Formulário 2B? Aprovado. Abrindo o portão.");
+                    this.triggerDialogue(name, "Formulário Vermelho? Aprovado. Abrindo o portão.");
                     sfx.action();
                     this.createExit(650, 300, 2);
                     if (this.gateBlock) { this.gateBlock.destroy(); this.gateBlock = null; }
                     return;
                 }
 
-                if (this.registry.get('hasFormBlue') && !this.registry.get('hasFormBlueAuth')) {
-                    this.registry.set('hasFormBlueAuth', true);
-                    this.triggerDialogue(name, "Formulário 1B autenticado. Agora traga o 2B.");
+                if (this.registry.get('hasFormGreen') && !this.registry.get('hasFormGreenAuth')) {
+                    this.registry.set('hasFormGreenAuth', true);
+                    this.triggerDialogue(name, "Formulário Verde autenticado. Agora traga o Formulário Vermelho.");
                     sfx.collect();
                     return;
                 }
 
-                this.triggerDialogue(name, "Traga o formulário 2B para abrir o portal.");
+                this.triggerDialogue(name, "Preciso do Formulário Vermelho, senão não abro.");
             }
         } else if (this.currentRoom === 2) {
             const type = npc.getData('type');
@@ -793,7 +791,7 @@ export class MainScene extends Phaser.Scene {
                 if (this.screenFixed) {
                     if (!this.registry.get('hasStamp')) {
                         this.registry.set('hasStamp', true);
-                        this.triggerDialogue("Atendente", "Painel a funcionar? Milagre! Aqui tem o Carimbo.");
+                        this.triggerDialogue("Atendente", "Vocês arrumaram? Gracias. Como agradecimento, vou te poupar tempo. Pode seguir sua jornada.");
                         this.triggerSparkles(npc.x, npc.y, 0x00ff00); // Brilho de sucesso
                         sfx.collect(); // Som de item importante
                         npc.x = 1000;
@@ -804,7 +802,7 @@ export class MainScene extends Phaser.Scene {
                         this.triggerDialogue("Atendente", "Próximo!");
                     }
                 } else {
-                    this.triggerDialogue("Atendente", "O sistema caiu. Sem senha, sem atendimento.");
+                    this.triggerDialogue("Atendente", "Esse ecrã está quebrado há tempos. Se ao menos tivéssemos um mecânico...");
                 }
             }
         }
@@ -817,7 +815,7 @@ export class MainScene extends Phaser.Scene {
         item.destroy();
 
         // Flash ao coletar itens importantes
-        if (['stone_left', 'stone_right', 'stone_top', 'stamp_auth', 'form_pink', 'form_blue', 'visa'].includes(key)) {
+        if (['stone_left', 'stone_right', 'stone_top', 'stamp_auth', 'form_red', 'form_green', 'visa'].includes(key)) {
             this.cameras.main.flash(400);
         }
 
@@ -828,13 +826,13 @@ export class MainScene extends Phaser.Scene {
             if (this.registry.get('hasStamp')) this.createExit(650, 300, 3);
         }
         else if (key === 'stamp_auth') { this.registry.set('hasStamp', true); this.triggerDialogue("Denise", "Carimbo obtido!"); }
-        else if (key === 'form_blue') {
-            this.registry.set('hasFormBlue', true);
-            this.triggerDialogue("Denise", "Formulário 1B (azul) em mãos!");
+        else if (key === 'form_green') {
+            this.registry.set('hasFormGreen', true);
+            this.triggerDialogue("Denise", "Formulário Verde em mãos!");
         }
-        else if (key === 'form_pink') {
+        else if (key === 'form_red') {
             this.triggerSparkles(item.x, item.y, 0xff69b4);
-            this.registry.set('hasFormPink', true); this.triggerDialogue("Denise", "Formulário 2B (rosa) encontrado!");
+            this.registry.set('hasFormRed', true); this.triggerDialogue("Denise", "Pronto. Já estou com Formulário Vermelho!");
         }
         this.updateInventoryUI();
 
@@ -1163,8 +1161,8 @@ export class MainScene extends Phaser.Scene {
             { key: 'cinnamon', label: 'Canela', collected: this.cinnamonCount > 0, frame: { texture: 'consumables', index: 0 }, count: this.cinnamonCount },
             { key: 'clove', label: 'Cravo', collected: this.cloveCount > 0, frame: { texture: 'consumables', index: 1 }, count: this.cloveCount },
             { key: 'pastel', label: 'Pastel de Nata', collected: this.pastelCount > 0, frame: { texture: 'consumables', index: 2 }, count: this.pastelCount },
-            { key: 'form_blue', label: 'Formulário 1B (Azul)', collected: r.get('hasFormBlue'), frame: { texture: 'items', index: 15 } },
-            { key: 'form_pink', label: 'Formulário 2B (Rosa)', collected: r.get('hasFormPink'), frame: { texture: 'items', index: 16 } },
+            { key: 'form_green', label: 'Formulário 1B (Verde)', collected: r.get('hasFormGreen'), frame: { texture: 'items', index: 15 } },
+            { key: 'form_red', label: 'Formulário 2B (Vermelho)', collected: r.get('hasFormRed'), frame: { texture: 'items', index: 16 } },
             { key: 'stone_west', label: 'Pedra Oeste', collected: r.get('hasStoneWest'), frame: { texture: 'items', index: STONE_FRAMES.west } },
             { key: 'stone_east', label: 'Pedra Leste', collected: r.get('hasStoneEast'), frame: { texture: 'items', index: STONE_FRAMES.east } },
             { key: 'stone_north', label: 'Pedra Norte', collected: r.get('hasStoneNorth'), frame: { texture: 'items', index: STONE_FRAMES.north } },
