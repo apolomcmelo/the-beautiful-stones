@@ -9,6 +9,7 @@ import cover from '../resources/cover/cover.png';
 import fiodorSprite from '../resources/sprites/characters-sprites.png';
 import consumablesSprite from '../resources/sprites/consumables-sprites.png';
 import itemsSprite from '../resources/sprites/items-sprites.png';
+import greenGuardSprite from '../resources/sprites/green-guard-sprites.png';
 
 export class BootScene extends Phaser.Scene {
     constructor() {
@@ -26,6 +27,7 @@ export class BootScene extends Phaser.Scene {
         this.load.spritesheet('fiodor', fiodorSprite, { frameWidth: 32, frameHeight: 32 });
         this.load.spritesheet('consumables', consumablesSprite, { frameWidth: 32, frameHeight: 32 });
         this.load.spritesheet('items', itemsSprite, { frameWidth: 32, frameHeight: 32 });
+        this.load.spritesheet('green_guard', greenGuardSprite, { frameWidth: 36, frameHeight: 48 });
 
         const g = this.make.graphics({ x: 0, y: 0 });
 

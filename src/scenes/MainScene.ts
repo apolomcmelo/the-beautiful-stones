@@ -137,6 +137,15 @@ export class MainScene extends Phaser.Scene {
             this.anims.create({ key: 'fiodor-idle-down', frames: this.anims.generateFrameNumbers('fiodor', { start: 16, end: 19 }), frameRate: 5, repeat: -1 });
         }
 
+        if (!this.anims.exists('green-guard-idle')) {
+            this.anims.create({
+                key: 'green-guard-idle',
+                frames: this.anims.generateFrameNumbers('green_guard', { start: 0, end: 3 }),
+                frameRate: 4,
+                repeat: -1
+            });
+        }
+
         // Reset de referências
         this.walls = null as any;
         this.bg = null as any;
@@ -160,6 +169,8 @@ export class MainScene extends Phaser.Scene {
             this.registry.set('hasStoneWest', false); this.registry.set('hasStoneEast', false); this.registry.set('hasStoneNorth', false); this.registry.set('hasStoneTop', false);
             this.registry.set('hasFormGreenAuth', false);
             this.registry.set('placedWest', false); this.registry.set('placedEast', false); this.registry.set('placedNorth', false); this.registry.set('placedTop', false);
+            this.registry.set('doorRoom2Opened', false);
+            this.registry.set('gateOpened', false);
         }
 
         this.registry.events.on('changedata', this.updateInventoryUI, this);
@@ -319,6 +330,8 @@ export class MainScene extends Phaser.Scene {
 
     // ================= FASES =================
     setupLevel1_Mines() {
+        this.doorRoom2Opened = !!this.registry.get('doorRoom2Opened');
+        this.gateOpened = !!this.registry.get('gateOpened');
         this.bg = this.add.tileSprite(0, 0, WORLD_WIDTH, WORLD_HEIGHT, 'mine_floor').setOrigin(0).setDepth(0);
         const data = LEVEL_1_DATA;
         for (let y = 0; y < data.height; y++) { for (let x = 0; x < data.width; x++) { if (data.layout[y * data.width + x] === 1) this.walls.create(x * 32 + 16, y * 32 + 16, 'wall'); } }
@@ -343,10 +356,30 @@ export class MainScene extends Phaser.Scene {
                 }
             }
             else if (obj.type === 'spice_cinnamon') { const cin = this.spices.create(pixelX, pixelY, 'consumables', 0).setData('type', 'cinnamon'); this.physics.add.overlap(this.player, cin, this.collectSpice, undefined, this); }
-            else if (obj.type === 'guard_gate') { const npc = this.npcs.create(pixelX, pixelY, 'dwarf'); npc.setData('type', 'guard_gate'); npc.setName('Analista de Políticas de Inmigración'); }
-            else if (obj.type === 'guard_room2') { const npc = this.npcs.create(pixelX, pixelY, 'dwarf'); npc.setTint(0xffd700); npc.setData('type', 'guard_room2'); npc.setName('Axente de Visados'); }
+            else if (obj.type === 'guard_gate') {
+                if (!this.gateOpened) {
+                    const npc = this.npcs.create(pixelX, pixelY, 'dwarf');
+                    npc.setData('type', 'guard_gate');
+                    npc.setName('Analista de Políticas de Inmigración');
+                }
+            }
+            else if (obj.type === 'guard_room2') {
+                if (!this.doorRoom2Opened) {
+                    const npc = this.npcs.create(pixelX, pixelY, 'green_guard');
+                    npc.setOrigin(0.5, 1);
+                    npc.setData('type', 'guard_room2');
+                    npc.setName('Axente de Visados');
+                    npc.setSize(32, 32).setOffset(2, 16); // Mantém colisão no piso
+                    npc.refreshBody();
+                    npc.play('green-guard-idle');
+                }
+            }
             else if (obj.type === 'door_room1') { const door = this.specialObjects.create(pixelX, pixelY, 'door'); door.setData('type', 'door_room1'); }
-            else if (obj.type === 'door_room2') { const door = this.specialObjects.create(pixelX, pixelY, 'door'); door.setData('type', 'door_room2'); }
+            else if (obj.type === 'door_room2') {
+                if (!this.doorRoom2Opened) {
+                    const door = this.specialObjects.create(pixelX, pixelY, 'door'); door.setData('type', 'door_room2');
+                }
+            }
             else if (obj.type === 'form_green') {
                 if (!this.registry.get('hasFormGreen')) {
                     const form = this.items.create(pixelX, pixelY, 'items', 15);
@@ -365,11 +398,17 @@ export class MainScene extends Phaser.Scene {
         buildRoom(10, 14, 6, 9, 12, 9); // Sala 2 (anão + form 2B rosa)
         this.removeWallAt(6, 8);  // Tile da porta da sala 1
         this.removeWallAt(6, 7);  // Tile interno logo atrás da porta 1
-        this.removeWallAt(12, 9); // Tile da porta da sala 2
+        if (this.doorRoom2Opened) {
+            this.removeWallAt(12, 9); // Tile da porta da sala 2 já aberta
+        }
 
         // Bloqueio do portão até liberação
-        this.gateBlock = this.walls.create(21 * 32 + 16, 9 * 32 + 16, 'wall');
-        this.triggerDialogue("Denise", "Koffe, encontre a porta trancada sem guarda...");
+        if (!this.gateOpened) {
+            this.gateBlock = this.walls.create(21 * 32 + 16, 9 * 32 + 16, 'wall');
+            this.triggerDialogue("Denise", "Koffe, encontre a porta trancada sem guarda...");
+        } else {
+            this.createExit(650, 300, 2);
+        }
     }
 
     setupLevel2_Ruins() {
@@ -749,11 +788,13 @@ export class MainScene extends Phaser.Scene {
 
                 if (this.registry.get('hasFormGreenAuth') && !this.registry.get('hasFormRed')) {
                     this.doorRoom2Opened = true;
+                    this.registry.set('doorRoom2Opened', true);
                     this.triggerDialogue("Axente de Visados", "Agora sim. Pode passar.");
                     sfx.action();
                     const door = this.specialObjects.getChildren().find(o => o.getData('type') === 'door_room2') as Phaser.Physics.Arcade.Sprite;
                     if (door) { door.disableBody(true, true); door.destroy(); }
                     this.removeWallAt(12, 9);
+                    this.tweens.add({ targets: npc, alpha: 0, duration: 400, onComplete: () => npc.disableBody(true, true) });
                     return;
                 }
 
@@ -767,6 +808,7 @@ export class MainScene extends Phaser.Scene {
 
                 if (this.registry.get('hasFormRed')) {
                     this.gateOpened = true;
+                    this.registry.set('gateOpened', true);
                     this.triggerDialogue(name, "Formulário Vermelho? Aprovado. Abrindo o portão.");
                     sfx.action();
                     this.createExit(650, 300, 2);
