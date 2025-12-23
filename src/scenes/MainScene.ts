@@ -171,6 +171,7 @@ export class MainScene extends Phaser.Scene {
             this.registry.set('placedWest', false); this.registry.set('placedEast', false); this.registry.set('placedNorth', false); this.registry.set('placedTop', false);
             this.registry.set('doorRoom2Opened', false);
             this.registry.set('gateOpened', false);
+            this.registry.set('screenFixed', false);
         }
 
         this.registry.events.on('changedata', this.updateInventoryUI, this);
@@ -413,15 +414,27 @@ export class MainScene extends Phaser.Scene {
 
     setupLevel2_Ruins() {
         this.bg = this.add.tileSprite(0, 0, WORLD_WIDTH, WORLD_HEIGHT, 'ruin_floor').setOrigin(0).setDepth(0);
-        this.screenFixed = false;
+        this.screenFixed = !!this.registry.get('screenFixed');
         const data = LEVEL_2_DATA;
         for (let y = 0; y < data.height; y++) { for (let x = 0; x < data.width; x++) { if (data.layout[y * data.width + x] === 1) this.walls.create(x * 32 + 16, y * 32 + 16, 'wall'); } }
         this.createReturnPortal(50, 300, 1);
         data.objects.forEach(obj => {
             const pixelX = obj.x * 32 + 16; const pixelY = obj.y * 32 + 16;
             if (obj.type === 'player_start') { this.player.setPosition(pixelX, pixelY); this.assistants.forEach(a => a.setPosition(pixelX - 20, pixelY)); }
-            else if (obj.type === 'password_screen') { const screen = this.specialObjects.create(pixelX, pixelY, 'password_screen'); screen.setData('type', 'broken_screen'); screen.setData('fixed', false); }
-            else if (obj.type === 'clerk') { const npc = this.npcs.create(pixelX, pixelY, 'statue'); npc.setImmovable(true); npc.setData('type', 'clerk'); }
+            else if (obj.type === 'password_screen') {
+                const screen = this.specialObjects.create(pixelX, pixelY, 'password_screen');
+                screen.setData('type', 'broken_screen');
+                screen.setData('fixed', this.screenFixed);
+                if (this.screenFixed) screen.setTint(0x00ff00);
+            }
+            else if (obj.type === 'clerk') {
+                const npc = this.npcs.create(pixelX, pixelY, 'statue');
+                npc.setImmovable(true);
+                npc.setData('type', 'clerk');
+                if (this.screenFixed && this.registry.get('hasStamp')) {
+                    npc.x = 1000; // afasta se já entregou o selo
+                }
+            }
             else if (obj.type === 'npc_queue') { const npc = this.npcs.create(pixelX, pixelY, 'statue'); npc.setImmovable(true); npc.setTint(0x888888); npc.setData('type', 'queue'); }
             else if (obj.type === 'stone_right') {
                 if (!this.registry.get('hasStoneEast')) {
@@ -431,6 +444,9 @@ export class MainScene extends Phaser.Scene {
             }
             else if (obj.type === 'spice_clove') { const clove = this.spices.create(pixelX, pixelY, 'consumables', 1).setData('type', 'clove'); this.physics.add.overlap(this.player, clove, this.collectSpice, undefined, this); }
         });
+        if (this.screenFixed && this.registry.get('hasStamp') && this.registry.get('hasStoneEast')) {
+            this.createExit(650, 300, 3);
+        }
         this.triggerDialogue("Denise", "Que sala de espera... A senha parou no AA04?");
     }
 
@@ -637,6 +653,7 @@ export class MainScene extends Phaser.Scene {
                 target.setData('fixed', true);
                 targetSprite.setTint(0x00ff00);
                 this.screenFixed = true;
+                this.registry.set('screenFixed', true);
                 return true;
             }
         } else if (type === 'broken_screen') {
@@ -842,6 +859,7 @@ export class MainScene extends Phaser.Scene {
                         }
                     } else {
                         this.triggerDialogue("Atendente", "Próximo!");
+                        if (this.registry.get('hasStoneEast')) this.createExit(650, 300, 3);
                     }
                 } else {
                     this.triggerDialogue("Atendente", "Esse ecrã está quebrado há tempos. Se ao menos tivéssemos um mecânico...");
