@@ -145,7 +145,14 @@ export class MainScene extends Phaser.Scene {
                 repeat: -1
             });
         }
-
+        if (!this.anims.exists('red-guard-idle')) {
+            this.anims.create({
+                key: 'red-guard-idle',
+                frames: this.anims.generateFrameNumbers('red_guard', { start: 0, end: 3 }),
+                frameRate: 4,
+                repeat: -1
+            });
+        }
         // Reset de referências
         this.walls = null as any;
         this.bg = null as any;
@@ -359,9 +366,12 @@ export class MainScene extends Phaser.Scene {
             else if (obj.type === 'spice_cinnamon') { const cin = this.spices.create(pixelX, pixelY, 'consumables', 0).setData('type', 'cinnamon'); this.physics.add.overlap(this.player, cin, this.collectSpice, undefined, this); }
             else if (obj.type === 'guard_gate') {
                 if (!this.gateOpened) {
-                    const npc = this.npcs.create(pixelX, pixelY, 'dwarf');
+                    const npc = this.npcs.create(pixelX, pixelY, 'green_guard');
                     npc.setData('type', 'guard_gate');
                     npc.setName('Analista de Políticas de Inmigración');
+                    npc.setSize(48, 48).setOffset(2, 16); // Mantém colisão no piso
+                    npc.refreshBody();
+                    npc.play('red-guard-idle');
                 }
             }
             else if (obj.type === 'guard_room2') {
@@ -370,7 +380,7 @@ export class MainScene extends Phaser.Scene {
                     npc.setOrigin(0.5, 1);
                     npc.setData('type', 'guard_room2');
                     npc.setName('Axente de Visados');
-                    npc.setSize(32, 32).setOffset(2, 16); // Mantém colisão no piso
+                    npc.setSize(48, 48).setOffset(2, 16); // Mantém colisão no piso
                     npc.refreshBody();
                     npc.play('green-guard-idle');
                 }
