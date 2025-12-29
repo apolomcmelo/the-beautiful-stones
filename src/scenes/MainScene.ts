@@ -1031,7 +1031,7 @@ export class MainScene extends Phaser.Scene {
         this.bossHealth -= 20;
         const bossHealthFill = document.getElementById('boss-health-fill');
         if (bossHealthFill) bossHealthFill.style.width = this.bossHealth + '%';
-        this.triggerDialogue("Boss", "Isso é um suborno?!");
+        this.showFloatingText(this.boss.x, this.boss.y - 60, "Isso é um suborno?!", 0xff0000);
         this.triggerImpact(this.boss.x, this.boss.y); // Impacto Visual no Boss
 
         if (this.bossHealth <= 0) {
