@@ -79,6 +79,10 @@ export class MainScene extends Phaser.Scene {
     private portals!: Phaser.Physics.Arcade.Group;
 
     private stoneSprites: { west?: Phaser.GameObjects.Sprite; east?: Phaser.GameObjects.Sprite; north?: Phaser.GameObjects.Sprite; top?: Phaser.GameObjects.Sprite; final?: Phaser.GameObjects.Sprite } = {};
+    private clearStoneSprites() {
+        Object.values(this.stoneSprites).forEach(s => s?.destroy());
+        this.stoneSprites = {};
+    }
 
     constructor() {
         super({ key: 'MainScene' });
@@ -296,6 +300,8 @@ export class MainScene extends Phaser.Scene {
         if (this.portals) this.portals.clear(true, true);
         else this.portals = this.physics.add.group();
 
+        this.clearStoneSprites();
+
         this.walls = this.physics.add.staticGroup();
         this.items = this.physics.add.staticGroup();
         this.spices = this.physics.add.staticGroup();
@@ -358,7 +364,7 @@ export class MainScene extends Phaser.Scene {
             const pixelX = obj.x * 32 + 16; const pixelY = obj.y * 32 + 16;
             if (obj.type === 'player_start') { this.player.setPosition(pixelX, pixelY); this.assistants.forEach(a => a.setPosition(pixelX - 20, pixelY)); }
             else if (obj.type === 'stone_left') {
-                if (!this.registry.get('hasStoneWest')) {
+                if (!this.registry.get('hasStoneWest') && !this.registry.get('placedWest')) {
                     const stone = this.items.create(pixelX, pixelY, 'items', STONE_FRAMES.west);
                     stone.setData('type', 'stone_left');
                 }
@@ -447,14 +453,14 @@ export class MainScene extends Phaser.Scene {
             }
             else if (obj.type === 'npc_queue') { const npc = this.npcs.create(pixelX, pixelY, 'statue'); npc.setImmovable(true); npc.setTint(0x888888); npc.setData('type', 'queue'); }
             else if (obj.type === 'stone_right') {
-                if (!this.registry.get('hasStoneEast')) {
+                if (!this.registry.get('hasStoneEast') && !this.registry.get('placedEast')) {
                     const stone = this.items.create(pixelX, pixelY, 'items', STONE_FRAMES.east);
                     stone.setData('type', 'stone_right');
                 }
             }
             else if (obj.type === 'spice_clove') { const clove = this.spices.create(pixelX, pixelY, 'consumables', 1).setData('type', 'clove'); this.physics.add.overlap(this.player, clove, this.collectSpice, undefined, this); }
         });
-        if (this.screenFixed && this.registry.get('hasStamp') && this.registry.get('hasStoneEast')) {
+        if (this.screenFixed && this.registry.get('hasStamp') && (this.registry.get('hasStoneEast') || this.registry.get('placedEast'))) {
             this.createExit(650, 300, 3);
         }
         this.triggerDialogue("Denise", "Que sala de espera... A senha parou no AA04?");
@@ -491,7 +497,10 @@ export class MainScene extends Phaser.Scene {
         this.shadows.create(200, 200, 'shadow'); this.shadows.create(500, 400, 'shadow'); this.shadows.create(100, 300, 'shadow');
         this.tombs.create(300, 150, 'tomb').setData('hasStone', false).setImmovable(true);
         this.tombs.create(400, 500, 'tomb').setData('hasStone', false).setImmovable(true);
-        this.tombs.create(600, 150, 'tomb').setData('hasStone', true).setImmovable(true);
+        const topTomb = this.tombs.create(600, 150, 'tomb').setImmovable(true) as Phaser.Physics.Arcade.Sprite;
+        const hasTop = this.registry.get('hasStoneTop') || this.registry.get('placedTop');
+        topTomb.setData('hasStone', !hasTop);
+        if (hasTop) topTomb.setTint(0x555555);
         this.dolmenBase = this.physics.add.staticSprite(600, 300, 'dolmen_base');
         const pastel = this.spices.create(500, 350, 'consumables', 2).setData('type', 'pastel');
         pastel.setFrame(2); // Garante o frame correto do pastel de nata
@@ -691,7 +700,7 @@ export class MainScene extends Phaser.Scene {
         } else if (this.currentRoom === 2) {
             if (!this.screenFixed) target = { x: 13 * 32 + 16, y: 4 * 32 + 16 };
             else if (!this.registry.get('hasStamp')) target = { x: 13 * 32 + 16, y: 5 * 32 + 16 };
-            else if (!this.registry.get('hasStoneEast')) target = { x: 22 * 32 + 16, y: 5 * 32 + 16 };
+            else if (!this.registry.get('hasStoneEast') && !this.registry.get('placedEast')) target = { x: 22 * 32 + 16, y: 5 * 32 + 16 };
         } else if (this.currentRoom === 4) {
             if (!this.registry.get('hasStoneTop')) target = { x: 600, y: 150 };
         }
@@ -840,6 +849,7 @@ export class MainScene extends Phaser.Scene {
                     sfx.action();
                     this.createExit(650, 300, 2);
                     if (this.gateBlock) { this.gateBlock.destroy(); this.gateBlock = null; }
+                    this.tweens.add({ targets: npc, alpha: 0, duration: 400, onComplete: () => npc.disableBody(true, true) });
                     return;
                 }
 
@@ -864,12 +874,12 @@ export class MainScene extends Phaser.Scene {
                         this.triggerSparkles(npc.x, npc.y, 0x00ff00); // Brilho de sucesso
                         sfx.collect(); // Som de item importante
                         npc.x = 1000;
-                        if (this.registry.get('hasStoneEast')) {
+                        if (this.registry.get('hasStoneEast') || this.registry.get('placedEast')) {
                             this.createExit(650, 300, 3);
                         }
                     } else {
                         this.triggerDialogue("Atendente", "Próximo!");
-                        if (this.registry.get('hasStoneEast')) this.createExit(650, 300, 3);
+                        if (this.registry.get('hasStoneEast') || this.registry.get('placedEast')) this.createExit(650, 300, 3);
                     }
                 } else {
                     this.triggerDialogue("Atendente", "Esse ecrã está quebrado há tempos. Se ao menos tivéssemos um mecânico...");
@@ -906,7 +916,7 @@ export class MainScene extends Phaser.Scene {
         }
         this.updateInventoryUI();
 
-        if (this.currentRoom === 2 && this.registry.get('hasStamp') && this.registry.get('hasStoneEast')) {
+        if (this.currentRoom === 2 && this.registry.get('hasStamp') && (this.registry.get('hasStoneEast') || this.registry.get('placedEast'))) {
             this.createExit(650, 300, 3);
         }
     }
@@ -921,6 +931,7 @@ export class MainScene extends Phaser.Scene {
                 this.registry.set('hasStoneTop', true);
                 this.announceStoneCollection();
                 tomb.setTint(0x555555);
+                tomb.setData('hasStone', false);
                 this.triggerSparkles(tomb.x, tomb.y, 0xffd700); // Ouro
                 sfx.collect();
             } else this.triggerDialogue("Denise", "Já está vazia.");
@@ -1134,6 +1145,7 @@ export class MainScene extends Phaser.Scene {
     restorePuzzleState() { }
     restoreDolmenState() {
         const r = this.registry;
+        this.clearStoneSprites();
         if (r.get('placedWest')) this.stoneSprites.west = this.add.sprite(this.dolmenBase.x - 30, this.dolmenBase.y - 10, 'items', STONE_FRAMES.west).setDepth(5);
         if (r.get('placedEast')) this.stoneSprites.east = this.add.sprite(this.dolmenBase.x + 30, this.dolmenBase.y - 10, 'items', STONE_FRAMES.east).setDepth(5);
         if (r.get('placedNorth')) this.stoneSprites.north = this.add.sprite(this.dolmenBase.x, this.dolmenBase.y - 10, 'items', STONE_FRAMES.north).setDepth(4);
@@ -1233,10 +1245,10 @@ export class MainScene extends Phaser.Scene {
             { key: 'pastel', label: 'Pastel de Nata', collected: this.pastelCount > 0, frame: { texture: 'consumables', index: 2 }, count: this.pastelCount },
             { key: 'form_green', label: 'Formulário 1B (Verde)', collected: r.get('hasFormGreen'), frame: { texture: 'items', index: 15 } },
             { key: 'form_red', label: 'Formulário 2B (Vermelho)', collected: r.get('hasFormRed'), frame: { texture: 'items', index: 16 } },
-            { key: 'stone_west', label: 'Pedra Oeste', collected: r.get('hasStoneWest'), frame: { texture: 'items', index: STONE_FRAMES.west } },
-            { key: 'stone_east', label: 'Pedra Leste', collected: r.get('hasStoneEast'), frame: { texture: 'items', index: STONE_FRAMES.east } },
-            { key: 'stone_north', label: 'Pedra Norte', collected: r.get('hasStoneNorth'), frame: { texture: 'items', index: STONE_FRAMES.north } },
-            { key: 'stone_top', label: 'Pedra Topo', collected: r.get('hasStoneTop'), frame: { texture: 'items', index: STONE_FRAMES.top } }
+            { key: 'stone_west', label: 'Pedra Oeste', collected: r.get('hasStoneWest') || r.get('placedWest'), frame: { texture: 'items', index: STONE_FRAMES.west } },
+            { key: 'stone_east', label: 'Pedra Leste', collected: r.get('hasStoneEast') || r.get('placedEast'), frame: { texture: 'items', index: STONE_FRAMES.east } },
+            { key: 'stone_north', label: 'Pedra Norte', collected: r.get('hasStoneNorth') || r.get('placedNorth'), frame: { texture: 'items', index: STONE_FRAMES.north } },
+            { key: 'stone_top', label: 'Pedra Topo', collected: r.get('hasStoneTop') || r.get('placedTop'), frame: { texture: 'items', index: STONE_FRAMES.top } }
         ];
 
         items.filter(item => item.collected).forEach(item => {
