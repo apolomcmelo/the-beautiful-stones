@@ -5,7 +5,9 @@ import slide3 from '../resources/cutscenes/slide3-the-invitation-warm.png';
 import slide4 from '../resources/cutscenes/slide4-the-gate-warm.png';
 import slide5 from '../resources/cutscenes/slide5-the-monster-warm.png';
 import gameOverImg from '../resources/cutscenes/game-over.png';
+import worldGlobe from '../resources/cutscenes/world-globe.png';
 import cover from '../resources/cover/cover.png';
+import planeSprite from '../resources/sprites/plane-sprite-low-res.png';
 import fiodorSprite from '../resources/sprites/characters-sprites.png';
 import consumablesSprite from '../resources/sprites/consumables-sprites.png';
 import itemsSprite from '../resources/sprites/items-sprites.png';
@@ -24,6 +26,8 @@ export class BootScene extends Phaser.Scene {
         this.load.image('slide4', slide4);
         this.load.image('slide5', slide5);
         this.load.image('gameOver', gameOverImg);
+        this.load.image('world_globe', worldGlobe);
+        this.load.image('plane_sprite', planeSprite);
         this.load.image('cover', cover);
         this.load.spritesheet('fiodor', fiodorSprite, { frameWidth: 32, frameHeight: 32 });
         this.load.spritesheet('consumables', consumablesSprite, { frameWidth: 32, frameHeight: 32 });
