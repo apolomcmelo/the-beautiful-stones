@@ -17,6 +17,7 @@ import donEscribanSprite from '../resources/sprites/don-escriban-sprites.png';
 import npcSprite from '../resources/sprites/npc-sprites.png';
 import mainCharacterSprite from '../resources/sprites/main-character-sprites.png';
 import orpheuSprite from '../resources/sprites/orpheu-sprites.png';
+import ticketScreenSprite from '../resources/sprites/ticket-screen-sprites.png';
 
 export class BootScene extends Phaser.Scene {
     constructor() {
@@ -42,6 +43,7 @@ export class BootScene extends Phaser.Scene {
         this.load.spritesheet('npc', npcSprite, { frameWidth: 48, frameHeight: 48 });
         this.load.spritesheet('main_character', mainCharacterSprite, { frameWidth: 27, frameHeight: 50 });
         this.load.spritesheet('orpheu', orpheuSprite, { frameWidth: 32, frameHeight: 32 });
+        this.load.spritesheet('ticket_screen', ticketScreenSprite, { frameWidth: 80, frameHeight: 80 });
 
         const g = this.make.graphics({ x: 0, y: 0 });
 
@@ -73,7 +75,7 @@ export class BootScene extends Phaser.Scene {
 
         // OBJETOS ESPECIAIS
         g.clear(); g.fillStyle(0x8b4513); g.fillRect(0, 0, 32, 32); g.fillStyle(0xcd853f); g.fillRect(4, 4, 24, 24); g.fillStyle(0x000000); g.fillCircle(24, 16, 2); g.generateTexture('door', 32, 32);
-        g.clear(); g.fillStyle(0x333333); g.fillRect(0, 0, 32, 32); g.fillStyle(0xff0000); g.fillRect(4, 8, 24, 16); g.generateTexture('password_screen', 32, 32);
+        // Ticket screen texture now loaded from sprite file 'ticket-screen-sprites.png'
 
         // PEDRAS
         g.clear(); g.fillStyle(0x95a5a6); g.fillRect(4, 4, 24, 28); g.lineStyle(2, 0xffffff); g.strokeRect(4, 4, 24, 28); g.generateTexture('stone_left', 32, 32);

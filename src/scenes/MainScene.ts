@@ -456,10 +456,11 @@ export class MainScene extends Phaser.Scene {
             const pixelX = obj.x * 32 + 16; const pixelY = obj.y * 32 + 16;
             if (obj.type === 'player_start') { this.player.setPosition(pixelX, pixelY); this.assistants.forEach(a => a.setPosition(pixelX - 20, pixelY)); }
             else if (obj.type === 'password_screen') {
-                const screen = this.specialObjects.create(pixelX, pixelY, 'password_screen');
+                const screen = this.specialObjects.create(pixelX, pixelY, 'ticket_screen', this.screenFixed ? 1 : 0);
+                screen.setScale(50 / 80); // Scale from 80px to 50px
+                (screen.body as Phaser.Physics.Arcade.Body).setSize(50, 50); // Match collision to visual size
                 screen.setData('type', 'broken_screen');
                 screen.setData('fixed', this.screenFixed);
-                if (this.screenFixed) screen.setTint(0x00ff00);
             }
             else if (obj.type === 'clerk') {
                 const npc = this.npcs.create(pixelX, pixelY, 'npc', 0);
@@ -710,7 +711,7 @@ export class MainScene extends Phaser.Scene {
                 this.triggerSparkles(targetSprite.x, targetSprite.y, 0x00ffff); // Brilho ciano
                 sfx.action(); // Som de ação
                 target.setData('fixed', true);
-                targetSprite.setTint(0x00ff00);
+                targetSprite.setFrame(1); // Change to fixed frame
                 this.screenFixed = true;
                 this.registry.set('screenFixed', true);
                 return true;
