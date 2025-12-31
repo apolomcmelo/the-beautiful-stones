@@ -141,6 +141,18 @@ export class MainScene extends Phaser.Scene {
             this.anims.create({ key: 'fiodor-idle-down', frames: this.anims.generateFrameNumbers('fiodor', { start: 16, end: 19 }), frameRate: 5, repeat: -1 });
         }
 
+        // Create Animations for Orpheu
+        if (!this.anims.exists('orpheu-idle-back')) {
+            this.anims.create({ key: 'orpheu-idle-back', frames: [{ key: 'orpheu', frame: 0 }], frameRate: 1 });
+            this.anims.create({ key: 'orpheu-idle-front', frames: [{ key: 'orpheu', frame: 1 }], frameRate: 1 });
+            this.anims.create({ key: 'orpheu-idle-left', frames: [{ key: 'orpheu', frame: 2 }], frameRate: 1 });
+            this.anims.create({ key: 'orpheu-idle-right', frames: [{ key: 'orpheu', frame: 3 }], frameRate: 1 });
+            this.anims.create({ key: 'orpheu-walk-back', frames: [{ key: 'orpheu', frame: 4 }], frameRate: 1 });
+            this.anims.create({ key: 'orpheu-walk-front', frames: [{ key: 'orpheu', frame: 5 }], frameRate: 1 });
+            this.anims.create({ key: 'orpheu-walk-left', frames: [{ key: 'orpheu', frame: 6 }], frameRate: 1 });
+            this.anims.create({ key: 'orpheu-walk-right', frames: [{ key: 'orpheu', frame: 7 }], frameRate: 1 });
+        }
+
         if (!this.anims.exists('green-guard-idle')) {
             this.anims.create({
                 key: 'green-guard-idle',
@@ -590,6 +602,22 @@ export class MainScene extends Phaser.Scene {
                 } else {
                     // cat.stop(); // Don't stop animation completely, play idle
                     cat.play('fiodor-idle-down', true);
+                }
+            }
+
+            // Animation Logic for Orpheu
+            if (cat.name === "Orpheu") {
+                const vel = (cat.body as Phaser.Physics.Arcade.Body).velocity;
+                if (vel.length() > 5) {
+                    if (Math.abs(vel.x) > Math.abs(vel.y)) {
+                        if (vel.x > 0) cat.play('orpheu-walk-right', true);
+                        else cat.play('orpheu-walk-left', true);
+                    } else {
+                        if (vel.y > 0) cat.play('orpheu-walk-front', true);
+                        else cat.play('orpheu-walk-back', true);
+                    }
+                } else {
+                    cat.play('orpheu-idle-front', true);
                 }
             }
         });

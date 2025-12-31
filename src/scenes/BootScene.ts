@@ -16,6 +16,7 @@ import redFormGuardSprite from '../resources/sprites/red-form-guard-sprites.png'
 import donEscribanSprite from '../resources/sprites/don-escriban-sprites.png';
 import npcSprite from '../resources/sprites/npc-sprites.png';
 import mainCharacterSprite from '../resources/sprites/main-character-sprites.png';
+import orpheuSprite from '../resources/sprites/orpheu-sprites.png';
 
 export class BootScene extends Phaser.Scene {
     constructor() {
@@ -40,6 +41,7 @@ export class BootScene extends Phaser.Scene {
         this.load.image('boss', donEscribanSprite);
         this.load.spritesheet('npc', npcSprite, { frameWidth: 48, frameHeight: 48 });
         this.load.spritesheet('main_character', mainCharacterSprite, { frameWidth: 27, frameHeight: 50 });
+        this.load.spritesheet('orpheu', orpheuSprite, { frameWidth: 32, frameHeight: 32 });
 
         const g = this.make.graphics({ x: 0, y: 0 });
 
@@ -56,7 +58,7 @@ export class BootScene extends Phaser.Scene {
         g.clear(); g.fillStyle(0xe0ac69); g.fillRect(8, 4, 16, 14); g.fillStyle(0x8fbc8f); g.fillRect(8, 18, 16, 14); g.fillStyle(0x000000); g.fillRect(12, 8, 2, 2); g.fillRect(20, 8, 2, 2); g.generateTexture('denise', 32, 48);
         g.clear(); g.fillStyle(0x1a1a1a); g.fillRect(4, 12, 24, 16); g.fillStyle(0xffffff); g.fillTriangle(6, 12, 10, 8, 14, 12); g.fillTriangle(20, 12, 24, 8, 28, 12); g.generateTexture('maron', 32, 32);
         // g.clear(); g.fillStyle(0xfff8dc); g.fillRect(4, 12, 24, 16); g.fillStyle(0x000000); g.fillRect(6, 14, 2, 4); g.fillRect(26, 14, 2, 4); g.generateTexture('fiodor', 32, 32);
-        g.clear(); g.fillStyle(0xd2b48c); g.fillRect(4, 12, 24, 16); g.fillStyle(0x8b4513); g.fillRect(14, 12, 6, 16); g.generateTexture('orpheu', 32, 32);
+        // Orpheu texture now loaded from sprite file 'orpheu-sprites.png'
         g.clear(); g.fillStyle(0x8b4513); g.fillCircle(16, 16, 12); g.fillStyle(0xffffff); g.fillCircle(12, 12, 4); g.generateTexture('koffe', 32, 32);
 
         // NPCs e Inimigos
