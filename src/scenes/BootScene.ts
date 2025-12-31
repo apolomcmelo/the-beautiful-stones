@@ -8,7 +8,7 @@ import gameOverImg from '../resources/cutscenes/game-over.png';
 import worldGlobe from '../resources/cutscenes/world-globe.png';
 import cover from '../resources/cover/cover.png';
 import planeSprite from '../resources/sprites/plane-sprite-low-res.png';
-import fiodorSprite from '../resources/sprites/characters-sprites.png';
+import fiodorSprite from '../resources/sprites/fiodor-sprites.png';
 import consumablesSprite from '../resources/sprites/consumables-sprites.png';
 import itemsSprite from '../resources/sprites/items-sprites.png';
 import greenGuardSprite from '../resources/sprites/green-form-guard-sprites.png';

@@ -133,12 +133,12 @@ export class MainScene extends Phaser.Scene {
         (window as any).gameScene = this;
 
         // Create Animations for Fiódor
-        if (!this.anims.exists('fiodor-walk-down')) {
-            this.anims.create({ key: 'fiodor-walk-down', frames: this.anims.generateFrameNumbers('fiodor', { start: 0, end: 3 }), frameRate: 10, repeat: -1 });
-            this.anims.create({ key: 'fiodor-walk-right', frames: this.anims.generateFrameNumbers('fiodor', { start: 4, end: 7 }), frameRate: 10, repeat: -1 });
-            this.anims.create({ key: 'fiodor-walk-up', frames: this.anims.generateFrameNumbers('fiodor', { start: 8, end: 11 }), frameRate: 10, repeat: -1 });
-            this.anims.create({ key: 'fiodor-walk-left', frames: this.anims.generateFrameNumbers('fiodor', { start: 12, end: 15 }), frameRate: 10, repeat: -1 });
-            this.anims.create({ key: 'fiodor-idle-down', frames: this.anims.generateFrameNumbers('fiodor', { start: 16, end: 19 }), frameRate: 5, repeat: -1 });
+        if (!this.anims.exists('fiodor-idle')) {
+            this.anims.create({ key: 'fiodor-idle', frames: [{ key: 'fiodor', frame: 0 }], frameRate: 1 });
+            this.anims.create({ key: 'fiodor-walk-up', frames: [{ key: 'fiodor', frame: 1 }], frameRate: 1 });
+            this.anims.create({ key: 'fiodor-walk-down', frames: [{ key: 'fiodor', frame: 2 }], frameRate: 1 });
+            this.anims.create({ key: 'fiodor-walk-left', frames: [{ key: 'fiodor', frame: 3 }], frameRate: 1 });
+            this.anims.create({ key: 'fiodor-walk-right', frames: [{ key: 'fiodor', frame: 4 }], frameRate: 1 });
         }
 
         // Create Animations for Orpheu
@@ -601,8 +601,7 @@ export class MainScene extends Phaser.Scene {
                         else cat.play('fiodor-walk-up', true);
                     }
                 } else {
-                    // cat.stop(); // Don't stop animation completely, play idle
-                    cat.play('fiodor-idle-down', true);
+                    cat.play('fiodor-idle', true);
                 }
             }
 
