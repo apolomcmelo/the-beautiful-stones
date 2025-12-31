@@ -13,6 +13,7 @@ import consumablesSprite from '../resources/sprites/consumables-sprites.png';
 import itemsSprite from '../resources/sprites/items-sprites.png';
 import greenGuardSprite from '../resources/sprites/green-form-guard-sprites.png';
 import redFormGuardSprite from '../resources/sprites/red-form-guard-sprites.png';
+import donEscribanSprite from '../resources/sprites/don-escriban-sprites.png';
 
 export class BootScene extends Phaser.Scene {
     constructor() {
@@ -34,6 +35,7 @@ export class BootScene extends Phaser.Scene {
         this.load.spritesheet('items', itemsSprite, { frameWidth: 32, frameHeight: 32 });
         this.load.spritesheet('green_guard', greenGuardSprite, { frameWidth: 48, frameHeight: 48 });
         this.load.spritesheet('red_guard', redFormGuardSprite, { frameWidth: 48, frameHeight: 48 });
+        this.load.image('boss', donEscribanSprite);
 
         const g = this.make.graphics({ x: 0, y: 0 });
 
@@ -56,7 +58,7 @@ export class BootScene extends Phaser.Scene {
         // NPCs e Inimigos
         g.clear(); g.fillStyle(0x8b0000); g.fillRect(6, 10, 20, 20); g.fillStyle(0xffd700); g.fillRect(8, 2, 16, 6); g.generateTexture('dwarf', 32, 32);
         g.clear(); g.fillStyle(0xbdc3c7); g.fillRect(8, 4, 16, 24); g.generateTexture('statue', 32, 32);
-        g.clear(); g.fillStyle(0x800000); g.fillRect(0, 0, 64, 80); g.fillStyle(0xffd700); g.fillRect(10, 10, 44, 20); g.generateTexture('boss', 64, 80);
+        // Boss texture now loaded from sprite file 'don-escriban-sprites.png'
 
         // ITENS
         // texturas de formulário agora vêm do spritesheet 'items' (frames configurados na MainScene)

@@ -329,6 +329,11 @@ export class MainScene extends Phaser.Scene {
         else if (level === 2) this.setupLevel2_Ruins();
         else if (level === 3) this.setupLevel3_Boss();
         else if (level === 4) this.setupLevel4_Desert();
+
+        // Add boss collision if boss exists
+        if (this.boss) {
+            this.physics.add.collider(this.player, this.boss);
+        }
     }
 
     // ================= HELPER DE PARTÍCULAS =================
@@ -475,7 +480,7 @@ export class MainScene extends Phaser.Scene {
         this.createReturnPortal(50, 300, 2);
         if (!this.registry.get('hasVisa')) {
             this.bossHealth = 100;
-            this.boss = this.physics.add.sprite(600, 300, 'boss').setImmovable(true);
+            this.boss = this.physics.add.sprite(600, 300, 'boss').setImmovable(true).setScale(0.75);
             const bossHealthBar = document.getElementById('boss-health-bar');
             if (bossHealthBar) {
                 bossHealthBar.style.display = 'block';
