@@ -141,6 +141,15 @@ export class MainScene extends Phaser.Scene {
             this.anims.create({ key: 'fiodor-walk-right', frames: [{ key: 'fiodor', frame: 4 }], frameRate: 1 });
         }
 
+        // Create Animations for Maron
+        if (!this.anims.exists('maron-idle')) {
+            this.anims.create({ key: 'maron-idle', frames: [{ key: 'maron', frame: 0 }], frameRate: 1 });
+            this.anims.create({ key: 'maron-walk-up', frames: [{ key: 'maron', frame: 1 }], frameRate: 1 });
+            this.anims.create({ key: 'maron-walk-down', frames: [{ key: 'maron', frame: 2 }], frameRate: 1 });
+            this.anims.create({ key: 'maron-walk-left', frames: [{ key: 'maron', frame: 3 }], frameRate: 1 });
+            this.anims.create({ key: 'maron-walk-right', frames: [{ key: 'maron', frame: 4 }], frameRate: 1 });
+        }
+
         // Create Animations for Orpheu
         if (!this.anims.exists('orpheu-idle-back')) {
             this.anims.create({ key: 'orpheu-idle-back', frames: [{ key: 'orpheu', frame: 0 }], frameRate: 1 });
@@ -602,6 +611,22 @@ export class MainScene extends Phaser.Scene {
                     }
                 } else {
                     cat.play('fiodor-idle', true);
+                }
+            }
+
+            // Animation Logic for Maron
+            if (cat.name === "Maron") {
+                const vel = (cat.body as Phaser.Physics.Arcade.Body).velocity;
+                if (vel.length() > 5) {
+                    if (Math.abs(vel.x) > Math.abs(vel.y)) {
+                        if (vel.x > 0) cat.play('maron-walk-right', true);
+                        else cat.play('maron-walk-left', true);
+                    } else {
+                        if (vel.y > 0) cat.play('maron-walk-down', true);
+                        else cat.play('maron-walk-up', true);
+                    }
+                } else {
+                    cat.play('maron-idle', true);
                 }
             }
 
