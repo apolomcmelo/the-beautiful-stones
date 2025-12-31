@@ -439,6 +439,7 @@ export class MainScene extends Phaser.Scene {
         const data = LEVEL_2_DATA;
         for (let y = 0; y < data.height; y++) { for (let x = 0; x < data.width; x++) { if (data.layout[y * data.width + x] === 1) this.walls.create(x * 32 + 16, y * 32 + 16, 'wall'); } }
         this.createReturnPortal(50, 300, 1);
+        let queueIndex = 0; // Counter for queue NPCs to assign unique frames
         data.objects.forEach(obj => {
             const pixelX = obj.x * 32 + 16; const pixelY = obj.y * 32 + 16;
             if (obj.type === 'player_start') { this.player.setPosition(pixelX, pixelY); this.assistants.forEach(a => a.setPosition(pixelX - 20, pixelY)); }
@@ -449,14 +450,20 @@ export class MainScene extends Phaser.Scene {
                 if (this.screenFixed) screen.setTint(0x00ff00);
             }
             else if (obj.type === 'clerk') {
-                const npc = this.npcs.create(pixelX, pixelY, 'statue');
+                const npc = this.npcs.create(pixelX, pixelY, 'npc', 0);
                 npc.setImmovable(true);
                 npc.setData('type', 'clerk');
                 if (this.screenFixed && this.registry.get('hasStamp')) {
                     npc.x = 1000; // afasta se já entregou o selo
                 }
             }
-            else if (obj.type === 'npc_queue') { const npc = this.npcs.create(pixelX, pixelY, 'statue'); npc.setImmovable(true); npc.setTint(0x888888); npc.setData('type', 'queue'); }
+            else if (obj.type === 'npc_queue') {
+                const frame = 1 + (queueIndex % 3); // Cycle through frames 1, 2, 3 for queue NPCs
+                queueIndex++;
+                const npc = this.npcs.create(pixelX, pixelY, 'npc', frame);
+                npc.setImmovable(true);
+                npc.setData('type', 'queue');
+            }
             else if (obj.type === 'stone_right') {
                 if (!this.registry.get('hasStoneEast') && !this.registry.get('placedEast')) {
                     const stone = this.items.create(pixelX, pixelY, 'items', STONE_FRAMES.east);
@@ -870,7 +877,7 @@ export class MainScene extends Phaser.Scene {
         } else if (this.currentRoom === 2) {
             const type = npc.getData('type');
             if (type === 'queue') {
-                this.triggerDialogue("Pessoa na Fila", "A senha é AM69... o painel travou em AA04 faz anos.");
+                this.triggerDialogue("Estátua Viva", "A senha é AM69... o painel travou em AA04 faz anos.");
             } else if (type === 'clerk') {
                 if (this.screenFixed) {
                     if (!this.registry.get('hasStamp')) {

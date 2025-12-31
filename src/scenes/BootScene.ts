@@ -14,6 +14,7 @@ import itemsSprite from '../resources/sprites/items-sprites.png';
 import greenGuardSprite from '../resources/sprites/green-form-guard-sprites.png';
 import redFormGuardSprite from '../resources/sprites/red-form-guard-sprites.png';
 import donEscribanSprite from '../resources/sprites/don-escriban-sprites.png';
+import npcSprite from '../resources/sprites/npc-sprites.png';
 
 export class BootScene extends Phaser.Scene {
     constructor() {
@@ -36,6 +37,7 @@ export class BootScene extends Phaser.Scene {
         this.load.spritesheet('green_guard', greenGuardSprite, { frameWidth: 48, frameHeight: 48 });
         this.load.spritesheet('red_guard', redFormGuardSprite, { frameWidth: 48, frameHeight: 48 });
         this.load.image('boss', donEscribanSprite);
+        this.load.spritesheet('npc', npcSprite, { frameWidth: 48, frameHeight: 48 });
 
         const g = this.make.graphics({ x: 0, y: 0 });
 
