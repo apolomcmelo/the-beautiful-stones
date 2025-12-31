@@ -240,7 +240,7 @@ export class MainScene extends Phaser.Scene {
     }
 
     createPlayerAndCats() {
-        this.player = this.physics.add.sprite(100, 300, 'denise').setDepth(10).setVisible(false);
+        this.player = this.physics.add.sprite(100, 300, 'main_character', 1).setDepth(10).setVisible(false);
         (this.player.body as Phaser.Physics.Arcade.Body).setSize(20, 20);
         (this.player.body as Phaser.Physics.Arcade.Body).setOffset(6, 28);
         this.player.setCollideWorldBounds(true);
@@ -529,10 +529,10 @@ export class MainScene extends Phaser.Scene {
 
         this.player.setVelocity(0);
         if (!this.isDialogueOpen) {
-            if (this.cursors.left.isDown || this.wasd.A.isDown) this.player.setVelocityX(-currentSpeed);
-            else if (this.cursors.right.isDown || this.wasd.D.isDown) this.player.setVelocityX(currentSpeed);
-            if (this.cursors.up.isDown || this.wasd.W.isDown) this.player.setVelocityY(-currentSpeed);
-            else if (this.cursors.down.isDown || this.wasd.S.isDown) this.player.setVelocityY(currentSpeed);
+            if (this.cursors.left.isDown || this.wasd.A.isDown) { this.player.setVelocityX(-currentSpeed); this.player.setFrame(2); }
+            else if (this.cursors.right.isDown || this.wasd.D.isDown) { this.player.setVelocityX(currentSpeed); this.player.setFrame(3); }
+            if (this.cursors.up.isDown || this.wasd.W.isDown) { this.player.setVelocityY(-currentSpeed); this.player.setFrame(0); }
+            else if (this.cursors.down.isDown || this.wasd.S.isDown) { this.player.setVelocityY(currentSpeed); this.player.setFrame(1); }
         }
 
         // --- CONTROLO DA POEIRA & SOM DE PASSOS ---
