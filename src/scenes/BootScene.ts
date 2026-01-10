@@ -1,11 +1,12 @@
 import Phaser from 'phaser';
-import slide1 from '../resources/cutscenes/slide1-the-cave-warm.png';
-import slide2 from '../resources/cutscenes/slide2-the-dwarf-warm.png';
-import slide3 from '../resources/cutscenes/slide3-the-invitation-warm.png';
-import slide4 from '../resources/cutscenes/slide4-the-gate-warm.png';
-import slide5 from '../resources/cutscenes/slide5-the-monster-warm.png';
-import gameOverImg from '../resources/cutscenes/game-over.png';
-import worldGlobe from '../resources/cutscenes/world-globe.png';
+import slide1 from '../resources/cutscenes/slide1-the_cave_warm.webp';
+import slide2 from '../resources/cutscenes/slide2-the_dwarf_warm.webp';
+import slide3 from '../resources/cutscenes/slide3-the_invitation-warm.webp';
+import slide4 from '../resources/cutscenes/slide4-the-gate-warm.webp';
+import slide5 from '../resources/cutscenes/slide5-the-monster-warm.webp';
+import gameOverImg from '../resources/cutscenes/game-over.webp';
+import worldGlobe from '../resources/cutscenes/world-globe.webp';
+import finalSurprise from '../resources/cutscenes/final-surprise-warm.webp';
 import cover from '../resources/cover/cover.png';
 import planeSprite from '../resources/sprites/plane-sprite-low-res.png';
 import fiodorSprite from '../resources/sprites/fiodor-sprites.png';
@@ -26,6 +27,11 @@ export class BootScene extends Phaser.Scene {
     }
 
     preload() {
+        // Debug: Log load errors
+        this.load.on('loaderror', (file: Phaser.Loader.File) => {
+            console.error('Load error:', file.key, file.src);
+        });
+
         this.load.image('slide1', slide1);
         this.load.image('slide2', slide2);
         this.load.image('slide3', slide3);
@@ -33,6 +39,7 @@ export class BootScene extends Phaser.Scene {
         this.load.image('slide5', slide5);
         this.load.image('gameOver', gameOverImg);
         this.load.image('world_globe', worldGlobe);
+        this.load.image('final_surprise', finalSurprise);
         this.load.image('plane_sprite', planeSprite);
         this.load.image('cover', cover);
         this.load.spritesheet('fiodor', fiodorSprite, { frameWidth: 50, frameHeight: 50 });
