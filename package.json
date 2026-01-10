@@ -1,6 +1,7 @@
 {
     "name": "the-beautiful-stones",
     "version": "1.0.0",
+    "type": "module",
     "description": "A Jornada das Belas Pedras",
     "scripts": {
         "dev": "vite",
