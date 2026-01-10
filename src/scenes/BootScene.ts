@@ -35,17 +35,17 @@ export class BootScene extends Phaser.Scene {
         this.load.image('world_globe', worldGlobe);
         this.load.image('plane_sprite', planeSprite);
         this.load.image('cover', cover);
-        this.load.spritesheet('fiodor', fiodorSprite, { frameWidth: 32, frameHeight: 32 });
+        this.load.spritesheet('fiodor', fiodorSprite, { frameWidth: 50, frameHeight: 50 });
         this.load.spritesheet('consumables', consumablesSprite, { frameWidth: 32, frameHeight: 32 });
         this.load.spritesheet('items', itemsSprite, { frameWidth: 32, frameHeight: 32 });
-        this.load.spritesheet('green_guard', greenGuardSprite, { frameWidth: 48, frameHeight: 48 });
-        this.load.spritesheet('red_guard', redFormGuardSprite, { frameWidth: 48, frameHeight: 48 });
+        this.load.spritesheet('green_guard', greenGuardSprite, { frameWidth: 50, frameHeight: 50 });
+        this.load.spritesheet('red_guard', redFormGuardSprite, { frameWidth: 50, frameHeight: 50 });
         this.load.image('boss', donEscribanSprite);
         this.load.spritesheet('npc', npcSprite, { frameWidth: 48, frameHeight: 48 });
-        this.load.spritesheet('main_character', mainCharacterSprite, { frameWidth: 27, frameHeight: 50 });
-        this.load.spritesheet('orpheu', orpheuSprite, { frameWidth: 32, frameHeight: 32 });
+        this.load.spritesheet('main_character', mainCharacterSprite, { frameWidth: 40, frameHeight: 75 });
+        this.load.spritesheet('orpheu', orpheuSprite, { frameWidth: 50, frameHeight: 50 });
         this.load.spritesheet('ticket_screen', ticketScreenSprite, { frameWidth: 80, frameHeight: 80 });
-        this.load.spritesheet('maron', maronSprite, { frameWidth: 32, frameHeight: 32 });
+        this.load.spritesheet('maron', maronSprite, { frameWidth: 50, frameHeight: 50 });
 
         const g = this.make.graphics({ x: 0, y: 0 });
 

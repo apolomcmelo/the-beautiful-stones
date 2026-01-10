@@ -1,4 +1,5 @@
 export const TILE_SIZE = 32;
+export const TILE_HALF = TILE_SIZE / 2;
 export const SCREEN_WIDTH = 640;
 export const SCREEN_HEIGHT = 480;
 export const WORLD_WIDTH = 800;

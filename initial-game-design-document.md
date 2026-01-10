@@ -245,7 +245,7 @@ Anão:
 - Balancing: inimigos básicos 1–2 hits para derrotar; bosses 5–10 hits com padrões.
 
 ## Arte e som
-- Estilo pixel detalhado: sprites 32x48 de altura para protagonista, gatos 32x32, cachorro 32x32 com transparência
+- Estilo pixel detalhado: sprites 50x75 de altura para protagonista, gatos 50x50, cachorro 50x50 com transparência
 - Animação:
   - idle: 2 quadros
   - walk: 4 quadros
