@@ -13,6 +13,7 @@ import mainCharactersSprite from '../resources/sprites/main-characters-sprites.p
 import secondaryCharactersSprite from '../resources/sprites/secondary-characters-sprites.png';
 import collectablesSprite from '../resources/sprites/collectables-sprites.png';
 import dolmenSprite from '../resources/sprites/dolmen-sprites.png';
+import bossSprite from '../resources/sprites/boss-sprites.png';
 
 export class BootScene extends Phaser.Scene {
     constructor() {
@@ -57,6 +58,9 @@ export class BootScene extends Phaser.Scene {
         // Dolmen spritesheet (89x89) - frames [0][0]-[0][2]
         this.load.spritesheet('dolmen', dolmenSprite, { frameWidth: 89, frameHeight: 89 });
 
+        // Boss spritesheet (90x90)
+        this.load.spritesheet('boss', bossSprite, { frameWidth: 90, frameHeight: 90 });
+
         const g = this.make.graphics({ x: 0, y: 0 });
 
         // --- ARTE ---
@@ -75,7 +79,7 @@ export class BootScene extends Phaser.Scene {
         // NPCs e Inimigos
         g.clear(); g.fillStyle(0x8b0000); g.fillRect(6, 10, 20, 20); g.fillStyle(0xffd700); g.fillRect(8, 2, 16, 6); g.generateTexture('dwarf', 32, 32);
         g.clear(); g.fillStyle(0xbdc3c7); g.fillRect(8, 4, 16, 24); g.generateTexture('statue', 32, 32);
-        // Boss texture now loaded from main-characters-sprites.png
+        // Boss texture now loaded from boss-sprites.png (90x90)
 
         // ITENS
         // All item textures now come from collectables-sprites.png
@@ -124,18 +128,6 @@ export class BootScene extends Phaser.Scene {
     }
 
     create() {
-        // Extract Boss Don Escribán sprite from main-characters-sprites.png
-        // Boss is at position [0][4] with size 58x58, starting at x = 4 * 48 = 192px
-        const mainCharTexture = this.textures.get('main_character');
-        const sourceImage = mainCharTexture.getSourceImage() as HTMLImageElement;
-
-        const canvas = document.createElement('canvas');
-        canvas.width = 58;
-        canvas.height = 58;
-        const ctx = canvas.getContext('2d')!;
-        ctx.drawImage(sourceImage, 192, 0, 58, 58, 0, 0, 58, 58);
-        this.textures.addCanvas('boss', canvas);
-
         this.scene.start('IntroScene');
     }
 }
