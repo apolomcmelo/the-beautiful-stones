@@ -9,17 +9,10 @@ import worldGlobe from '../resources/cutscenes/world-globe.webp';
 import finalSurprise from '../resources/cutscenes/final-surprise-warm.webp';
 import cover from '../resources/cover/cover.png';
 import planeSprite from '../resources/sprites/plane-sprite-low-res.png';
-import fiodorSprite from '../resources/sprites/fiodor-sprites.png';
-import consumablesSprite from '../resources/sprites/consumables-sprites.png';
-import itemsSprite from '../resources/sprites/items-sprites.png';
-import greenGuardSprite from '../resources/sprites/green-form-guard-sprites.png';
-import redFormGuardSprite from '../resources/sprites/red-form-guard-sprites.png';
-import donEscribanSprite from '../resources/sprites/don-escriban-sprites.png';
-import npcSprite from '../resources/sprites/npc-sprites.png';
-import mainCharacterSprite from '../resources/sprites/main-character-sprites.png';
-import orpheuSprite from '../resources/sprites/orpheu-sprites.png';
-import ticketScreenSprite from '../resources/sprites/ticket-screen-sprites.png';
-import maronSprite from '../resources/sprites/maron-sprites.png';
+import mainCharactersSprite from '../resources/sprites/main-characters-sprites.png';
+import secondaryCharactersSprite from '../resources/sprites/secondary-characters-sprites.png';
+import collectablesSprite from '../resources/sprites/collectables-sprites.png';
+import dolmenSprite from '../resources/sprites/dolmen-sprites.png';
 
 export class BootScene extends Phaser.Scene {
     constructor() {
@@ -42,17 +35,27 @@ export class BootScene extends Phaser.Scene {
         this.load.image('final_surprise', finalSurprise);
         this.load.image('plane_sprite', planeSprite);
         this.load.image('cover', cover);
-        this.load.spritesheet('fiodor', fiodorSprite, { frameWidth: 50, frameHeight: 50 });
-        this.load.spritesheet('consumables', consumablesSprite, { frameWidth: 32, frameHeight: 32 });
-        this.load.spritesheet('items', itemsSprite, { frameWidth: 32, frameHeight: 32 });
-        this.load.spritesheet('green_guard', greenGuardSprite, { frameWidth: 50, frameHeight: 50 });
-        this.load.spritesheet('red_guard', redFormGuardSprite, { frameWidth: 50, frameHeight: 50 });
-        this.load.image('boss', donEscribanSprite);
-        this.load.spritesheet('npc', npcSprite, { frameWidth: 48, frameHeight: 48 });
-        this.load.spritesheet('main_character', mainCharacterSprite, { frameWidth: 40, frameHeight: 75 });
-        this.load.spritesheet('orpheu', orpheuSprite, { frameWidth: 50, frameHeight: 50 });
-        this.load.spritesheet('ticket_screen', ticketScreenSprite, { frameWidth: 80, frameHeight: 80 });
-        this.load.spritesheet('maron', maronSprite, { frameWidth: 50, frameHeight: 50 });
+
+        // Main characters spritesheet - Main character: 48x58, frames [0][0]-[0][3]
+        this.load.spritesheet('main_character', mainCharactersSprite, { frameWidth: 48, frameHeight: 58 });
+
+        // Secondary characters spritesheet (all 48x48)
+        // Row 0: Orpheu [0][0]-[0][4] (idle, up, down, left, right) = frames 0-4
+        // Row 1: Fiódor [1][0]-[1][4] = frames 5-9
+        // Row 2: Maron [2][0]-[2][4] = frames 10-14
+        // Row 3: Koffe [3][0]-[3][4] = frames 15-19
+        // Row 4: Red guard [4][0]-[4][3] = frames 20-23
+        // Row 5: Green guard [5][0]-[5][3] = frames 25-28
+        // Row 6: Attendant [6][0], Statues [6][1]-[6][3] = frames 30-33
+        this.load.spritesheet('secondary_characters', secondaryCharactersSprite, { frameWidth: 48, frameHeight: 48 });
+
+        // Collectables spritesheet (all 48x48)
+        // Row 0: Ticket screen [0][0]-[0][1], Forms [0][2]-[0][3], Consumables [0][4]-[0][6]
+        // Row 1: Stones [1][0]-[1][11] (4 stones x 3 frames each)
+        this.load.spritesheet('collectables', collectablesSprite, { frameWidth: 48, frameHeight: 48 });
+
+        // Dolmen spritesheet (89x89) - frames [0][0]-[0][2]
+        this.load.spritesheet('dolmen', dolmenSprite, { frameWidth: 89, frameHeight: 89 });
 
         const g = this.make.graphics({ x: 0, y: 0 });
 
@@ -67,26 +70,23 @@ export class BootScene extends Phaser.Scene {
 
         // PERSONAGENS
         g.clear(); g.fillStyle(0xe0ac69); g.fillRect(8, 4, 16, 14); g.fillStyle(0x8fbc8f); g.fillRect(8, 18, 16, 14); g.fillStyle(0x000000); g.fillRect(12, 8, 2, 2); g.fillRect(20, 8, 2, 2); g.generateTexture('denise', 32, 48);
-        // Maron texture now loaded from sprite file 'maron-sprites.png'
-        // g.clear(); g.fillStyle(0xfff8dc); g.fillRect(4, 12, 24, 16); g.fillStyle(0x000000); g.fillRect(6, 14, 2, 4); g.fillRect(26, 14, 2, 4); g.generateTexture('fiodor', 32, 32);
-        // Orpheu texture now loaded from sprite file 'orpheu-sprites.png'
-        g.clear(); g.fillStyle(0x8b4513); g.fillCircle(16, 16, 12); g.fillStyle(0xffffff); g.fillCircle(12, 12, 4); g.generateTexture('koffe', 32, 32);
+        // All character sprites now loaded from secondary-characters-sprites.png
 
         // NPCs e Inimigos
         g.clear(); g.fillStyle(0x8b0000); g.fillRect(6, 10, 20, 20); g.fillStyle(0xffd700); g.fillRect(8, 2, 16, 6); g.generateTexture('dwarf', 32, 32);
         g.clear(); g.fillStyle(0xbdc3c7); g.fillRect(8, 4, 16, 24); g.generateTexture('statue', 32, 32);
-        // Boss texture now loaded from sprite file 'don-escriban-sprites.png'
+        // Boss texture now loaded from main-characters-sprites.png
 
         // ITENS
-        // texturas de formulário agora vêm do spritesheet 'items' (frames configurados na MainScene)
+        // All item textures now come from collectables-sprites.png
         g.clear(); g.fillStyle(0x2ecc71); g.fillRect(8, 8, 16, 16); g.generateTexture('stamp_auth', 32, 32);
         g.clear(); g.fillStyle(0xf1c40f); g.fillRect(4, 4, 24, 24); g.fillStyle(0x000000); g.fillRect(6, 10, 20, 2); g.fillRect(6, 16, 20, 2); g.generateTexture('visa', 32, 32);
 
         // OBJETOS ESPECIAIS
         g.clear(); g.fillStyle(0x8b4513); g.fillRect(0, 0, 32, 32); g.fillStyle(0xcd853f); g.fillRect(4, 4, 24, 24); g.fillStyle(0x000000); g.fillCircle(24, 16, 2); g.generateTexture('door', 32, 32);
-        // Ticket screen texture now loaded from sprite file 'ticket-screen-sprites.png'
+        // Ticket screen now loaded from collectables-sprites.png
 
-        // PEDRAS
+        // PEDRAS (fallback procedural textures - main sprites from collectables-sprites.png)
         g.clear(); g.fillStyle(0x95a5a6); g.fillRect(4, 4, 24, 28); g.lineStyle(2, 0xffffff); g.strokeRect(4, 4, 24, 28); g.generateTexture('stone_left', 32, 32);
         g.clear(); g.fillStyle(0x505050); g.fillRect(4, 4, 24, 28); g.lineStyle(2, 0xffd700); g.strokeRect(4, 4, 24, 28); g.generateTexture('stone_right', 32, 32);
         g.clear(); g.fillStyle(0x95a5a6); g.fillRect(2, 10, 28, 12); g.lineStyle(2, 0x000000); g.strokeRect(2, 10, 28, 12); g.generateTexture('stone_top', 32, 32);
@@ -124,6 +124,18 @@ export class BootScene extends Phaser.Scene {
     }
 
     create() {
+        // Extract Boss Don Escribán sprite from main-characters-sprites.png
+        // Boss is at position [0][4] with size 58x58, starting at x = 4 * 48 = 192px
+        const mainCharTexture = this.textures.get('main_character');
+        const sourceImage = mainCharTexture.getSourceImage() as HTMLImageElement;
+
+        const canvas = document.createElement('canvas');
+        canvas.width = 58;
+        canvas.height = 58;
+        const ctx = canvas.getContext('2d')!;
+        ctx.drawImage(sourceImage, 192, 0, 58, 58, 0, 0, 58, 58);
+        this.textures.addCanvas('boss', canvas);
+
         this.scene.start('IntroScene');
     }
 }

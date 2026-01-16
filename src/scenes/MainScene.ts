@@ -2,11 +2,25 @@ import Phaser from 'phaser';
 import { LEVEL_1_DATA, LEVEL_2_DATA, WORLD_WIDTH, WORLD_HEIGHT } from '../consts';
 import { sfx, playAssistantVoice } from '../utils/audio';
 
+// Frame constants for collectables spritesheet (48x48, assuming 12 columns)
+// Row 0: ticket_screen[0-1], forms[2-3], consumables[4-6]
+// Row 1: stones[12-23] (4 stones x 3 frames each)
+const COLLECTABLE_FRAMES = {
+    TICKET_SCREEN_BROKEN: 0,
+    TICKET_SCREEN_REPAIRED: 1,
+    FORM_RED: 2,
+    FORM_GREEN: 3,
+    CINNAMON: 4,
+    CLOVE: 5,
+    PASTEL: 6
+};
+
+// Stone frames in row 1 of collectables spritesheet
 const STONE_FRAMES = {
-    west: 0,   // 1ª coluna, 1ª fileira
-    east: 3,   // 1ª coluna, 2ª fileira
-    north: 6,  // 1ª coluna, 3ª fileira (boss)
-    top: 9     // 1ª coluna, 4ª fileira
+    west: 12,   // First stone: frames 12-14
+    east: 15,   // Second stone: frames 15-17
+    north: 18,  // Third stone: frames 18-20
+    top: 21     // Fourth/last stone: frames 21-23
 };
 
 export class MainScene extends Phaser.Scene {
@@ -93,12 +107,12 @@ export class MainScene extends Phaser.Scene {
         if (!this.anims.exists(animKey)) {
             this.anims.create({
                 key: animKey,
-                frames: this.anims.generateFrameNumbers('items', { start: frameStart, end: frameStart + 2 }),
+                frames: this.anims.generateFrameNumbers('collectables', { start: frameStart, end: frameStart + 2 }),
                 frameRate: 6,
                 repeat: -1
             });
         }
-        const sprite = this.add.sprite(x, y, 'items', frameStart).setDepth(depth);
+        const sprite = this.add.sprite(x, y, 'collectables', frameStart).setDepth(depth);
         sprite.play(animKey);
         return sprite;
     }
@@ -132,48 +146,57 @@ export class MainScene extends Phaser.Scene {
     create() {
         (window as any).gameScene = this;
 
-        // Create Animations for Fiódor
+        // Create Animations for Fiódor (Row 1 in secondary_characters: frames 5-9)
         if (!this.anims.exists('fiodor-idle')) {
-            this.anims.create({ key: 'fiodor-idle', frames: [{ key: 'fiodor', frame: 0 }], frameRate: 1 });
-            this.anims.create({ key: 'fiodor-walk-up', frames: [{ key: 'fiodor', frame: 1 }], frameRate: 1 });
-            this.anims.create({ key: 'fiodor-walk-down', frames: [{ key: 'fiodor', frame: 2 }], frameRate: 1 });
-            this.anims.create({ key: 'fiodor-walk-left', frames: [{ key: 'fiodor', frame: 3 }], frameRate: 1 });
-            this.anims.create({ key: 'fiodor-walk-right', frames: [{ key: 'fiodor', frame: 4 }], frameRate: 1 });
+            this.anims.create({ key: 'fiodor-idle', frames: [{ key: 'secondary_characters', frame: 5 }], frameRate: 1 });
+            this.anims.create({ key: 'fiodor-walk-up', frames: [{ key: 'secondary_characters', frame: 6 }], frameRate: 1 });
+            this.anims.create({ key: 'fiodor-walk-down', frames: [{ key: 'secondary_characters', frame: 7 }], frameRate: 1 });
+            this.anims.create({ key: 'fiodor-walk-left', frames: [{ key: 'secondary_characters', frame: 8 }], frameRate: 1 });
+            this.anims.create({ key: 'fiodor-walk-right', frames: [{ key: 'secondary_characters', frame: 9 }], frameRate: 1 });
         }
 
-        // Create Animations for Maron
+        // Create Animations for Maron (Row 2 in secondary_characters: frames 10-14)
         if (!this.anims.exists('maron-idle')) {
-            this.anims.create({ key: 'maron-idle', frames: [{ key: 'maron', frame: 0 }], frameRate: 1 });
-            this.anims.create({ key: 'maron-walk-up', frames: [{ key: 'maron', frame: 1 }], frameRate: 1 });
-            this.anims.create({ key: 'maron-walk-down', frames: [{ key: 'maron', frame: 2 }], frameRate: 1 });
-            this.anims.create({ key: 'maron-walk-left', frames: [{ key: 'maron', frame: 3 }], frameRate: 1 });
-            this.anims.create({ key: 'maron-walk-right', frames: [{ key: 'maron', frame: 4 }], frameRate: 1 });
+            this.anims.create({ key: 'maron-idle', frames: [{ key: 'secondary_characters', frame: 10 }], frameRate: 1 });
+            this.anims.create({ key: 'maron-walk-up', frames: [{ key: 'secondary_characters', frame: 11 }], frameRate: 1 });
+            this.anims.create({ key: 'maron-walk-down', frames: [{ key: 'secondary_characters', frame: 12 }], frameRate: 1 });
+            this.anims.create({ key: 'maron-walk-left', frames: [{ key: 'secondary_characters', frame: 13 }], frameRate: 1 });
+            this.anims.create({ key: 'maron-walk-right', frames: [{ key: 'secondary_characters', frame: 14 }], frameRate: 1 });
         }
 
-        // Create Animations for Orpheu
-        if (!this.anims.exists('orpheu-idle-back')) {
-            this.anims.create({ key: 'orpheu-idle-back', frames: [{ key: 'orpheu', frame: 0 }], frameRate: 1 });
-            this.anims.create({ key: 'orpheu-idle-front', frames: [{ key: 'orpheu', frame: 1 }], frameRate: 1 });
-            this.anims.create({ key: 'orpheu-idle-left', frames: [{ key: 'orpheu', frame: 2 }], frameRate: 1 });
-            this.anims.create({ key: 'orpheu-idle-right', frames: [{ key: 'orpheu', frame: 3 }], frameRate: 1 });
-            this.anims.create({ key: 'orpheu-walk-back', frames: [{ key: 'orpheu', frame: 4 }], frameRate: 1 });
-            this.anims.create({ key: 'orpheu-walk-front', frames: [{ key: 'orpheu', frame: 5 }], frameRate: 1 });
-            this.anims.create({ key: 'orpheu-walk-left', frames: [{ key: 'orpheu', frame: 6 }], frameRate: 1 });
-            this.anims.create({ key: 'orpheu-walk-right', frames: [{ key: 'orpheu', frame: 7 }], frameRate: 1 });
+        // Create Animations for Orpheu (Row 0 in secondary_characters: frames 0-4)
+        if (!this.anims.exists('orpheu-idle')) {
+            this.anims.create({ key: 'orpheu-idle', frames: [{ key: 'secondary_characters', frame: 0 }], frameRate: 1 });
+            this.anims.create({ key: 'orpheu-walk-up', frames: [{ key: 'secondary_characters', frame: 1 }], frameRate: 1 });
+            this.anims.create({ key: 'orpheu-walk-down', frames: [{ key: 'secondary_characters', frame: 2 }], frameRate: 1 });
+            this.anims.create({ key: 'orpheu-walk-left', frames: [{ key: 'secondary_characters', frame: 3 }], frameRate: 1 });
+            this.anims.create({ key: 'orpheu-walk-right', frames: [{ key: 'secondary_characters', frame: 4 }], frameRate: 1 });
         }
 
-        if (!this.anims.exists('green-guard-idle')) {
+        // Create Animations for Koffe (Row 3 in secondary_characters: frames 15-19)
+        if (!this.anims.exists('koffe-idle')) {
+            this.anims.create({ key: 'koffe-idle', frames: [{ key: 'secondary_characters', frame: 15 }], frameRate: 1 });
+            this.anims.create({ key: 'koffe-walk-up', frames: [{ key: 'secondary_characters', frame: 16 }], frameRate: 1 });
+            this.anims.create({ key: 'koffe-walk-down', frames: [{ key: 'secondary_characters', frame: 17 }], frameRate: 1 });
+            this.anims.create({ key: 'koffe-walk-left', frames: [{ key: 'secondary_characters', frame: 18 }], frameRate: 1 });
+            this.anims.create({ key: 'koffe-walk-right', frames: [{ key: 'secondary_characters', frame: 19 }], frameRate: 1 });
+        }
+
+        // Create Animations for Guards (Row 4-5 in secondary_characters)
+        // Row 4: Red guard [4][0]-[4][3] = frames 20-23
+        // Row 5: Green guard [5][0]-[5][3] = frames 25-28
+        if (!this.anims.exists('red-guard-idle')) {
             this.anims.create({
-                key: 'green-guard-idle',
-                frames: this.anims.generateFrameNumbers('green_guard', { start: 0, end: 3 }),
+                key: 'red-guard-idle',
+                frames: this.anims.generateFrameNumbers('secondary_characters', { start: 20, end: 23 }),
                 frameRate: 4,
                 repeat: -1
             });
         }
-        if (!this.anims.exists('red-guard-idle')) {
+        if (!this.anims.exists('green-guard-idle')) {
             this.anims.create({
-                key: 'red-guard-idle',
-                frames: this.anims.generateFrameNumbers('red_guard', { start: 0, end: 3 }),
+                key: 'green-guard-idle',
+                frames: this.anims.generateFrameNumbers('secondary_characters', { start: 25, end: 28 }),
                 frameRate: 4,
                 repeat: -1
             });
@@ -263,16 +286,19 @@ export class MainScene extends Phaser.Scene {
     createPlayerAndCats() {
         this.player = this.physics.add.sprite(100, 300, 'main_character', 1).setDepth(10).setVisible(false);
         (this.player.body as Phaser.Physics.Arcade.Body).setSize(20, 20);
-        (this.player.body as Phaser.Physics.Arcade.Body).setOffset(6, 28);
+        (this.player.body as Phaser.Physics.Arcade.Body).setOffset(14, 38);
         this.player.setCollideWorldBounds(true);
         this.cameras.main.startFollow(this.player);
         this.cameras.main.setZoom(1.5);
 
+        // Assistants use secondary_characters spritesheet with specific frame offsets
+        // Maron: Row 2, start frame 10 | Fiódor: Row 1, start frame 5
+        // Orpheu: Row 0, start frame 0 | Koffe: Row 3, start frame 15
         this.assistants = [
-            this.physics.add.sprite(80, 300, 'maron').setName("Maron"),
-            this.physics.add.sprite(60, 300, 'fiodor').setName("Fiódor"),
-            this.physics.add.sprite(40, 300, 'orpheu').setName("Orpheu"),
-            this.physics.add.sprite(20, 300, 'koffe').setName("Koffe") // Index 3
+            this.physics.add.sprite(80, 300, 'secondary_characters', 10).setName("Maron"),
+            this.physics.add.sprite(60, 300, 'secondary_characters', 5).setName("Fiódor"),
+            this.physics.add.sprite(40, 300, 'secondary_characters', 0).setName("Orpheu"),
+            this.physics.add.sprite(20, 300, 'secondary_characters', 15).setName("Koffe") // Index 3
         ];
         this.assistants.forEach(c => {
             c.setDepth(10).setVisible(false);
@@ -391,30 +417,30 @@ export class MainScene extends Phaser.Scene {
             if (obj.type === 'player_start') { this.player.setPosition(pixelX, pixelY); this.assistants.forEach(a => a.setPosition(pixelX - 20, pixelY)); }
             else if (obj.type === 'stone_left') {
                 if (!this.registry.get('hasStoneWest') && !this.registry.get('placedWest')) {
-                    const stone = this.items.create(pixelX, pixelY, 'items', STONE_FRAMES.west);
+                    const stone = this.items.create(pixelX, pixelY, 'collectables', STONE_FRAMES.west);
                     stone.setData('type', 'stone_left');
                 }
             }
-            else if (obj.type === 'spice_cinnamon') { const cin = this.spices.create(pixelX, pixelY, 'consumables', 0).setData('type', 'cinnamon'); this.physics.add.overlap(this.player, cin, this.collectSpice, undefined, this); }
+            else if (obj.type === 'spice_cinnamon') { const cin = this.spices.create(pixelX, pixelY, 'collectables', COLLECTABLE_FRAMES.CINNAMON).setData('type', 'cinnamon'); this.physics.add.overlap(this.player, cin, this.collectSpice, undefined, this); }
             else if (obj.type === 'guard_gate') {
                 if (!this.gateOpened) {
-                    const npc = this.npcs.create(pixelX, pixelY, 'green_guard');
+                    const npc = this.npcs.create(pixelX, pixelY, 'secondary_characters', 25);
                     npc.setData('type', 'guard_gate');
                     npc.setName('Analista de Políticas de Inmigración');
-                    npc.setSize(48, 48).setOffset(2, 16); // Mantém colisão no piso
+                    npc.setSize(48, 48).setOffset(0, 0);
                     npc.refreshBody();
-                    npc.play('red-guard-idle');
+                    npc.play('green-guard-idle');
                 }
             }
             else if (obj.type === 'guard_room2') {
                 if (!this.doorRoom2Opened) {
-                    const npc = this.npcs.create(pixelX, pixelY, 'green_guard');
+                    const npc = this.npcs.create(pixelX, pixelY, 'secondary_characters', 20);
                     npc.setOrigin(0.5, 1);
                     npc.setData('type', 'guard_room2');
                     npc.setName('Axente de Visados');
-                    npc.setSize(48, 48).setOffset(2, 16); // Mantém colisão no piso
+                    npc.setSize(48, 48).setOffset(0, 0);
                     npc.refreshBody();
-                    npc.play('green-guard-idle');
+                    npc.play('red-guard-idle');
                 }
             }
             else if (obj.type === 'door_room1') { const door = this.specialObjects.create(pixelX, pixelY, 'door'); door.setData('type', 'door_room1'); }
@@ -425,13 +451,13 @@ export class MainScene extends Phaser.Scene {
             }
             else if (obj.type === 'form_green') {
                 if (!this.registry.get('hasFormGreen')) {
-                    const form = this.items.create(pixelX, pixelY, 'items', 15);
+                    const form = this.items.create(pixelX, pixelY, 'collectables', COLLECTABLE_FRAMES.FORM_GREEN);
                     form.setData('type', 'form_green');
                 }
             }
             else if (obj.type === 'form_red') {
                 if (!this.registry.get('hasFormRed')) {
-                    const form = this.items.create(pixelX, pixelY, 'items', 16);
+                    const form = this.items.create(pixelX, pixelY, 'collectables', COLLECTABLE_FRAMES.FORM_RED);
                     form.setData('type', 'form_red');
                 }
             }
@@ -465,14 +491,12 @@ export class MainScene extends Phaser.Scene {
             const pixelX = obj.x * 32 + 16; const pixelY = obj.y * 32 + 16;
             if (obj.type === 'player_start') { this.player.setPosition(pixelX, pixelY); this.assistants.forEach(a => a.setPosition(pixelX - 20, pixelY)); }
             else if (obj.type === 'password_screen') {
-                const screen = this.specialObjects.create(pixelX, pixelY, 'ticket_screen', this.screenFixed ? 1 : 0);
-                screen.setScale(50 / 80); // Scale from 80px to 50px
-                (screen.body as Phaser.Physics.Arcade.Body).setSize(50, 50); // Match collision to visual size
+                const screen = this.specialObjects.create(pixelX, pixelY, 'collectables', this.screenFixed ? COLLECTABLE_FRAMES.TICKET_SCREEN_REPAIRED : COLLECTABLE_FRAMES.TICKET_SCREEN_BROKEN);
                 screen.setData('type', 'broken_screen');
                 screen.setData('fixed', this.screenFixed);
             }
             else if (obj.type === 'clerk') {
-                const npc = this.npcs.create(pixelX, pixelY, 'npc', 0);
+                const npc = this.npcs.create(pixelX, pixelY, 'secondary_characters', 30);
                 npc.setImmovable(true);
                 npc.setData('type', 'clerk');
                 if (this.screenFixed && this.registry.get('hasStamp')) {
@@ -480,19 +504,19 @@ export class MainScene extends Phaser.Scene {
                 }
             }
             else if (obj.type === 'npc_queue') {
-                const frame = 1 + (queueIndex % 3); // Cycle through frames 1, 2, 3 for queue NPCs
+                const frame = 31 + (queueIndex % 3); // Cycle through statue frames 31, 32, 33 for queue NPCs
                 queueIndex++;
-                const npc = this.npcs.create(pixelX, pixelY, 'npc', frame);
+                const npc = this.npcs.create(pixelX, pixelY, 'secondary_characters', frame);
                 npc.setImmovable(true);
                 npc.setData('type', 'queue');
             }
             else if (obj.type === 'stone_right') {
                 if (!this.registry.get('hasStoneEast') && !this.registry.get('placedEast')) {
-                    const stone = this.items.create(pixelX, pixelY, 'items', STONE_FRAMES.east);
+                    const stone = this.items.create(pixelX, pixelY, 'collectables', STONE_FRAMES.east);
                     stone.setData('type', 'stone_right');
                 }
             }
-            else if (obj.type === 'spice_clove') { const clove = this.spices.create(pixelX, pixelY, 'consumables', 1).setData('type', 'clove'); this.physics.add.overlap(this.player, clove, this.collectSpice, undefined, this); }
+            else if (obj.type === 'spice_clove') { const clove = this.spices.create(pixelX, pixelY, 'collectables', COLLECTABLE_FRAMES.CLOVE).setData('type', 'clove'); this.physics.add.overlap(this.player, clove, this.collectSpice, undefined, this); }
         });
         if (this.screenFixed && this.registry.get('hasStamp') && (this.registry.get('hasStoneEast') || this.registry.get('placedEast'))) {
             this.createExit(650, 300, 3);
@@ -536,8 +560,7 @@ export class MainScene extends Phaser.Scene {
         topTomb.setData('hasStone', !hasTop);
         if (hasTop) topTomb.setTint(0x555555);
         this.dolmenBase = this.physics.add.staticSprite(600, 300, 'dolmen_base');
-        const pastel = this.spices.create(500, 350, 'consumables', 2).setData('type', 'pastel');
-        pastel.setFrame(2); // Garante o frame correto do pastel de nata
+        const pastel = this.spices.create(500, 350, 'collectables', COLLECTABLE_FRAMES.PASTEL).setData('type', 'pastel');
         this.physics.add.overlap(this.player, pastel, this.collectSpice, undefined, this);
         this.restoreDolmenState();
     }
@@ -638,11 +661,27 @@ export class MainScene extends Phaser.Scene {
                         if (vel.x > 0) cat.play('orpheu-walk-right', true);
                         else cat.play('orpheu-walk-left', true);
                     } else {
-                        if (vel.y > 0) cat.play('orpheu-walk-front', true);
-                        else cat.play('orpheu-walk-back', true);
+                        if (vel.y > 0) cat.play('orpheu-walk-down', true);
+                        else cat.play('orpheu-walk-up', true);
                     }
                 } else {
-                    cat.play('orpheu-idle-front', true);
+                    cat.play('orpheu-idle', true);
+                }
+            }
+
+            // Animation Logic for Koffe
+            if (cat.name === "Koffe") {
+                const vel = (cat.body as Phaser.Physics.Arcade.Body).velocity;
+                if (vel.length() > 5) {
+                    if (Math.abs(vel.x) > Math.abs(vel.y)) {
+                        if (vel.x > 0) cat.play('koffe-walk-right', true);
+                        else cat.play('koffe-walk-left', true);
+                    } else {
+                        if (vel.y > 0) cat.play('koffe-walk-down', true);
+                        else cat.play('koffe-walk-up', true);
+                    }
+                } else {
+                    cat.play('koffe-idle', true);
                 }
             }
         });
@@ -1049,14 +1088,13 @@ export class MainScene extends Phaser.Scene {
                     const key = k as keyof typeof this.stoneSprites;
                     if (this.stoneSprites[key]) { this.stoneSprites[key]!.destroy(); this.stoneSprites[key] = undefined; }
                 });
-                // pedra final (5ª fileira) frames 12-14
-                const finalAnimStart = 12;
-                const finalKey = `stone-anim-${finalAnimStart}`;
+                // Display the dolmen animation (using dolmen spritesheet)
+                const finalKey = 'dolmen-anim';
                 if (!this.anims.exists(finalKey)) {
-                    this.anims.create({ key: finalKey, frames: this.anims.generateFrameNumbers('items', { start: finalAnimStart, end: finalAnimStart + 2 }), frameRate: 6, repeat: -1 });
+                    this.anims.create({ key: finalKey, frames: this.anims.generateFrameNumbers('dolmen', { start: 0, end: 2 }), frameRate: 6, repeat: -1 });
                 }
                 if (this.stoneSprites.final) this.stoneSprites.final.destroy();
-                this.stoneSprites.final = this.add.sprite(this.dolmenBase.x, this.dolmenBase.y - 32, 'items', finalAnimStart).setDepth(6);
+                this.stoneSprites.final = this.add.sprite(this.dolmenBase.x, this.dolmenBase.y - 32, 'dolmen', 0).setDepth(6);
                 this.stoneSprites.final.play(finalKey);
                 this.time.delayedCall(3000, () => {
                     this.stoneSprites.final?.anims.pause(this.stoneSprites.final.anims.currentAnim?.frames[0]);
@@ -1211,10 +1249,10 @@ export class MainScene extends Phaser.Scene {
     restoreDolmenState() {
         const r = this.registry;
         this.clearStoneSprites();
-        if (r.get('placedWest')) this.stoneSprites.west = this.add.sprite(this.dolmenBase.x - 30, this.dolmenBase.y - 10, 'items', STONE_FRAMES.west).setDepth(5);
-        if (r.get('placedEast')) this.stoneSprites.east = this.add.sprite(this.dolmenBase.x + 30, this.dolmenBase.y - 10, 'items', STONE_FRAMES.east).setDepth(5);
-        if (r.get('placedNorth')) this.stoneSprites.north = this.add.sprite(this.dolmenBase.x, this.dolmenBase.y - 10, 'items', STONE_FRAMES.north).setDepth(4);
-        if (r.get('placedTop')) this.stoneSprites.top = this.add.sprite(this.dolmenBase.x, this.dolmenBase.y - 32, 'items', STONE_FRAMES.top).setDepth(6);
+        if (r.get('placedWest')) this.stoneSprites.west = this.add.sprite(this.dolmenBase.x - 30, this.dolmenBase.y - 10, 'collectables', STONE_FRAMES.west).setDepth(5);
+        if (r.get('placedEast')) this.stoneSprites.east = this.add.sprite(this.dolmenBase.x + 30, this.dolmenBase.y - 10, 'collectables', STONE_FRAMES.east).setDepth(5);
+        if (r.get('placedNorth')) this.stoneSprites.north = this.add.sprite(this.dolmenBase.x, this.dolmenBase.y - 10, 'collectables', STONE_FRAMES.north).setDepth(4);
+        if (r.get('placedTop')) this.stoneSprites.top = this.add.sprite(this.dolmenBase.x, this.dolmenBase.y - 32, 'collectables', STONE_FRAMES.top).setDepth(6);
     }
     createWallsRect(x: number, y: number, w: number, h: number) { for (let i = x; i < x + w; i++) { this.walls.create(i * 32 + 16, y * 32 + 16, 'wall'); this.walls.create(i * 32 + 16, (y + h) * 32 + 16, 'wall'); } for (let j = y; j <= y + h; j++) { this.walls.create(x * 32 + 16, j * 32 + 16, 'wall'); this.walls.create((x + w) * 32 + 16, j * 32 + 16, 'wall'); } }
     createExit(x: number, y: number, nextLevel: number) { const portal = this.portals.create(x, y, 'portal'); this.physics.add.overlap(this.player, portal, () => { this.loadLevel(nextLevel); }); }
@@ -1305,15 +1343,15 @@ export class MainScene extends Phaser.Scene {
 
         const r = this.registry;
         const items = [
-            { key: 'cinnamon', label: 'Canela', collected: this.cinnamonCount > 0, frame: { texture: 'consumables', index: 0 }, count: this.cinnamonCount },
-            { key: 'clove', label: 'Cravo', collected: this.cloveCount > 0, frame: { texture: 'consumables', index: 1 }, count: this.cloveCount },
-            { key: 'pastel', label: 'Pastel de Nata', collected: this.pastelCount > 0, frame: { texture: 'consumables', index: 2 }, count: this.pastelCount },
-            { key: 'form_green', label: 'Formulário 1B (Verde)', collected: r.get('hasFormGreen'), frame: { texture: 'items', index: 15 } },
-            { key: 'form_red', label: 'Formulário 2B (Vermelho)', collected: r.get('hasFormRed'), frame: { texture: 'items', index: 16 } },
-            { key: 'stone_west', label: 'Pedra Oeste', collected: r.get('hasStoneWest') || r.get('placedWest'), frame: { texture: 'items', index: STONE_FRAMES.west } },
-            { key: 'stone_east', label: 'Pedra Leste', collected: r.get('hasStoneEast') || r.get('placedEast'), frame: { texture: 'items', index: STONE_FRAMES.east } },
-            { key: 'stone_north', label: 'Pedra Norte', collected: r.get('hasStoneNorth') || r.get('placedNorth'), frame: { texture: 'items', index: STONE_FRAMES.north } },
-            { key: 'stone_top', label: 'Pedra Topo', collected: r.get('hasStoneTop') || r.get('placedTop'), frame: { texture: 'items', index: STONE_FRAMES.top } }
+            { key: 'cinnamon', label: 'Canela', collected: this.cinnamonCount > 0, frame: { texture: 'collectables', index: COLLECTABLE_FRAMES.CINNAMON }, count: this.cinnamonCount },
+            { key: 'clove', label: 'Cravo', collected: this.cloveCount > 0, frame: { texture: 'collectables', index: COLLECTABLE_FRAMES.CLOVE }, count: this.cloveCount },
+            { key: 'pastel', label: 'Pastel de Nata', collected: this.pastelCount > 0, frame: { texture: 'collectables', index: COLLECTABLE_FRAMES.PASTEL }, count: this.pastelCount },
+            { key: 'form_green', label: 'Formulário 1B (Verde)', collected: r.get('hasFormGreen'), frame: { texture: 'collectables', index: COLLECTABLE_FRAMES.FORM_GREEN } },
+            { key: 'form_red', label: 'Formulário 2B (Vermelho)', collected: r.get('hasFormRed'), frame: { texture: 'collectables', index: COLLECTABLE_FRAMES.FORM_RED } },
+            { key: 'stone_west', label: 'Pedra Oeste', collected: r.get('hasStoneWest') || r.get('placedWest'), frame: { texture: 'collectables', index: STONE_FRAMES.west } },
+            { key: 'stone_east', label: 'Pedra Leste', collected: r.get('hasStoneEast') || r.get('placedEast'), frame: { texture: 'collectables', index: STONE_FRAMES.east } },
+            { key: 'stone_north', label: 'Pedra Norte', collected: r.get('hasStoneNorth') || r.get('placedNorth'), frame: { texture: 'collectables', index: STONE_FRAMES.north } },
+            { key: 'stone_top', label: 'Pedra Topo', collected: r.get('hasStoneTop') || r.get('placedTop'), frame: { texture: 'collectables', index: STONE_FRAMES.top } }
         ];
 
         items.filter(item => item.collected).forEach(item => {
