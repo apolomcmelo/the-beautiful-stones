@@ -325,6 +325,7 @@ export class MainScene extends Phaser.Scene {
         this.loadLevel(this.startLevel);
         this.updateInventoryUI();
         this.updateUI();
+        this.updateControlsHint();
     }
 
     loadLevel(level: number) {
@@ -1286,23 +1287,56 @@ export class MainScene extends Phaser.Scene {
         sfx.collect();
 
         if (type === 'cinnamon') {
+            const isFirst = this.cinnamonCount === 0;
             this.cinnamonCount++;
             this.showFloatingText(player.x, player.y - 20, "+1 Canela", 0xffff00);
             this.triggerDialogue("Denise", "Canela coletada! Para usar, pressione Z.");
             this.updateInventoryUI();
+            if (isFirst) this.updateControlsHint();
         }
         else if (type === 'clove') {
+            const isFirst = this.cloveCount === 0;
             this.cloveCount++;
             this.showFloatingText(player.x, player.y - 20, "+1 Cravo", 0xffff00);
             this.triggerDialogue("Denise", "Cravo coletado! Para usar, pressione X.");
             this.updateInventoryUI();
+            if (isFirst) this.updateControlsHint();
         }
         else if (type === 'pastel') {
+            const isFirst = this.pastelCount === 0;
             this.pastelCount++;
             this.showFloatingText(player.x, player.y - 20, "+1 Pastel de Nata", 0xffff00);
             this.triggerDialogue("Denise", "Pastel de Nata coletado! Para usar, pressione C.");
             this.updateInventoryUI();
+            if (isFirst) this.updateControlsHint();
         }
+    }
+
+    updateControlsHint() {
+        const hint = document.getElementById('controls-hint');
+        if (!hint) return;
+
+        let text = 'WASD: Mover | 1 (Maron), 2 (Fiódor), 3 (Orpheu), 4/K (Koffe) | ESPAÇO: Ação';
+
+        const consumables: string[] = [];
+        if (this.cinnamonCount > 0 || this.registry.get('hasCollectedCinnamon')) {
+            consumables.push('Z: Canela');
+            this.registry.set('hasCollectedCinnamon', true);
+        }
+        if (this.cloveCount > 0 || this.registry.get('hasCollectedClove')) {
+            consumables.push('X: Cravo');
+            this.registry.set('hasCollectedClove', true);
+        }
+        if (this.pastelCount > 0 || this.registry.get('hasCollectedPastel')) {
+            consumables.push('C: Pastel de Nata');
+            this.registry.set('hasCollectedPastel', true);
+        }
+
+        if (consumables.length > 0) {
+            text += ' | ' + consumables.join(', ');
+        }
+
+        hint.textContent = text;
     }
 
     updateBuffUI() {
