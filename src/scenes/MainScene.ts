@@ -401,7 +401,15 @@ export class MainScene extends Phaser.Scene {
         this.physics.add.collider(this.player, this.specialObjects);
         this.physics.add.collider(this.assistants, this.specialObjects);
         this.physics.add.collider(this.player, this.npcs);
-        this.physics.add.collider(this.assistants, this.npcs);
+        // Skip Koffe collision with NPCs when in hint mode (so he can reach targets)
+        this.physics.add.collider(this.assistants, this.npcs, undefined, (assistant, _npc) => {
+            const cat = assistant as Phaser.Physics.Arcade.Sprite;
+            // Allow collision unless this is Koffe in hint mode
+            if (cat.name === 'Koffe' && cat.getData('mode') === 'hint') {
+                return false; // Skip collision
+            }
+            return true; // Normal collision
+        }, this);
 
         if (level === 1) this.setupLevel1_Mines();
         else if (level === 2) this.setupLevel2_Ruins();
@@ -864,7 +872,7 @@ export class MainScene extends Phaser.Scene {
         if (props.interactiveType === 'crater' || props.acceptsStones || props.type === 'crater') {
             // Use regular sprite - no physics body
             const crater = this.add.sprite(x, y, textureKey, frame);
-            crater.setDepth(depth);
+            crater.setDepth(1); // Below characters (player depth ~10)
             crater.setData('isCrater', true);
             // Store crater sprite for later dolmen base positioning
             this.craterSprites.push(crater);
@@ -1301,21 +1309,41 @@ export class MainScene extends Phaser.Scene {
         const koffe = this.assistants[3];
         let target: { x: number, y: number } | null = null;
         if (this.currentRoom === 1) {
-            if (!this.registry.get('hasFormGreen')) {
+            // Level 1 progression:
+            // 1. Door without guard (until door is opened)
+            // 2. Analista de Políticas de Inmigración (to authenticate green form)
+            // 3. Axente de Visados (to open door with authenticated form)
+            // 4. Analista again (to open gate with red form)
+            if (!this.doorRoom1Opened) {
                 target = { x: 6 * 32 + 16, y: 8 * 32 + 16 }; // Porta sem guarda
             } else if (!this.registry.get('hasFormGreenAuth')) {
-                target = { x: 20 * 32 + 16, y: 9 * 32 + 16 }; // Analista para autenticar 1B
-            } else if (!this.registry.get('hasFormRed')) {
-                target = { x: 12 * 32 + 16, y: 9 * 32 + 16 }; // Axente para liberar 2B
-            } else {
-                target = { x: 20 * 32 + 16, y: 9 * 32 + 16 }; // Analista abre portal
+                target = { x: 20 * 32 + 16, y: 9 * 32 + 16 }; // Analista para autenticar 1B (guard_gate at 20,9)
+            } else if (!this.doorRoom2Opened) {
+                target = { x: 12 * 32 + 16, y: 11 * 32 + 16 }; // Axente de Visados para abrir porta (guard_room2 at 12,11)
+            } else if (!this.gateOpened) {
+                target = { x: 20 * 32 + 16, y: 9 * 32 + 16 }; // Analista abre portal (guard_gate at 20,9)
             }
         } else if (this.currentRoom === 2) {
-            if (!this.screenFixed) target = { x: 13 * 32 + 16, y: 4 * 32 + 16 };
-            else if (!this.registry.get('hasStamp')) target = { x: 13 * 32 + 16, y: 5 * 32 + 16 };
-            else if (!this.registry.get('hasStoneEast') && !this.registry.get('placedEast')) target = { x: 22 * 32 + 16, y: 5 * 32 + 16 };
+            // Level 2 progression:
+            // 1. Ticket screen (to fix it)
+            // 2. Atendente (to get stamp)
+            // 3. Stone (to collect it)
+            if (!this.screenFixed) {
+                target = { x: 13 * 32 + 16, y: 4 * 32 + 16 }; // Ticket screen
+            } else if (!this.registry.get('hasStamp')) {
+                target = { x: 13 * 32 + 16, y: 5 * 32 + 16 }; // Atendente
+            } else if (!this.registry.get('hasStoneEast') && !this.registry.get('placedEast')) {
+                target = { x: 22 * 32 + 16, y: 5 * 32 + 16 }; // Stone
+            }
         } else if (this.currentRoom === 4) {
-            if (!this.registry.get('hasStoneTop')) target = { x: 600, y: 150 };
+            // Level 4 progression:
+            // 1. Tomb (to get the stone)
+            // 2. Crater/Dolmen base (to place stones)
+            if (!this.registry.get('hasStoneTop') && !this.registry.get('placedTop')) {
+                target = { x: 600, y: 150 }; // Tomb
+            } else if (this.dolmenBase && this.dolmenBase.active) {
+                target = { x: this.dolmenBase.x, y: this.dolmenBase.y }; // Crater/Dolmen
+            }
         }
 
         if (target) {
@@ -1997,7 +2025,8 @@ export class MainScene extends Phaser.Scene {
         const startTile = { x: Math.floor(start.x / tileSize), y: Math.floor(start.y / tileSize) };
         const endTile = { x: Math.floor(end.x / tileSize), y: Math.floor(end.y / tileSize) };
 
-        const grid = this.buildCollisionGrid(tileSize);
+        // Pass endTile so the target position is kept walkable even if an NPC is there
+        const grid = this.buildCollisionGrid(tileSize, endTile);
         if (!grid.length) return [];
 
         const gridWidth = grid[0].length;
@@ -2079,7 +2108,7 @@ export class MainScene extends Phaser.Scene {
         return []; // No path found
     }
 
-    private buildCollisionGrid(tileSize: number): number[][] {
+    private buildCollisionGrid(tileSize: number, targetTile?: { x: number; y: number }): number[][] {
         let width: number, height: number;
 
         if (this.currentRoom === 4 && this.desertMap) {
@@ -2117,6 +2146,35 @@ export class MainScene extends Phaser.Scene {
                     grid[ty][tx] = 1;
                 }
             });
+        }
+
+        // Add special objects (doors, etc.)
+        if (this.specialObjects) {
+            this.specialObjects.getChildren().forEach(obj => {
+                const special = obj as Phaser.Physics.Arcade.Sprite;
+                const tx = Math.floor(special.x / tileSize);
+                const ty = Math.floor(special.y / tileSize);
+                if (ty >= 0 && ty < height && tx >= 0 && tx < width) {
+                    grid[ty][tx] = 1;
+                }
+            });
+        }
+
+        // Add NPCs as obstacles (Koffe needs to navigate around them)
+        if (this.npcs) {
+            this.npcs.getChildren().forEach(obj => {
+                const npc = obj as Phaser.Physics.Arcade.Sprite;
+                const tx = Math.floor(npc.x / tileSize);
+                const ty = Math.floor(npc.y / tileSize);
+                if (ty >= 0 && ty < height && tx >= 0 && tx < width) {
+                    grid[ty][tx] = 1;
+                }
+            });
+        }
+
+        // Ensure target tile is walkable (even if an NPC is there - Koffe needs to reach it)
+        if (targetTile && targetTile.y >= 0 && targetTile.y < height && targetTile.x >= 0 && targetTile.x < width) {
+            grid[targetTile.y][targetTile.x] = 0;
         }
 
         return grid;
