@@ -7,7 +7,7 @@ import slide5 from '../resources/cutscenes/slide5-the-monster-warm.webp';
 import gameOverImg from '../resources/cutscenes/game-over.webp';
 import worldGlobe from '../resources/cutscenes/world-globe.webp';
 import finalSurprise from '../resources/cutscenes/final-surprise-warm.webp';
-import cover from '../resources/cover/cover.png';
+import cover from '../resources/cover/cover.webp';
 import planeSprite from '../resources/sprites/plane-sprite-low-res.png';
 import mainCharactersSprite from '../resources/sprites/main-characters-sprites.png';
 import secondaryCharactersSprite from '../resources/sprites/secondary-characters-sprites.png';

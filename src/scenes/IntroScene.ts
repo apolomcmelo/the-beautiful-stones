@@ -122,7 +122,7 @@ export class IntroScene extends Phaser.Scene {
             this.slideGroup.add(titleText);
 
             // Button
-            const btnBg = this.add.rectangle(cx, cy + 100, 220, 50, 0x000000).setInteractive({ useHandCursor: true });
+            const btnBg = this.add.rectangle(cx, cy + 100, 220, 50, 0x000000, 0.7).setInteractive({ useHandCursor: true });
             btnBg.setStrokeStyle(2, 0xffffff);
             const btnText = this.add.text(cx, cy + 100, "INICIAR EXPEDIÇÃO", {
                 fontFamily: 'Courier New',
@@ -133,8 +133,8 @@ export class IntroScene extends Phaser.Scene {
             this.slideGroup.add(btnBg);
             this.slideGroup.add(btnText);
 
-            btnBg.on('pointerover', () => btnBg.setFillStyle(0x333333));
-            btnBg.on('pointerout', () => btnBg.setFillStyle(0x000000));
+            btnBg.on('pointerover', () => btnBg.setFillStyle(0x333333, 0.85));
+            btnBg.on('pointerout', () => btnBg.setFillStyle(0x000000, 0.7));
             btnBg.on('pointerdown', () => {
                 unlockAudio();
                 this.cameras.main.fadeOut(500);
