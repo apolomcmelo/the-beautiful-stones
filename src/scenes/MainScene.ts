@@ -641,11 +641,9 @@ export class MainScene extends Phaser.Scene {
         this.physics.world.setBounds(0, 0, mapWidth, mapHeight);
         this.cameras.main.setBounds(0, 0, mapWidth, mapHeight);
 
-        // Position player - ensure player depth is between walls and decorations-above
-        this.player.setPosition(200, 300);
+        // Set player depth (position will be set by player_start object in setupDesertObjects)
         this.player.setDepth(5); // Player renders above walls (3)
         this.assistants.forEach(a => {
-            a.setPosition(180, 300);
             a.setDepth(5);
         });
 
@@ -653,7 +651,7 @@ export class MainScene extends Phaser.Scene {
         const bossHealthBar = document.getElementById('boss-health-bar');
         if (bossHealthBar) bossHealthBar.style.display = 'none';
 
-        // Process objects from the object layer
+        // Process objects from the object layer (includes player_start position)
         this.setupDesertObjects();
 
         // Note: Tombs don't have collision - player can walk through them
@@ -695,12 +693,21 @@ export class MainScene extends Phaser.Scene {
         const objectsDepth = this.getObjectLayerDepth('objects', 4);
 
         objectsLayer.objects.forEach((obj) => {
+            // Get properties from the object itself
+            const objProps = this.getObjectProperties(obj.properties);
+
+            // Check for player start position (point object with type property = 'player_start')
+            if (obj.type === 'player_start' || obj.name === 'player_start' || objProps.type === 'player_start') {
+                this.player.setPosition(obj.x!, obj.y!);
+                this.assistants.forEach((a, i) => {
+                    a.setPosition(obj.x! - 20 - (i * 20), obj.y!);
+                });
+                return; // Skip to next object
+            }
+
             // Tiled object positions: x is left edge, y is bottom edge
             const x = obj.x! + (obj.width! / 2);
             const y = obj.y! - (obj.height! / 2);
-
-            // Get properties from the object itself
-            const objProps = this.getObjectProperties(obj.properties);
 
             // Also get properties from the tileset tile definition
             const tileProps = this.getTilesetProperties(obj.gid);
