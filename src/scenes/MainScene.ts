@@ -1488,12 +1488,14 @@ export class MainScene extends Phaser.Scene {
                 if (this.registry.get('hasFormGreenAuth') && !this.registry.get('hasFormRed')) {
                     this.doorRoom2Opened = true;
                     this.registry.set('doorRoom2Opened', true);
+                    this.registry.set('hasFormGreen', false); // Form is consumed when door opens
                     this.triggerDialogue("Axente de Visados", "Agora sim. Pode passar.");
                     sfx.action();
                     const door = this.specialObjects.getChildren().find(o => o.getData('type') === 'door_room2') as Phaser.Physics.Arcade.Sprite;
                     if (door) { door.disableBody(true, true); door.destroy(); }
                     this.removeWallAt(12, 9);
                     this.tweens.add({ targets: npc, alpha: 0, duration: 400, onComplete: () => npc.disableBody(true, true) });
+                    this.updateInventoryUI();
                     return;
                 }
 
@@ -1508,11 +1510,13 @@ export class MainScene extends Phaser.Scene {
                 if (this.registry.get('hasFormRed')) {
                     this.gateOpened = true;
                     this.registry.set('gateOpened', true);
+                    this.registry.set('hasFormRed', false); // Form is consumed
                     this.triggerDialogue(name, "Formulário Vermelho? Aprovado. Abrindo o portão.");
                     sfx.action();
                     this.createExit(650, 300, 2);
                     if (this.gateBlock) { this.gateBlock.destroy(); this.gateBlock = null; }
                     this.tweens.add({ targets: npc, alpha: 0, duration: 400, onComplete: () => npc.disableBody(true, true) });
+                    this.updateInventoryUI();
                     return;
                 }
 
@@ -1961,11 +1965,11 @@ export class MainScene extends Phaser.Scene {
             { key: 'clove', label: 'Cravo', collected: this.cloveCount > 0, frame: { texture: 'collectables', index: COLLECTABLE_FRAMES.CLOVE }, count: this.cloveCount },
             { key: 'pastel', label: 'Pastel de Nata', collected: this.pastelCount > 0, frame: { texture: 'collectables', index: COLLECTABLE_FRAMES.PASTEL }, count: this.pastelCount },
             { key: 'form_green', label: 'Formulário 1B (Verde)', collected: r.get('hasFormGreen'), frame: { texture: 'collectables', index: COLLECTABLE_FRAMES.FORM_GREEN } },
-            { key: 'form_red', label: 'Formulário 2B (Vermelho)', collected: r.get('hasFormRed'), frame: { texture: 'collectables', index: COLLECTABLE_FRAMES.FORM_RED } },
-            { key: 'stone_west', label: 'Pedra Oeste', collected: r.get('hasStoneWest') || r.get('placedWest'), frame: { texture: 'collectables', index: STONE_FRAMES.west } },
-            { key: 'stone_east', label: 'Pedra Leste', collected: r.get('hasStoneEast') || r.get('placedEast'), frame: { texture: 'collectables', index: STONE_FRAMES.east } },
-            { key: 'stone_north', label: 'Pedra Norte', collected: r.get('hasStoneNorth') || r.get('placedNorth'), frame: { texture: 'collectables', index: STONE_FRAMES.north } },
-            { key: 'stone_top', label: 'Pedra Topo', collected: r.get('hasStoneTop') || r.get('placedTop'), frame: { texture: 'collectables', index: STONE_FRAMES.top } }
+            { key: 'form_red', label: 'Formulário 2B (Vermelho)', collected: r.get('hasFormRed'), frame: { texture: 'collectables', index: STONE_FRAMES.west } },
+            { key: 'stone_west', label: 'Pedra Oeste', collected: r.get('hasStoneWest'), frame: { texture: 'collectables', index: STONE_FRAMES.west } },
+            { key: 'stone_east', label: 'Pedra Leste', collected: r.get('hasStoneEast'), frame: { texture: 'collectables', index: STONE_FRAMES.east } },
+            { key: 'stone_north', label: 'Pedra Norte', collected: r.get('hasStoneNorth'), frame: { texture: 'collectables', index: STONE_FRAMES.north } },
+            { key: 'stone_top', label: 'Pedra Topo', collected: r.get('hasStoneTop'), frame: { texture: 'collectables', index: STONE_FRAMES.top } }
         ];
 
         items.filter(item => item.collected).forEach(item => {
