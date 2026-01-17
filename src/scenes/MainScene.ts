@@ -1662,7 +1662,7 @@ export class MainScene extends Phaser.Scene {
             }
             sfx.win(); // Fanfarra inicial
             this.updateInventoryUI();
-            this.time.delayedCall(3000, () => {
+            this.time.delayedCall(1500, () => {
                 // Hide individual stones
                 ['left_stone', 'right_stone', 'north_stone', 'top_stone'].forEach(name => {
                     const s = this.interactiveObjects.get(name);
@@ -1674,7 +1674,7 @@ export class MainScene extends Phaser.Scene {
                 if (dolmen) {
                     dolmen.setVisible(true);
                     this.playInteractiveAnimation(dolmen);
-                    this.time.delayedCall(3000, () => {
+                    this.time.delayedCall(1500, () => {
                         this.stopInteractiveAnimation(dolmen);
                         this.winGame();
                     });
@@ -1687,7 +1687,7 @@ export class MainScene extends Phaser.Scene {
                     if (this.stoneSprites.final) this.stoneSprites.final.destroy();
                     this.stoneSprites.final = this.add.sprite(this.dolmenBase.x, this.dolmenBase.y - 32, 'dolmen', 0).setDepth(6);
                     this.stoneSprites.final.play(finalKey);
-                    this.time.delayedCall(3000, () => {
+                    this.time.delayedCall(1500, () => {
                         this.stoneSprites.final?.anims.pause(this.stoneSprites.final.anims.currentAnim?.frames[0]);
                         this.winGame();
                     });
@@ -1965,7 +1965,7 @@ export class MainScene extends Phaser.Scene {
             { key: 'clove', label: 'Cravo', collected: this.cloveCount > 0, frame: { texture: 'collectables', index: COLLECTABLE_FRAMES.CLOVE }, count: this.cloveCount },
             { key: 'pastel', label: 'Pastel de Nata', collected: this.pastelCount > 0, frame: { texture: 'collectables', index: COLLECTABLE_FRAMES.PASTEL }, count: this.pastelCount },
             { key: 'form_green', label: 'Formulário 1B (Verde)', collected: r.get('hasFormGreen'), frame: { texture: 'collectables', index: COLLECTABLE_FRAMES.FORM_GREEN } },
-            { key: 'form_red', label: 'Formulário 2B (Vermelho)', collected: r.get('hasFormRed'), frame: { texture: 'collectables', index: STONE_FRAMES.west } },
+            { key: 'form_red', label: 'Formulário 2B (Vermelho)', collected: r.get('hasFormRed'), frame: { texture: 'collectables', index: COLLECTABLE_FRAMES.FORM_RED } },
             { key: 'stone_west', label: 'Pedra Oeste', collected: r.get('hasStoneWest'), frame: { texture: 'collectables', index: STONE_FRAMES.west } },
             { key: 'stone_east', label: 'Pedra Leste', collected: r.get('hasStoneEast'), frame: { texture: 'collectables', index: STONE_FRAMES.east } },
             { key: 'stone_north', label: 'Pedra Norte', collected: r.get('hasStoneNorth'), frame: { texture: 'collectables', index: STONE_FRAMES.north } },
