@@ -313,8 +313,11 @@ export class MainScene extends Phaser.Scene {
         (this.player.body as Phaser.Physics.Arcade.Body).setSize(20, 20);
         (this.player.body as Phaser.Physics.Arcade.Body).setOffset(14, 38);
         this.player.setCollideWorldBounds(true);
-        this.cameras.main.startFollow(this.player);
-        this.cameras.main.setZoom(1.5);
+
+        // Camera setup for pixel-perfect rendering
+        this.cameras.main.setRoundPixels(true);
+        // Use lerp 1,1 to disable interpolation - prevents subpixel camera positions
+        this.cameras.main.startFollow(this.player, true, 1, 1);
 
         // Assistants use secondary_characters spritesheet with specific frame offsets
         // Maron: Row 2, start frame 10 | Fiódor: Row 1, start frame 5
@@ -640,6 +643,8 @@ export class MainScene extends Phaser.Scene {
         const mapHeight = this.desertMap.heightInPixels;
         this.physics.world.setBounds(0, 0, mapWidth, mapHeight);
         this.cameras.main.setBounds(0, 0, mapWidth, mapHeight);
+        // Ensure camera uses integer positions for pixel-perfect tile rendering
+        this.cameras.main.setRoundPixels(true);
 
         // Set player depth (position will be set by player_start object in setupDesertObjects)
         this.player.setDepth(5); // Player renders above walls (3)
