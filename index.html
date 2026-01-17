@@ -19,6 +19,26 @@
             height: 100vh;
         }
 
+        /* Mobile warning screen */
+        #mobile-warning {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+            color: #fff;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 20px;
+            box-sizing: border-box;
+            z-index: 9999;
+            font-size: 1.5rem;
+            line-height: 1.6;
+        }
+
         #game-container {
             position: relative;
             box-shadow: 0 0 30px rgba(255, 255, 255, 0.1);
@@ -189,6 +209,11 @@
 
 <body>
 
+    <!-- Mobile warning screen -->
+    <div id="mobile-warning">
+        Eu avisei para você usar o portátil, não avisei?
+    </div>
+
     <div id="status-area">
         <div id="health-bar">
             <div id="health-fill"></div>HP: <span id="health-value">100</span>
@@ -209,6 +234,22 @@
     </div>
     <div id="controls-hint">Teclas: 1 (Maron), 2 (Fiódor), 3 (Orpheu), 4/K (Koffe). ESPAÇO: Ação.</div>
 
+    <script>
+        // Mobile detection - show warning on mobile devices
+        (function () {
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+                || (window.innerWidth <= 768 && 'ontouchstart' in window);
+
+            if (isMobile) {
+                document.getElementById('mobile-warning').style.display = 'flex';
+                document.getElementById('status-area').style.display = 'none';
+                document.getElementById('game-container').style.display = 'none';
+                document.getElementById('ui-layer').style.display = 'none';
+                document.getElementById('controls-hint').style.display = 'none';
+                document.getElementById('boss-health-bar').style.display = 'none';
+            }
+        })();
+    </script>
     <script type="module" src="/src/main.ts"></script>
 </body>
 
