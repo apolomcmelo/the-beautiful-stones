@@ -1,6 +1,19 @@
 import Phaser from 'phaser';
 import { LEVEL_1_DATA, LEVEL_2_DATA, WORLD_WIDTH, WORLD_HEIGHT } from '../consts';
 import { sfx, playAssistantVoice } from '../utils/audio';
+import desertLevelJson from '../assets/maps/desert-level.json';
+
+// Type for raw Tiled JSON tileset structure
+interface TiledTileset {
+    firstgid: number;
+    name: string;
+    tilecount: number;
+    tiles?: Array<{
+        id: number;
+        properties?: Array<{ name: string; type: string; value: unknown }>;
+        type?: string;
+    }>;
+}
 
 // Frame constants for collectables spritesheet (48x48, assuming 12 columns)
 // Row 0: ticket_screen[0-1], forms[2-3], consumables[4-6]
@@ -75,6 +88,16 @@ export class MainScene extends Phaser.Scene {
     private startLevel: number = 1;
     private isNewGame: boolean = false;
 
+    // Tilemap for desert level
+    private desertMap: Phaser.Tilemaps.Tilemap | null = null;
+    private desertTileset: Phaser.Tilemaps.Tileset | null = null;
+    private consumablesTileset: Phaser.Tilemaps.Tileset | null = null;
+    private groundLayer: Phaser.Tilemaps.TilemapLayer | null = null;
+    private shadowsLayer: Phaser.Tilemaps.TilemapLayer | null = null;
+    private wallsLayer: Phaser.Tilemaps.TilemapLayer | null = null;
+    private topRocksLayer: Phaser.Tilemaps.TilemapLayer | null = null;
+    private decorationsLayer: Phaser.Tilemaps.TilemapLayer | null = null;
+
     // Groups
     private walls!: Phaser.Physics.Arcade.StaticGroup;
     private bg!: Phaser.GameObjects.TileSprite;
@@ -87,8 +110,10 @@ export class MainScene extends Phaser.Scene {
     private gems!: Phaser.Physics.Arcade.StaticGroup;
     private pedestals!: Phaser.Physics.Arcade.StaticGroup;
     private shadows!: Phaser.Physics.Arcade.StaticGroup;
-    private tombs!: Phaser.Physics.Arcade.StaticGroup;
+    private tombs!: Phaser.GameObjects.Group;
+    private craterSprites: Phaser.GameObjects.Sprite[] = [];
     private dolmenBase!: Phaser.Physics.Arcade.Sprite;
+    private rawTileProperties: Map<number, Record<string, unknown>> = new Map();
     private bossAttackGroup!: Phaser.Physics.Arcade.Group;
     private portals!: Phaser.Physics.Arcade.Group;
 
@@ -347,6 +372,14 @@ export class MainScene extends Phaser.Scene {
         if (this.portals) this.portals.clear(true, true);
         else this.portals = this.physics.add.group();
 
+        // Clear tilemap layers
+        if (this.groundLayer) { this.groundLayer.destroy(); this.groundLayer = null; }
+        if (this.shadowsLayer) { this.shadowsLayer.destroy(); this.shadowsLayer = null; }
+        if (this.wallsLayer) { this.wallsLayer.destroy(); this.wallsLayer = null; }
+        if (this.topRocksLayer) { this.topRocksLayer.destroy(); this.topRocksLayer = null; }
+        if (this.decorationsLayer) { this.decorationsLayer.destroy(); this.decorationsLayer = null; }
+        if (this.desertMap) { this.desertMap.destroy(); this.desertMap = null; }
+
         this.clearStoneSprites();
 
         this.walls = this.physics.add.staticGroup();
@@ -357,7 +390,7 @@ export class MainScene extends Phaser.Scene {
         this.gems = this.physics.add.staticGroup();
         this.pedestals = this.physics.add.staticGroup();
         this.shadows = this.physics.add.staticGroup();
-        this.tombs = this.physics.add.staticGroup();
+        this.tombs = this.add.group();
         this.heavyBoxes = this.physics.add.group({ bounceX: 0, bounceY: 0, dragX: 800, dragY: 800 });
         this.projectiles = this.physics.add.group();
         this.bossAttackGroup = this.physics.add.group();
@@ -376,6 +409,12 @@ export class MainScene extends Phaser.Scene {
         else if (level === 2) this.setupLevel2_Ruins();
         else if (level === 3) this.setupLevel3_Boss();
         else if (level === 4) this.setupLevel4_Desert();
+
+        // Reset player/assistant depth for non-tilemap levels
+        if (level !== 4) {
+            this.player.setDepth(10);
+            this.assistants.forEach(a => a.setDepth(10));
+        }
 
         // Add boss collision if boss exists
         if (this.boss) {
@@ -545,24 +584,317 @@ export class MainScene extends Phaser.Scene {
     }
 
     setupLevel4_Desert() {
+        // Create tilemap
+        this.desertMap = this.make.tilemap({ key: 'desert-map' });
+
+        // Add tilesets - names must match exactly what's in Tiled
+        this.desertTileset = this.desertMap.addTilesetImage('desert-tileset', 'desert-tiles');
+        this.consumablesTileset = this.desertMap.addTilesetImage('consumables', 'consumables-tiles');
+
+        if (!this.desertTileset) {
+            console.error('Failed to load desert tileset. Check that the name matches Tiled.');
+            return;
+        }
+
+        // Consumables tileset is optional (may not be used in tile layers)
+        const allTilesets = this.consumablesTileset
+            ? [this.desertTileset, this.consumablesTileset]
+            : [this.desertTileset];
+
+        // Create layers (order matters for depth)
+        this.groundLayer = this.desertMap.createLayer('ground', allTilesets, 0, 0);
+        this.shadowsLayer = this.desertMap.createLayer('shadows', allTilesets, 0, 0);
+        this.wallsLayer = this.desertMap.createLayer('walls', allTilesets, 0, 0);
+        this.topRocksLayer = this.desertMap.createLayer('topRocks', allTilesets, 0, 0);
+        this.decorationsLayer = this.desertMap.createLayer('decorations', allTilesets, 0, 0);
+
+        // Set depths from Tiled layer properties, with fallbacks
+        if (this.groundLayer) {
+            const depth = this.getLayerDepth('ground', 0);
+            this.groundLayer.setDepth(depth);
+        }
+        if (this.shadowsLayer) {
+            const depth = this.getLayerDepth('shadows', 1);
+            this.shadowsLayer.setDepth(depth);
+        }
+        if (this.wallsLayer) {
+            const depth = this.getLayerDepth('walls', 3);
+            this.wallsLayer.setDepth(depth);
+            // Set collision for tiles with 'collides' property
+            this.wallsLayer.setCollisionByProperty({ collides: true });
+            this.physics.add.collider(this.player, this.wallsLayer);
+            this.physics.add.collider(this.assistants, this.wallsLayer);
+        }
+        if (this.topRocksLayer) {
+            const depth = this.getLayerDepth('topRocks', 10);
+            this.topRocksLayer.setDepth(depth);
+            // No collision - player walks behind these
+        }
+        if (this.decorationsLayer) {
+            const depth = this.getLayerDepth('decorations', 4);
+            this.decorationsLayer.setDepth(depth);
+        }
+
+        // Update world bounds to match tilemap size
+        const mapWidth = this.desertMap.widthInPixels;
+        const mapHeight = this.desertMap.heightInPixels;
+        this.physics.world.setBounds(0, 0, mapWidth, mapHeight);
+        this.cameras.main.setBounds(0, 0, mapWidth, mapHeight);
+
+        // Position player - ensure player depth is between walls and decorations-above
         this.player.setPosition(200, 300);
-        this.assistants.forEach(a => a.setPosition(180, 300));
-        this.bg = this.add.tileSprite(0, 0, WORLD_WIDTH, WORLD_HEIGHT, 'sand_floor').setOrigin(0).setDepth(0);
+        this.player.setDepth(5); // Player renders above walls (3)
+        this.assistants.forEach(a => {
+            a.setPosition(180, 300);
+            a.setDepth(5);
+        });
+
+        // Hide boss health bar
         const bossHealthBar = document.getElementById('boss-health-bar');
         if (bossHealthBar) bossHealthBar.style.display = 'none';
-        this.createWallsRect(0, 0, 25, 2); this.createWallsRect(0, 17, 25, 2);
+
+        // Process objects from the object layer
+        this.setupDesertObjects();
+
+        // Note: Tombs don't have collision - player can walk through them
+        // Collision is handled by wall tiles with 'collides' property
+
+        // Create return portal
         this.createReturnPortal(50, 300, 3);
-        this.shadows.create(200, 200, 'shadow'); this.shadows.create(500, 400, 'shadow'); this.shadows.create(100, 300, 'shadow');
-        this.tombs.create(300, 150, 'tomb').setData('hasStone', false).setImmovable(true);
-        this.tombs.create(400, 500, 'tomb').setData('hasStone', false).setImmovable(true);
-        const topTomb = this.tombs.create(600, 150, 'tomb').setImmovable(true) as Phaser.Physics.Arcade.Sprite;
-        const hasTop = this.registry.get('hasStoneTop') || this.registry.get('placedTop');
-        topTomb.setData('hasStone', !hasTop);
-        if (hasTop) topTomb.setTint(0x555555);
-        this.dolmenBase = this.physics.add.staticSprite(600, 300, 'dolmen_base');
-        const pastel = this.spices.create(500, 350, 'collectables', COLLECTABLE_FRAMES.PASTEL).setData('type', 'pastel');
-        this.physics.add.overlap(this.player, pastel, this.collectSpice, undefined, this);
+
+        // Dolmen base will be created when crater is found in setupDesertObjects
+        // The crater sprites become the interactive area for placing stones
         this.restoreDolmenState();
+    }
+
+    private getLayerDepth(layerName: string, defaultDepth: number): number {
+        if (!this.desertMap) return defaultDepth;
+
+        const layer = this.desertMap.getLayer(layerName);
+        if (layer && layer.properties) {
+            const props = layer.properties as Array<{ name: string; value: unknown }>;
+            const depthProp = props.find(p => p.name === 'depth');
+            if (depthProp) return depthProp.value as number;
+        }
+        return defaultDepth;
+    }
+
+    private setupDesertObjects() {
+        if (!this.desertMap || !this.desertTileset) return;
+
+        // Reset crater sprites array
+        this.craterSprites = [];
+
+        // Parse tile properties from raw JSON (Phaser doesn't auto-populate tileData)
+        this.parseTilePropertiesFromJson();
+
+        const objectsLayer = this.desertMap.getObjectLayer('objects');
+        if (!objectsLayer) return;
+
+        // Get the depth for objects layer
+        const objectsDepth = this.getObjectLayerDepth('objects', 4);
+
+        objectsLayer.objects.forEach((obj) => {
+            // Tiled object positions: x is left edge, y is bottom edge
+            const x = obj.x! + (obj.width! / 2);
+            const y = obj.y! - (obj.height! / 2);
+
+            // Get properties from the object itself
+            const objProps = this.getObjectProperties(obj.properties);
+
+            // Also get properties from the tileset tile definition
+            const tileProps = this.getTilesetProperties(obj.gid);
+
+            // Merge: object properties override tileset properties
+            const props = { ...tileProps, ...objProps };
+
+            // If the object has a gid, it's a tile object - create a sprite from tileset
+            if (obj.gid) {
+                this.createTileObject(obj, x, y, props, objectsDepth);
+            }
+        });
+
+        // Create invisible dolmen base at the center of crater sprites for stone placement
+        if (this.craterSprites.length > 0) {
+            const centerX = this.craterSprites.reduce((sum, s) => sum + s.x, 0) / this.craterSprites.length;
+            const centerY = this.craterSprites.reduce((sum, s) => sum + s.y, 0) / this.craterSprites.length;
+            // Create an invisible physics sprite for interaction detection
+            this.dolmenBase = this.physics.add.staticSprite(centerX, centerY, 'desert-tileset-sprites', 0);
+            this.dolmenBase.setVisible(false);
+            this.dolmenBase.setDepth(4);
+            // Make the body larger to cover all crater tiles
+            this.dolmenBase.body!.setSize(this.craterSprites.length * 48, 48);
+        }
+    }
+
+    private getObjectLayerDepth(layerName: string, defaultDepth: number): number {
+        if (!this.desertMap) return defaultDepth;
+
+        const layer = this.desertMap.getObjectLayer(layerName);
+        if (layer && layer.properties) {
+            const props = layer.properties as Array<{ name: string; value: unknown }>;
+            const depthProp = props.find(p => p.name === 'depth');
+            if (depthProp) return depthProp.value as number;
+        }
+        return defaultDepth;
+    }
+
+    private createTileObject(
+        obj: Phaser.Types.Tilemaps.TiledObject,
+        x: number,
+        y: number,
+        props: Record<string, unknown>,
+        depth: number
+    ) {
+        const gid = obj.gid!;
+
+        // Determine which tileset this gid belongs to and get the frame
+        let textureKey = '';
+        let frame = 0;
+
+        if (this.desertTileset && gid >= this.desertTileset.firstgid &&
+            gid < this.desertTileset.firstgid + this.desertTileset.total) {
+            frame = gid - this.desertTileset.firstgid;
+            textureKey = 'desert-tileset-sprites';
+        } else if (this.consumablesTileset && gid >= this.consumablesTileset.firstgid &&
+            gid < this.consumablesTileset.firstgid + this.consumablesTileset.total) {
+            frame = gid - this.consumablesTileset.firstgid;
+            textureKey = 'collectables'; // Reuse the existing collectables spritesheet
+        }
+
+        if (!textureKey) {
+            console.warn(`No tileset found for gid ${gid}`);
+            return;
+        }
+
+        // Check for consumables
+        if (props.consumable || props.consumableType) {
+            const consumableType = props.consumableType as string;
+            const consumable = this.spices.create(x, y, textureKey, frame) as Phaser.Physics.Arcade.Sprite;
+            consumable.setData('type', this.getConsumableDataType(consumableType));
+            consumable.setDepth(depth);
+            this.physics.add.overlap(this.player, consumable, this.collectSpice, undefined, this);
+            return;
+        }
+
+        // Check for graves with hidden stone (interactive, no collision)
+        if (props.hidesStone) {
+            const hasStone = !this.registry.get('hasStoneTop') && !this.registry.get('placedTop');
+            // Use regular sprite - no physics body needed for interaction
+            const tomb = this.add.sprite(x, y, textureKey, frame);
+            tomb.setData('hasStone', hasStone);
+            tomb.setData('stoneId', props.stoneId);
+            tomb.setData('hidesStone', true); // Mark as special tomb
+            tomb.setDepth(depth);
+            // Add to tombs group for interaction checking (not collision)
+            this.tombs.add(tomb);
+            // Don't tint at creation - let the original tile appearance remain
+            return;
+        }
+
+        // Check for crater (dolmen placement) - no collision needed
+        if (props.interactiveType === 'crater' || props.acceptsStones || props.type === 'crater') {
+            // Use regular sprite - no physics body
+            const crater = this.add.sprite(x, y, textureKey, frame);
+            crater.setDepth(depth);
+            crater.setData('isCrater', true);
+            // Store crater sprite for later dolmen base positioning
+            this.craterSprites.push(crater);
+            return;
+        }
+
+        // Default: create sprite for other tile objects
+        // Only add collision if the object has collides property
+        if (props.collides) {
+            const sprite = this.physics.add.staticSprite(x, y, textureKey, frame);
+            sprite.setDepth(depth);
+            sprite.setData('hasStone', false);
+            this.tombs.add(sprite);
+        } else {
+            // No collision - just a visual sprite
+            const sprite = this.add.sprite(x, y, textureKey, frame);
+            sprite.setDepth(depth);
+            sprite.setData('hasStone', false);
+            // Still add to tombs for interaction
+            this.tombs.add(sprite);
+        }
+    }
+
+    private getConsumableDataType(type: string): string {
+        if (type === 'cinnamon') return 'cinnamon';
+        if (type === 'clove') return 'clove';
+        if (type === 'pastelDeNata' || type === 'pastel') return 'pastel';
+        return 'pastel';
+    }
+
+    private getObjectProperties(properties?: { name: string; value: unknown }[]): Record<string, unknown> {
+        const props: Record<string, unknown> = {};
+        if (properties) {
+            properties.forEach((prop) => {
+                props[prop.name] = prop.value;
+            });
+        }
+        return props;
+    }
+
+    private parseTilePropertiesFromJson() {
+        // Parse tile properties from raw Tiled JSON since Phaser doesn't auto-populate tileData
+        this.rawTileProperties.clear();
+
+        const rawTilesets = (desertLevelJson as { tilesets: TiledTileset[] }).tilesets;
+
+        for (const tileset of rawTilesets) {
+            if (tileset.tiles) {
+                for (const tile of tileset.tiles) {
+                    // Calculate GID = firstgid + local tile id
+                    const gid = tileset.firstgid + tile.id;
+                    const props: Record<string, unknown> = {};
+
+                    if (tile.properties) {
+                        for (const prop of tile.properties) {
+                            props[prop.name] = prop.value;
+                        }
+                    }
+                    if (tile.type) {
+                        props.type = tile.type;
+                    }
+
+                    if (Object.keys(props).length > 0) {
+                        this.rawTileProperties.set(gid, props);
+                    }
+                }
+            }
+        }
+    }
+
+    private getTilesetProperties(gid?: number): Record<string, unknown> {
+        if (!gid) return {};
+
+        // Use cached properties from raw JSON
+        return this.rawTileProperties.get(gid) || {};
+    }
+
+    private isPlayerInShadow(): boolean {
+        // If no tilemap shadows layer, fall back to physics overlap with old shadows group
+        if (!this.desertMap || !this.shadowsLayer) {
+            return this.physics.overlap(this.player, this.shadows);
+        }
+
+        // Convert player world position to tile position
+        const tileX = this.desertMap.worldToTileX(this.player.x);
+        const tileY = this.desertMap.worldToTileY(this.player.y);
+
+        if (tileX === null || tileY === null) return false;
+
+        // Get the tile at player position in the shadows layer
+        const tile = this.shadowsLayer.getTileAt(tileX, tileY);
+
+        // Check if tile exists and has shadow/preventsHeatDamage property
+        if (tile && tile.properties) {
+            return tile.properties.preventsHeatDamage === true || tile.properties.shadow === true;
+        }
+
+        return false;
     }
 
     // ================= UPDATE =================
@@ -699,7 +1031,7 @@ export class MainScene extends Phaser.Scene {
         }
 
         if (this.currentRoom === 4 && !this.isDialogueOpen && !this.registry.get('placedTop')) {
-            const isSafe = this.physics.overlap(this.player, this.shadows);
+            const isSafe = this.isPlayerInShadow();
             if (!isSafe && time > this.lastHeatDamage + 1000) {
                 this.damagePlayer(2);
                 this.showFloatingText(this.player.x, this.player.y - 20, "Calor!", 0xff0000);
@@ -1034,12 +1366,17 @@ export class MainScene extends Phaser.Scene {
             if (!this.registry.get('hasStoneTop')) {
                 this.registry.set('hasStoneTop', true);
                 this.announceStoneCollection();
-                tomb.setTint(0x555555);
+                // Don't tint the tomb - keep its original appearance
                 tomb.setData('hasStone', false);
-                this.triggerSparkles(tomb.x, tomb.y, 0xffd700); // Ouro
+                this.triggerSparkles(tomb.x, tomb.y, 0xffd700); // Gold sparkles
                 sfx.collect();
             } else this.triggerDialogue("Denise", "Já está vazia.");
-        } else this.triggerDialogue("Denise", "Apenas pó.");
+        } else if (tomb.getData('hidesStone')) {
+            // This is the special tomb but stone was already collected
+            this.triggerDialogue("Denise", "Já está vazia.");
+        } else {
+            this.triggerDialogue("Denise", "Apenas pó.");
+        }
     }
 
     buildDolmen() {
