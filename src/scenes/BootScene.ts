@@ -19,6 +19,7 @@ import bossSprite from '../resources/sprites/boss-sprites.png';
 import desertLevelJson from '../assets/maps/desert-level.json';
 import desertTileset from '../assets/tilesets/desert-tileset.png';
 import consumablesTileset from '../assets/tilesets/consumables.png';
+import dolmenTileset from '../assets/tilesets/dolmen.png';
 
 export class BootScene extends Phaser.Scene {
     constructor() {
@@ -70,9 +71,12 @@ export class BootScene extends Phaser.Scene {
         this.load.tilemapTiledJSON('desert-map', desertLevelJson);
         this.load.image('desert-tiles', desertTileset);
         this.load.image('consumables-tiles', consumablesTileset);
+        this.load.image('dolmen-tiles', dolmenTileset);
 
         // Also load desert tileset as spritesheet for object layer sprites (48x48 tiles, 61 columns)
         this.load.spritesheet('desert-tileset-sprites', desertTileset, { frameWidth: 48, frameHeight: 48 });
+        // Load dolmen tileset as spritesheet for object layer sprites (90x90 tiles)
+        this.load.spritesheet('dolmen-tileset-sprites', dolmenTileset, { frameWidth: 90, frameHeight: 90 });
         // Consumables spritesheet is already loaded as 'collectables'
 
         const g = this.make.graphics({ x: 0, y: 0 });

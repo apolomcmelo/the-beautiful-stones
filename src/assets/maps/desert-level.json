@@ -9696,8 +9696,8 @@
                                    "type": "",
                                    "visible": true,
                                    "width": 0,
-                                   "x": 118.181818181818,
-                                   "y": 975.757575757576
+                                   "x": 118.182,
+                                   "y": 975.758
                             }
                      ],
                      "opacity": 1,
@@ -9708,6 +9708,168 @@
                                    "value": 4
                             }
                      ],
+                     "type": "objectgroup",
+                     "visible": true,
+                     "x": 0,
+                     "y": 0
+              },
+              {
+                     "draworder": "topdown",
+                     "id": 8,
+                     "name": "interactive_objects",
+                     "objects": [
+                            {
+                                   "gid": 2099,
+                                   "height": 90,
+                                   "id": 57,
+                                   "name": "dolmen",
+                                   "properties": [
+                                          {
+                                                 "name": "collides",
+                                                 "type": "bool",
+                                                 "value": false
+                                          },
+                                          {
+                                                 "name": "name",
+                                                 "type": "string",
+                                                 "value": "dolmen"
+                                          },
+                                          {
+                                                 "name": "type",
+                                                 "type": "string",
+                                                 "value": "interactive"
+                                          },
+                                          {
+                                                 "name": "visible",
+                                                 "type": "bool",
+                                                 "value": false
+                                          }
+                                   ],
+                                   "rotation": 0,
+                                   "type": "",
+                                   "visible": true,
+                                   "width": 90,
+                                   "x": 2403.5,
+                                   "y": 144.5
+                            },
+                            {
+                                   "gid": 2087,
+                                   "height": 48,
+                                   "id": 58,
+                                   "name": "left_stone",
+                                   "properties": [
+                                          {
+                                                 "name": "name",
+                                                 "type": "string",
+                                                 "value": "left_stone"
+                                          },
+                                          {
+                                                 "name": "type",
+                                                 "type": "string",
+                                                 "value": "interactive"
+                                          },
+                                          {
+                                                 "name": "visible",
+                                                 "type": "bool",
+                                                 "value": false
+                                          }
+                                   ],
+                                   "rotation": 0,
+                                   "type": "",
+                                   "visible": true,
+                                   "width": 48,
+                                   "x": 2400,
+                                   "y": 137
+                            },
+                            {
+                                   "gid": 2090,
+                                   "height": 48,
+                                   "id": 59,
+                                   "name": "right_stone",
+                                   "properties": [
+                                          {
+                                                 "name": "name",
+                                                 "type": "string",
+                                                 "value": "right_stone"
+                                          },
+                                          {
+                                                 "name": "type",
+                                                 "type": "string",
+                                                 "value": "interactive"
+                                          },
+                                          {
+                                                 "name": "visible",
+                                                 "type": "bool",
+                                                 "value": false
+                                          }
+                                   ],
+                                   "rotation": 0,
+                                   "type": "",
+                                   "visible": true,
+                                   "width": 48,
+                                   "x": 2452.5,
+                                   "y": 134
+                            },
+                            {
+                                   "gid": 2093,
+                                   "height": 42,
+                                   "id": 60,
+                                   "name": "north_stone",
+                                   "properties": [
+                                          {
+                                                 "name": "name",
+                                                 "type": "string",
+                                                 "value": "north_stone"
+                                          },
+                                          {
+                                                 "name": "type",
+                                                 "type": "string",
+                                                 "value": "interactive"
+                                          },
+                                          {
+                                                 "name": "visible",
+                                                 "type": "bool",
+                                                 "value": false
+                                          }
+                                   ],
+                                   "rotation": 0,
+                                   "type": "",
+                                   "visible": true,
+                                   "width": 47,
+                                   "x": 2424,
+                                   "y": 114.5
+                            },
+                            {
+                                   "gid": 2096,
+                                   "height": 35,
+                                   "id": 61,
+                                   "name": "top_stone",
+                                   "properties": [
+                                          {
+                                                 "name": "name",
+                                                 "type": "string",
+                                                 "value": "top_stone"
+                                          },
+                                          {
+                                                 "name": "type",
+                                                 "type": "string",
+                                                 "value": "interactive"
+                                          },
+                                          {
+                                                 "name": "visible",
+                                                 "type": "bool",
+                                                 "value": false
+                                          }
+                                   ],
+                                   "rotation": 350.972040319779,
+                                   "type": "",
+                                   "visible": true,
+                                   "width": 77.5350998101962,
+                                   "x": 2411.20439773428,
+                                   "y": 85.5891157798875
+                            }
+                     ],
+                     "opacity": 1,
                      "type": "objectgroup",
                      "visible": true,
                      "x": 0,
@@ -11991,8 +12153,8 @@
                      "y": 0
               }
        ],
-       "nextlayerid": 8,
-       "nextobjectid": 56,
+       "nextlayerid": 9,
+       "nextobjectid": 62,
        "orientation": "orthogonal",
        "renderorder": "right-down",
        "tiledversion": "1.11.2",
@@ -12081,7 +12243,7 @@
                                           {
                                                  "name": "collides",
                                                  "type": "bool",
-                                                 "value": true
+                                                 "value": false
                                           },
                                           {
                                                  "name": "depth",
@@ -12301,7 +12463,7 @@
                                           {
                                                  "name": "collides",
                                                  "type": "bool",
-                                                 "value": true
+                                                 "value": false
                                           },
                                           {
                                                  "name": "depth",
@@ -12357,7 +12519,7 @@
                                           {
                                                  "name": "collides",
                                                  "type": "bool",
-                                                 "value": true
+                                                 "value": false
                                           },
                                           {
                                                  "name": "depth",
@@ -12917,7 +13079,7 @@
                                           {
                                                  "name": "collides",
                                                  "type": "bool",
-                                                 "value": true
+                                                 "value": false
                                           },
                                           {
                                                  "name": "depth",
@@ -12985,7 +13147,7 @@
                                           {
                                                  "name": "collides",
                                                  "type": "bool",
-                                                 "value": true
+                                                 "value": false
                                           },
                                           {
                                                  "name": "depth",
@@ -13061,7 +13223,7 @@
                                           {
                                                  "name": "collides",
                                                  "type": "bool",
-                                                 "value": true
+                                                 "value": false
                                           },
                                           {
                                                  "name": "depth",
@@ -13433,7 +13595,7 @@
                                           {
                                                  "name": "collides",
                                                  "type": "bool",
-                                                 "value": true
+                                                 "value": false
                                           },
                                           {
                                                  "name": "depth",
@@ -14767,7 +14929,7 @@
                                           {
                                                  "name": "collides",
                                                  "type": "bool",
-                                                 "value": true
+                                                 "value": false
                                           },
                                           {
                                                  "name": "depth",
@@ -15255,7 +15417,7 @@
                                           {
                                                  "name": "collides",
                                                  "type": "bool",
-                                                 "value": true
+                                                 "value": false
                                           },
                                           {
                                                  "name": "depth",
@@ -15741,7 +15903,7 @@
                                           {
                                                  "name": "collides",
                                                  "type": "bool",
-                                                 "value": true
+                                                 "value": false
                                           },
                                           {
                                                  "name": "depth",
@@ -15809,7 +15971,7 @@
                                           {
                                                  "name": "collides",
                                                  "type": "bool",
-                                                 "value": true
+                                                 "value": false
                                           },
                                           {
                                                  "name": "depth",
@@ -16207,7 +16369,7 @@
                                           {
                                                  "name": "collides",
                                                  "type": "bool",
-                                                 "value": true
+                                                 "value": false
                                           },
                                           {
                                                  "name": "depth",
@@ -29491,7 +29653,7 @@
               {
                      "columns": 12,
                      "firstgid": 2075,
-                     "image": "../tilesets/consumables.png",
+                     "image": "../tilesets/collectables-sprites.png",
                      "imageheight": 96,
                      "imagewidth": 576,
                      "margin": 0,
@@ -29544,9 +29706,149 @@
                                                  "value": "pastelDeNata"
                                           }
                                    ]
+                            },
+                            {
+                                   "animation": [
+                                          {
+                                                 "duration": 300,
+                                                 "tileid": 12
+                                          },
+                                          {
+                                                 "duration": 200,
+                                                 "tileid": 13
+                                          },
+                                          {
+                                                 "duration": 220,
+                                                 "tileid": 14
+                                          },
+                                          {
+                                                 "duration": 120,
+                                                 "tileid": 13
+                                          },
+                                          {
+                                                 "duration": 200,
+                                                 "tileid": 14
+                                          }
+                                   ],
+                                   "id": 12
+                            },
+                            {
+                                   "animation": [
+                                          {
+                                                 "duration": 300,
+                                                 "tileid": 15
+                                          },
+                                          {
+                                                 "duration": 200,
+                                                 "tileid": 16
+                                          },
+                                          {
+                                                 "duration": 220,
+                                                 "tileid": 17
+                                          },
+                                          {
+                                                 "duration": 120,
+                                                 "tileid": 16
+                                          },
+                                          {
+                                                 "duration": 200,
+                                                 "tileid": 17
+                                          }
+                                   ],
+                                   "id": 15
+                            },
+                            {
+                                   "animation": [
+                                          {
+                                                 "duration": 300,
+                                                 "tileid": 18
+                                          },
+                                          {
+                                                 "duration": 200,
+                                                 "tileid": 19
+                                          },
+                                          {
+                                                 "duration": 220,
+                                                 "tileid": 20
+                                          },
+                                          {
+                                                 "duration": 200,
+                                                 "tileid": 19
+                                          },
+                                          {
+                                                 "duration": 200,
+                                                 "tileid": 20
+                                          }
+                                   ],
+                                   "id": 18
+                            },
+                            {
+                                   "animation": [
+                                          {
+                                                 "duration": 300,
+                                                 "tileid": 21
+                                          },
+                                          {
+                                                 "duration": 200,
+                                                 "tileid": 22
+                                          },
+                                          {
+                                                 "duration": 220,
+                                                 "tileid": 23
+                                          },
+                                          {
+                                                 "duration": 200,
+                                                 "tileid": 22
+                                          },
+                                          {
+                                                 "duration": 200,
+                                                 "tileid": 23
+                                          }
+                                   ],
+                                   "id": 21
                             }
                      ],
                      "tilewidth": 48
+              },
+              {
+                     "columns": 3,
+                     "firstgid": 2099,
+                     "image": "../tilesets/dolmen.png",
+                     "imageheight": 90,
+                     "imagewidth": 270,
+                     "margin": 0,
+                     "name": "dolmen",
+                     "spacing": 0,
+                     "tilecount": 3,
+                     "tileheight": 90,
+                     "tiles": [
+                            {
+                                   "animation": [
+                                          {
+                                                 "duration": 300,
+                                                 "tileid": 0
+                                          },
+                                          {
+                                                 "duration": 200,
+                                                 "tileid": 1
+                                          },
+                                          {
+                                                 "duration": 100,
+                                                 "tileid": 2
+                                          },
+                                          {
+                                                 "duration": 80,
+                                                 "tileid": 2
+                                          },
+                                          {
+                                                 "duration": 120,
+                                                 "tileid": 2
+                                          }
+                                   ],
+                                   "id": 0
+                            }
+                     ],
+                     "tilewidth": 90
               }
        ],
        "tilewidth": 48,

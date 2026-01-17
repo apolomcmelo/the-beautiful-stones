@@ -92,11 +92,15 @@ export class MainScene extends Phaser.Scene {
     private desertMap: Phaser.Tilemaps.Tilemap | null = null;
     private desertTileset: Phaser.Tilemaps.Tileset | null = null;
     private consumablesTileset: Phaser.Tilemaps.Tileset | null = null;
+    private dolmenTileset: Phaser.Tilemaps.Tileset | null = null;
     private groundLayer: Phaser.Tilemaps.TilemapLayer | null = null;
     private shadowsLayer: Phaser.Tilemaps.TilemapLayer | null = null;
     private wallsLayer: Phaser.Tilemaps.TilemapLayer | null = null;
     private topRocksLayer: Phaser.Tilemaps.TilemapLayer | null = null;
     private decorationsLayer: Phaser.Tilemaps.TilemapLayer | null = null;
+
+    // Interactive tilemap objects (stones, dolmen) - keyed by name
+    private interactiveObjects: Map<string, Phaser.GameObjects.Sprite> = new Map();
 
     // Groups
     private walls!: Phaser.Physics.Arcade.StaticGroup;
@@ -125,27 +129,6 @@ export class MainScene extends Phaser.Scene {
 
     constructor() {
         super({ key: 'MainScene' });
-    }
-
-    private playStoneAnim(frameStart: number, depth: number, x: number, y: number): Phaser.GameObjects.Sprite {
-        const animKey = `stone-anim-${frameStart}`;
-        if (!this.anims.exists(animKey)) {
-            this.anims.create({
-                key: animKey,
-                frames: this.anims.generateFrameNumbers('collectables', { start: frameStart, end: frameStart + 2 }),
-                frameRate: 6,
-                repeat: -1
-            });
-        }
-        const sprite = this.add.sprite(x, y, 'collectables', frameStart).setDepth(depth);
-        sprite.play(animKey);
-        return sprite;
-    }
-
-    private stopStoneAnim(sprite?: Phaser.GameObjects.Sprite) {
-        if (sprite && sprite.anims.isPlaying) {
-            sprite.anims.pause(sprite.anims.currentAnim?.frames[0]);
-        }
     }
 
     init(data: { level?: number, newGame?: boolean }) {
@@ -587,12 +570,16 @@ export class MainScene extends Phaser.Scene {
     }
 
     setupLevel4_Desert() {
+        // Clear interactive objects from previous loads
+        this.interactiveObjects.clear();
+
         // Create tilemap
         this.desertMap = this.make.tilemap({ key: 'desert-map' });
 
         // Add tilesets - names must match exactly what's in Tiled
         this.desertTileset = this.desertMap.addTilesetImage('desert-tileset', 'desert-tiles');
         this.consumablesTileset = this.desertMap.addTilesetImage('consumables', 'consumables-tiles');
+        this.dolmenTileset = this.desertMap.addTilesetImage('dolmen', 'dolmen-tiles');
 
         if (!this.desertTileset) {
             console.error('Failed to load desert tileset. Check that the name matches Tiled.');
@@ -726,6 +713,26 @@ export class MainScene extends Phaser.Scene {
             }
         });
 
+        // Load the interactive_objects layer (stones and dolmen)
+        const interactiveLayer = this.desertMap.getObjectLayer('interactive_objects');
+        if (interactiveLayer) {
+            const interactiveDepth = this.getObjectLayerDepth('interactive_objects', 6);
+
+            interactiveLayer.objects.forEach((obj) => {
+                if (!obj.gid) return; // Skip non-tile objects
+
+                const objProps = this.getObjectProperties(obj.properties);
+                const tileProps = this.getTilesetProperties(obj.gid);
+                const props = { ...tileProps, ...objProps };
+
+                // Tiled object positions: x is left edge, y is bottom edge
+                const x = obj.x! + (obj.width! / 2);
+                const y = obj.y! - (obj.height! / 2);
+
+                this.createTileObject(obj, x, y, props, interactiveDepth);
+            });
+        }
+
         // Create invisible dolmen base at the center of crater sprites for stone placement
         if (this.craterSprites.length > 0) {
             const centerX = this.craterSprites.reduce((sum, s) => sum + s.x, 0) / this.craterSprites.length;
@@ -744,9 +751,16 @@ export class MainScene extends Phaser.Scene {
 
         const layer = this.desertMap.getObjectLayer(layerName);
         if (layer && layer.properties) {
-            const props = layer.properties as Array<{ name: string; value: unknown }>;
-            const depthProp = props.find(p => p.name === 'depth');
-            if (depthProp) return depthProp.value as number;
+            // Handle both array and object formats for properties
+            if (Array.isArray(layer.properties)) {
+                const props = layer.properties as Array<{ name: string; value: unknown }>;
+                const depthProp = props.find(p => p.name === 'depth');
+                if (depthProp) return depthProp.value as number;
+            } else if (typeof layer.properties === 'object') {
+                // Properties might be a plain object { depth: value }
+                const props = layer.properties as Record<string, unknown>;
+                if (props.depth !== undefined) return props.depth as number;
+            }
         }
         return defaultDepth;
     }
@@ -772,10 +786,37 @@ export class MainScene extends Phaser.Scene {
             gid < this.consumablesTileset.firstgid + this.consumablesTileset.total) {
             frame = gid - this.consumablesTileset.firstgid;
             textureKey = 'collectables'; // Reuse the existing collectables spritesheet
+        } else if (this.dolmenTileset && gid >= this.dolmenTileset.firstgid &&
+            gid < this.dolmenTileset.firstgid + this.dolmenTileset.total) {
+            frame = gid - this.dolmenTileset.firstgid;
+            textureKey = 'dolmen-tileset-sprites';
         }
 
         if (!textureKey) {
             console.warn(`No tileset found for gid ${gid}`);
+            return;
+        }
+
+        // Check for interactive objects (stones and dolmen from tilemap)
+        // Check both custom property 'type' and object's built-in name/type fields
+        const isInteractive = props.type === 'interactive' || obj.type === 'interactive';
+        const objName = (props.name as string) || obj.name;
+
+        if (isInteractive && objName) {
+            const visible = props.visible === true;
+
+            // Create sprite and store in interactiveObjects map
+            const sprite = this.add.sprite(x, y, textureKey, frame);
+            sprite.setDepth(depth);
+            sprite.setVisible(visible);
+            sprite.setData('gid', gid);
+            sprite.setData('textureKey', textureKey);
+            sprite.setData('frame', frame);
+
+            // Store animation data if it exists (for playing animations later)
+            this.storeAnimationData(sprite, gid);
+
+            this.interactiveObjects.set(objName, sprite);
             return;
         }
 
@@ -847,6 +888,53 @@ export class MainScene extends Phaser.Scene {
             });
         }
         return props;
+    }
+
+    private storeAnimationData(sprite: Phaser.GameObjects.Sprite, gid: number) {
+        // Look up animation data from raw Tiled JSON
+        const rawTilesets = (desertLevelJson as { tilesets: TiledTileset[] }).tilesets;
+
+        for (const tileset of rawTilesets) {
+            if (gid >= tileset.firstgid && gid < tileset.firstgid + tileset.tilecount) {
+                const localId = gid - tileset.firstgid;
+                const tile = tileset.tiles?.find(t => t.id === localId);
+
+                if (tile && (tile as any).animation) {
+                    const animation = (tile as any).animation as Array<{ duration: number; tileid: number }>;
+                    sprite.setData('animation', animation);
+                    sprite.setData('tilesetName', tileset.name);
+                    sprite.setData('firstgid', tileset.firstgid);
+                }
+                break;
+            }
+        }
+    }
+
+    private playInteractiveAnimation(sprite: Phaser.GameObjects.Sprite) {
+        const animation = sprite.getData('animation') as Array<{ duration: number; tileid: number }> | undefined;
+        if (!animation || animation.length === 0) return;
+
+        const textureKey = sprite.getData('textureKey') as string;
+        const gid = sprite.getData('gid') as number;
+        const animKey = `interactive-anim-${gid}`;
+
+        if (!this.anims.exists(animKey)) {
+            const frames = animation.map(f => ({ key: textureKey, frame: f.tileid }));
+            this.anims.create({
+                key: animKey,
+                frames: frames,
+                frameRate: 1000 / animation[0].duration,
+                repeat: -1
+            });
+        }
+
+        sprite.play(animKey);
+    }
+
+    private stopInteractiveAnimation(sprite: Phaser.GameObjects.Sprite) {
+        if (sprite.anims.isPlaying) {
+            sprite.anims.pause(sprite.anims.currentAnim?.frames[0]);
+        }
     }
 
     private parseTilePropertiesFromJson() {
@@ -1393,62 +1481,86 @@ export class MainScene extends Phaser.Scene {
 
     buildDolmen() {
         const r = this.registry;
+
+        // Helper to show and animate a tilemap stone object
+        const showStone = (stoneName: string, sparkleX: number, sparkleY: number) => {
+            const stone = this.interactiveObjects.get(stoneName);
+            if (stone) {
+                stone.setVisible(true);
+                this.playInteractiveAnimation(stone);
+                this.triggerSparkles(sparkleX, sparkleY, 0xffffff);
+                sfx.action();
+                this.time.delayedCall(3000, () => this.stopInteractiveAnimation(stone));
+            } else {
+                // Fallback: create sprite manually if not found in tilemap
+                console.warn(`Stone ${stoneName} not found in tilemap, using fallback`);
+                this.triggerSparkles(sparkleX, sparkleY, 0xffffff);
+                sfx.action();
+            }
+        };
+
         if (r.get('hasStoneWest') && !r.get('placedWest')) {
             r.set('placedWest', true);
             r.set('hasStoneWest', false);
-            if (this.stoneSprites.west) this.stoneSprites.west.destroy();
-            this.stoneSprites.west = this.playStoneAnim(STONE_FRAMES.west, 5, this.dolmenBase.x - 30, this.dolmenBase.y - 10);
-            this.triggerSparkles(this.dolmenBase.x - 30, this.dolmenBase.y, 0xffffff);
-            sfx.action();
-            this.time.delayedCall(3000, () => this.stopStoneAnim(this.stoneSprites.west));
+            const stone = this.interactiveObjects.get('left_stone');
+            showStone('left_stone', stone?.x ?? this.dolmenBase.x - 30, stone?.y ?? this.dolmenBase.y);
             this.updateInventoryUI();
         }
         else if (r.get('hasStoneEast') && !r.get('placedEast')) {
             r.set('placedEast', true);
             r.set('hasStoneEast', false);
-            if (this.stoneSprites.east) this.stoneSprites.east.destroy();
-            this.stoneSprites.east = this.playStoneAnim(STONE_FRAMES.east, 5, this.dolmenBase.x + 30, this.dolmenBase.y - 10);
-            this.triggerSparkles(this.dolmenBase.x + 30, this.dolmenBase.y, 0xffffff);
-            sfx.action();
-            this.time.delayedCall(3000, () => this.stopStoneAnim(this.stoneSprites.east));
+            const stone = this.interactiveObjects.get('right_stone');
+            showStone('right_stone', stone?.x ?? this.dolmenBase.x + 30, stone?.y ?? this.dolmenBase.y);
             this.updateInventoryUI();
         }
         else if (r.get('hasStoneNorth') && !r.get('placedNorth')) {
             r.set('placedNorth', true);
             r.set('hasStoneNorth', false);
-            if (this.stoneSprites.north) this.stoneSprites.north.destroy();
-            this.stoneSprites.north = this.playStoneAnim(STONE_FRAMES.north, 4, this.dolmenBase.x, this.dolmenBase.y - 10);
-            this.triggerSparkles(this.dolmenBase.x, this.dolmenBase.y, 0xffffff);
-            sfx.action();
-            this.time.delayedCall(3000, () => this.stopStoneAnim(this.stoneSprites.north));
+            const stone = this.interactiveObjects.get('north_stone');
+            showStone('north_stone', stone?.x ?? this.dolmenBase.x, stone?.y ?? this.dolmenBase.y);
             this.updateInventoryUI();
         }
         else if (r.get('hasStoneTop') && !r.get('placedTop') && r.get('placedWest') && r.get('placedEast') && r.get('placedNorth')) {
             r.set('placedTop', true);
             r.set('hasStoneTop', false);
-            if (this.stoneSprites.top) this.stoneSprites.top.destroy();
-            this.stoneSprites.top = this.playStoneAnim(STONE_FRAMES.top, 6, this.dolmenBase.x, this.dolmenBase.y - 32);
-            this.triggerSparkles(this.dolmenBase.x, this.dolmenBase.y - 32, 0xffff00);
+            const stone = this.interactiveObjects.get('top_stone');
+            if (stone) {
+                stone.setVisible(true);
+                this.playInteractiveAnimation(stone);
+                this.triggerSparkles(stone.x, stone.y, 0xffff00);
+            }
             sfx.win(); // Fanfarra inicial
             this.updateInventoryUI();
             this.time.delayedCall(3000, () => {
-                // remover pedras antigas
-                ['west', 'east', 'north', 'top'].forEach(k => {
-                    const key = k as keyof typeof this.stoneSprites;
-                    if (this.stoneSprites[key]) { this.stoneSprites[key]!.destroy(); this.stoneSprites[key] = undefined; }
+                // Hide individual stones
+                ['left_stone', 'right_stone', 'north_stone', 'top_stone'].forEach(name => {
+                    const s = this.interactiveObjects.get(name);
+                    if (s) s.setVisible(false);
                 });
-                // Display the dolmen animation (using dolmen spritesheet)
-                const finalKey = 'dolmen-anim';
-                if (!this.anims.exists(finalKey)) {
-                    this.anims.create({ key: finalKey, frames: this.anims.generateFrameNumbers('dolmen', { start: 0, end: 2 }), frameRate: 6, repeat: -1 });
+
+                // Show the dolmen
+                const dolmen = this.interactiveObjects.get('dolmen');
+                if (dolmen) {
+                    dolmen.setVisible(true);
+                    this.playInteractiveAnimation(dolmen);
+                    this.time.delayedCall(3000, () => {
+                        this.stopInteractiveAnimation(dolmen);
+                        this.winGame();
+                    });
+                } else {
+                    // Fallback to old sprite method if dolmen not in tilemap
+                    const finalKey = 'dolmen-anim';
+                    if (!this.anims.exists(finalKey)) {
+                        this.anims.create({ key: finalKey, frames: this.anims.generateFrameNumbers('dolmen', { start: 0, end: 2 }), frameRate: 6, repeat: -1 });
+                    }
+                    if (this.stoneSprites.final) this.stoneSprites.final.destroy();
+                    this.stoneSprites.final = this.add.sprite(this.dolmenBase.x, this.dolmenBase.y - 32, 'dolmen', 0).setDepth(6);
+                    this.stoneSprites.final.play(finalKey);
+                    this.time.delayedCall(3000, () => {
+                        this.stoneSprites.final?.anims.pause(this.stoneSprites.final.anims.currentAnim?.frames[0]);
+                        this.winGame();
+                    });
                 }
-                if (this.stoneSprites.final) this.stoneSprites.final.destroy();
-                this.stoneSprites.final = this.add.sprite(this.dolmenBase.x, this.dolmenBase.y - 32, 'dolmen', 0).setDepth(6);
-                this.stoneSprites.final.play(finalKey);
-                this.time.delayedCall(3000, () => {
-                    this.stoneSprites.final?.anims.pause(this.stoneSprites.final.anims.currentAnim?.frames[0]);
-                    this.winGame();
-                });
             });
         }
     }
@@ -1597,11 +1709,37 @@ export class MainScene extends Phaser.Scene {
     restorePuzzleState() { }
     restoreDolmenState() {
         const r = this.registry;
-        this.clearStoneSprites();
-        if (r.get('placedWest')) this.stoneSprites.west = this.add.sprite(this.dolmenBase.x - 30, this.dolmenBase.y - 10, 'collectables', STONE_FRAMES.west).setDepth(5);
-        if (r.get('placedEast')) this.stoneSprites.east = this.add.sprite(this.dolmenBase.x + 30, this.dolmenBase.y - 10, 'collectables', STONE_FRAMES.east).setDepth(5);
-        if (r.get('placedNorth')) this.stoneSprites.north = this.add.sprite(this.dolmenBase.x, this.dolmenBase.y - 10, 'collectables', STONE_FRAMES.north).setDepth(4);
-        if (r.get('placedTop')) this.stoneSprites.top = this.add.sprite(this.dolmenBase.x, this.dolmenBase.y - 32, 'collectables', STONE_FRAMES.top).setDepth(6);
+
+        // Use tilemap interactive objects if available
+        if (this.interactiveObjects.size > 0) {
+            // Restore stone visibility based on registry state
+            const leftStone = this.interactiveObjects.get('left_stone');
+            const rightStone = this.interactiveObjects.get('right_stone');
+            const northStone = this.interactiveObjects.get('north_stone');
+            const topStone = this.interactiveObjects.get('top_stone');
+            const dolmen = this.interactiveObjects.get('dolmen');
+
+            if (leftStone) leftStone.setVisible(r.get('placedWest') === true);
+            if (rightStone) rightStone.setVisible(r.get('placedEast') === true);
+            if (northStone) northStone.setVisible(r.get('placedNorth') === true);
+            if (topStone) topStone.setVisible(r.get('placedTop') === true && !r.get('dolmenComplete'));
+
+            // If all stones are placed, show dolmen instead of individual stones
+            if (r.get('placedWest') && r.get('placedEast') && r.get('placedNorth') && r.get('placedTop')) {
+                if (leftStone) leftStone.setVisible(false);
+                if (rightStone) rightStone.setVisible(false);
+                if (northStone) northStone.setVisible(false);
+                if (topStone) topStone.setVisible(false);
+                if (dolmen) dolmen.setVisible(true);
+            }
+        } else {
+            // Fallback to old sprite method
+            this.clearStoneSprites();
+            if (r.get('placedWest')) this.stoneSprites.west = this.add.sprite(this.dolmenBase.x - 30, this.dolmenBase.y - 10, 'collectables', STONE_FRAMES.west).setDepth(5);
+            if (r.get('placedEast')) this.stoneSprites.east = this.add.sprite(this.dolmenBase.x + 30, this.dolmenBase.y - 10, 'collectables', STONE_FRAMES.east).setDepth(5);
+            if (r.get('placedNorth')) this.stoneSprites.north = this.add.sprite(this.dolmenBase.x, this.dolmenBase.y - 10, 'collectables', STONE_FRAMES.north).setDepth(4);
+            if (r.get('placedTop')) this.stoneSprites.top = this.add.sprite(this.dolmenBase.x, this.dolmenBase.y - 32, 'collectables', STONE_FRAMES.top).setDepth(6);
+        }
     }
     createWallsRect(x: number, y: number, w: number, h: number) { for (let i = x; i < x + w; i++) { this.walls.create(i * 32 + 16, y * 32 + 16, 'wall'); this.walls.create(i * 32 + 16, (y + h) * 32 + 16, 'wall'); } for (let j = y; j <= y + h; j++) { this.walls.create(x * 32 + 16, j * 32 + 16, 'wall'); this.walls.create((x + w) * 32 + 16, j * 32 + 16, 'wall'); } }
     createExit(x: number, y: number, nextLevel: number) { const portal = this.portals.create(x, y, 'portal'); this.physics.add.overlap(this.player, portal, () => { this.loadLevel(nextLevel); }); }
