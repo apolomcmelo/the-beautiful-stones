@@ -499,7 +499,7 @@ export class MainScene extends Phaser.Scene {
         // Bloqueio do portão até liberação
         if (!this.gateOpened) {
             this.gateBlock = this.walls.create(21 * 32 + 16, 9 * 32 + 16, 'wall');
-            this.triggerDialogue("Denise", "Koffe, encontre a porta trancada sem guarda...");
+            this.triggerDialogue("Sistema", "Para passar os níveis, pense nas características de cada mascote. Por exemplo, Koffe será sempre o teu guia...");
         } else {
             this.createExit(650, 300, 2);
         }
@@ -655,6 +655,9 @@ export class MainScene extends Phaser.Scene {
         // Dolmen base will be created when crater is found in setupDesertObjects
         // The crater sprites become the interactive area for placing stones
         this.restoreDolmenState();
+
+        // Initial dialogue hint about heat and shadows
+        this.triggerDialogue("Denise", "Que calor! Preciso de sombra pra me proteger.");
     }
 
     private getLayerDepth(layerName: string, defaultDepth: number): number {
