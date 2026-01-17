@@ -85,6 +85,15 @@ export class MainScene extends Phaser.Scene {
     private sparkleEmitter!: Phaser.GameObjects.Particles.ParticleEmitter;
     private impactEmitter!: Phaser.GameObjects.Particles.ParticleEmitter;
 
+    // Stuck detection for assistants
+    private assistantLastPositions: Map<string, { x: number; y: number; time: number }> = new Map();
+    private readonly STUCK_DISTANCE_THRESHOLD = 5;
+    private readonly STUCK_TIME_THRESHOLD = 1500; // ms
+
+    // A* pathfinding for Koffe
+    private koffeCurrentPath: { x: number; y: number }[] = [];
+    private koffePathIndex: number = 0;
+
     private startLevel: number = 1;
     private isNewGame: boolean = false;
 
@@ -312,10 +321,12 @@ export class MainScene extends Phaser.Scene {
             this.physics.add.sprite(20, 300, 'secondary_characters', 15).setName("Koffe") // Index 3
         ];
         this.assistants.forEach(c => {
-            c.setDepth(10).setVisible(false);
+            c.setDepth(9).setVisible(false);
             c.setCollideWorldBounds(true);
             c.setBounce(0.5);
             (c.body as Phaser.Physics.Arcade.Body).setSize(20, 20);
+            // Initialize stuck tracking
+            this.assistantLastPositions.set(c.name, { x: c.x, y: c.y, time: 0 });
         });
     } startGameplay() {
         this.isGameStarted = true;
@@ -400,7 +411,7 @@ export class MainScene extends Phaser.Scene {
         // Reset player/assistant depth for non-tilemap levels
         if (level !== 4) {
             this.player.setDepth(10);
-            this.assistants.forEach(a => a.setDepth(10));
+            this.assistants.forEach(a => a.setDepth(9));
         }
 
         // Add boss collision if boss exists
@@ -637,7 +648,7 @@ export class MainScene extends Phaser.Scene {
         // Set player depth (position will be set by player_start object in setupDesertObjects)
         this.player.setDepth(5); // Player renders above walls (3)
         this.assistants.forEach(a => {
-            a.setDepth(5);
+            a.setDepth(4); // Assistants render below player
         });
 
         // Hide boss health bar
@@ -1042,19 +1053,81 @@ export class MainScene extends Phaser.Scene {
         if (activeCat) this.selector.setPosition(activeCat.x, activeCat.y - 25);
 
         this.assistants.forEach((cat, i) => {
+            // Koffe pathfinding mode (hint)
             if (cat.name === "Koffe" && cat.getData('mode') === 'hint') {
-                const target = cat.getData('target');
-                if (target) {
-                    this.physics.moveTo(cat, target.x, target.y, 200);
-                    if (Phaser.Math.Distance.Between(cat.x, cat.y, target.x, target.y) < 50) {
-                        (cat.body as Phaser.Physics.Arcade.Body).setVelocity(0); cat.setData('mode', 'follow');
-                        this.showFloatingText(cat.x, cat.y - 30, "Woof! Aqui!", 0xffff00);
+                // Follow A* path if available
+                if (this.koffeCurrentPath.length > 0 && this.koffePathIndex < this.koffeCurrentPath.length) {
+                    const waypoint = this.koffeCurrentPath[this.koffePathIndex];
+                    const distToWaypoint = Phaser.Math.Distance.Between(cat.x, cat.y, waypoint.x, waypoint.y);
+                    if (distToWaypoint < 20) {
+                        this.koffePathIndex++;
+                        if (this.koffePathIndex >= this.koffeCurrentPath.length) {
+                            // Reached destination
+                            (cat.body as Phaser.Physics.Arcade.Body).setVelocity(0);
+                            cat.setData('mode', 'follow');
+                            this.koffeCurrentPath = [];
+                            this.koffePathIndex = 0;
+                            this.showFloatingText(cat.x, cat.y - 30, "Woof! Aqui!", 0xffff00);
+                        }
+                    } else {
+                        this.physics.moveTo(cat, waypoint.x, waypoint.y, 200);
+                    }
+                } else {
+                    // Fallback to direct movement if no path
+                    const target = cat.getData('target');
+                    if (target) {
+                        this.physics.moveTo(cat, target.x, target.y, 200);
+                        if (Phaser.Math.Distance.Between(cat.x, cat.y, target.x, target.y) < 50) {
+                            (cat.body as Phaser.Physics.Arcade.Body).setVelocity(0);
+                            cat.setData('mode', 'follow');
+                            this.showFloatingText(cat.x, cat.y - 30, "Woof! Aqui!", 0xffff00);
+                        }
                     }
                 }
             } else {
+                // Normal following behavior - 40px from player, 20px between each assistant
                 const dist = Phaser.Math.Distance.Between(cat.x, cat.y, this.player.x, this.player.y);
-                if (dist > 60 + (i * 20)) this.physics.moveToObject(cat, this.player, currentSpeed * 0.9);
-                else (cat.body as Phaser.Physics.Arcade.Body).setVelocity(0);
+                const followThreshold = 40 + (i * 20); // Maron: 40, Fiódor: 60, Orpheu: 80, Koffe: 100
+                if (dist > followThreshold) {
+                    this.physics.moveToObject(cat, this.player, currentSpeed * 0.9);
+                } else {
+                    (cat.body as Phaser.Physics.Arcade.Body).setVelocity(0);
+                }
+
+                // Stuck detection and teleport recovery
+                const lastPos = this.assistantLastPositions.get(cat.name);
+                if (lastPos) {
+                    const movedDist = Phaser.Math.Distance.Between(cat.x, cat.y, lastPos.x, lastPos.y);
+                    if (movedDist < this.STUCK_DISTANCE_THRESHOLD) {
+                        // Hasn't moved much - check if stuck long enough
+                        if (time - lastPos.time > this.STUCK_TIME_THRESHOLD && dist > followThreshold * 2) {
+                            // Teleport to player with particle effect
+                            const teleportX = this.player.x - 20 - (i * 15);
+                            const teleportY = this.player.y + 10;
+
+                            // Particle effect at old position
+                            this.sparkleEmitter.setParticleTint(0x9b59b6);
+                            this.sparkleEmitter.explode(8, cat.x, cat.y);
+
+                            // Teleport
+                            cat.setPosition(teleportX, teleportY);
+                            (cat.body as Phaser.Physics.Arcade.Body).setVelocity(0);
+
+                            // Particle effect at new position
+                            this.sparkleEmitter.explode(8, teleportX, teleportY);
+
+                            // Show message
+                            const msg = cat.name === "Koffe" ? "Woof!" : "Miau!";
+                            this.showFloatingText(teleportX, teleportY - 20, msg, 0x9b59b6);
+
+                            // Reset tracking
+                            this.assistantLastPositions.set(cat.name, { x: teleportX, y: teleportY, time: time });
+                        }
+                    } else {
+                        // Moving normally - update position and time
+                        this.assistantLastPositions.set(cat.name, { x: cat.x, y: cat.y, time: time });
+                    }
+                }
             }
 
             // Animation Logic for Fiódor
@@ -1246,7 +1319,24 @@ export class MainScene extends Phaser.Scene {
         }
 
         if (target) {
-            koffe.setData('mode', 'hint'); koffe.setData('target', target);
+            koffe.setData('mode', 'hint');
+            koffe.setData('target', target);
+
+            // Calculate A* path
+            const path = this.findPath(
+                { x: Math.floor(koffe.x), y: Math.floor(koffe.y) },
+                target
+            );
+
+            if (path.length > 0) {
+                this.koffeCurrentPath = path;
+                this.koffePathIndex = 0;
+            } else {
+                // Fallback: direct movement if no path found
+                this.koffeCurrentPath = [];
+                this.koffePathIndex = 0;
+            }
+
             sfx.collect(); // Som de dica
             this.showFloatingText(koffe.x, koffe.y - 20, "Sniff sniff...", 0xffff00);
         } else {
@@ -1896,4 +1986,161 @@ export class MainScene extends Phaser.Scene {
         });
     }
     winGame() { this.scene.start('EndingScene'); }
+
+    // ================= A* PATHFINDING =================
+    private findPath(start: { x: number; y: number }, end: { x: number; y: number }): { x: number; y: number }[] {
+        const tileSize = this.currentRoom === 4 ? 48 : 32;
+        const startTile = { x: Math.floor(start.x / tileSize), y: Math.floor(start.y / tileSize) };
+        const endTile = { x: Math.floor(end.x / tileSize), y: Math.floor(end.y / tileSize) };
+
+        const grid = this.buildCollisionGrid(tileSize);
+        if (!grid.length) return [];
+
+        const gridWidth = grid[0].length;
+        const gridHeight = grid.length;
+
+        // Ensure start and end are within bounds
+        if (startTile.x < 0 || startTile.x >= gridWidth || startTile.y < 0 || startTile.y >= gridHeight) return [];
+        if (endTile.x < 0 || endTile.x >= gridWidth || endTile.y < 0 || endTile.y >= gridHeight) return [];
+
+        // A* algorithm
+        interface Node {
+            x: number; y: number; g: number; h: number; f: number; parent: Node | null;
+        }
+
+        const openList: Node[] = [];
+        const closedSet = new Set<string>();
+        const key = (x: number, y: number) => `${x},${y}`;
+
+        const heuristic = (a: { x: number; y: number }, b: { x: number; y: number }) =>
+            Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
+
+        const startNode: Node = { x: startTile.x, y: startTile.y, g: 0, h: heuristic(startTile, endTile), f: 0, parent: null };
+        startNode.f = startNode.g + startNode.h;
+        openList.push(startNode);
+
+        const directions = [
+            { dx: 0, dy: -1 }, { dx: 0, dy: 1 }, { dx: -1, dy: 0 }, { dx: 1, dy: 0 },
+            { dx: -1, dy: -1 }, { dx: 1, dy: -1 }, { dx: -1, dy: 1 }, { dx: 1, dy: 1 }
+        ];
+
+        let iterations = 0;
+        const maxIterations = 1000;
+
+        while (openList.length > 0 && iterations < maxIterations) {
+            iterations++;
+            openList.sort((a, b) => a.f - b.f);
+            const current = openList.shift()!;
+
+            if (current.x === endTile.x && current.y === endTile.y) {
+                // Reconstruct path
+                const path: { x: number; y: number }[] = [];
+                let node: Node | null = current;
+                while (node) {
+                    path.unshift({ x: node.x * tileSize + tileSize / 2, y: node.y * tileSize + tileSize / 2 });
+                    node = node.parent;
+                }
+                return this.simplifyPath(path);
+            }
+
+            closedSet.add(key(current.x, current.y));
+
+            for (const dir of directions) {
+                const nx = current.x + dir.dx;
+                const ny = current.y + dir.dy;
+
+                if (nx < 0 || nx >= gridWidth || ny < 0 || ny >= gridHeight) continue;
+                if (grid[ny][nx] === 1) continue; // Wall
+                if (closedSet.has(key(nx, ny))) continue;
+
+                // Diagonal movement check - ensure corners are clear
+                if (dir.dx !== 0 && dir.dy !== 0) {
+                    if (grid[current.y][nx] === 1 || grid[ny][current.x] === 1) continue;
+                }
+
+                const g = current.g + (dir.dx !== 0 && dir.dy !== 0 ? 1.414 : 1);
+                const existing = openList.find(n => n.x === nx && n.y === ny);
+
+                if (!existing) {
+                    const h = heuristic({ x: nx, y: ny }, endTile);
+                    openList.push({ x: nx, y: ny, g, h, f: g + h, parent: current });
+                } else if (g < existing.g) {
+                    existing.g = g;
+                    existing.f = g + existing.h;
+                    existing.parent = current;
+                }
+            }
+        }
+
+        return []; // No path found
+    }
+
+    private buildCollisionGrid(tileSize: number): number[][] {
+        let width: number, height: number;
+
+        if (this.currentRoom === 4 && this.desertMap) {
+            width = this.desertMap.width;
+            height = this.desertMap.height;
+        } else {
+            width = Math.ceil(WORLD_WIDTH / tileSize);
+            height = Math.ceil(WORLD_HEIGHT / tileSize);
+        }
+
+        const grid: number[][] = [];
+        for (let y = 0; y < height; y++) {
+            grid[y] = [];
+            for (let x = 0; x < width; x++) {
+                grid[y][x] = 0; // Default walkable
+            }
+        }
+
+        // Add tilemap collision (Level 4)
+        if (this.wallsLayer && this.currentRoom === 4) {
+            this.wallsLayer.forEachTile(tile => {
+                if (tile && tile.properties && tile.properties.collides) {
+                    grid[tile.y][tile.x] = 1;
+                }
+            });
+        }
+
+        // Add static walls from walls group
+        if (this.walls) {
+            this.walls.getChildren().forEach(obj => {
+                const wall = obj as Phaser.Physics.Arcade.Sprite;
+                const tx = Math.floor(wall.x / tileSize);
+                const ty = Math.floor(wall.y / tileSize);
+                if (ty >= 0 && ty < height && tx >= 0 && tx < width) {
+                    grid[ty][tx] = 1;
+                }
+            });
+        }
+
+        return grid;
+    }
+
+    private simplifyPath(path: { x: number; y: number }[]): { x: number; y: number }[] {
+        if (path.length <= 2) return path;
+
+        const simplified: { x: number; y: number }[] = [path[0]];
+
+        for (let i = 1; i < path.length - 1; i++) {
+            const prev = path[i - 1];
+            const curr = path[i];
+            const next = path[i + 1];
+
+            // Calculate directions
+            const dx1 = Math.sign(curr.x - prev.x);
+            const dy1 = Math.sign(curr.y - prev.y);
+            const dx2 = Math.sign(next.x - curr.x);
+            const dy2 = Math.sign(next.y - curr.y);
+
+            // Keep point if direction changes
+            if (dx1 !== dx2 || dy1 !== dy2) {
+                simplified.push(curr);
+            }
+        }
+
+        simplified.push(path[path.length - 1]);
+        return simplified;
+    }
 }
