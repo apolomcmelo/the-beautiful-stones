@@ -1046,8 +1046,28 @@ export class MainScene extends Phaser.Scene {
 
         // --- CONTROLO DA POEIRA & SOM DE PASSOS ---
         if (this.player.body!.velocity.length() > 10) {
-            // Atualiza a posição da poeira para os pés da Denise
-            this.dustEmitter.setPosition(this.player.x, this.player.y + 20);
+            // Atualiza a posição da poeira para atrás da Denise (oposto à direção do movimento)
+            const vel = this.player.body!.velocity;
+            let dustOffsetX = 0;
+            let dustOffsetY = 0;
+
+            // Posiciona a poeira atrás do personagem baseado na direção
+            if (Math.abs(vel.x) > Math.abs(vel.y)) {
+                // Movimento horizontal - poeira atrás, alinhada com os pés
+                dustOffsetX = vel.x > 0 ? -10 : 10;
+                dustOffsetY = 25; // Alinhado com os pés
+            } else {
+                // Movimento vertical - poeira atrás
+                if (vel.y > 0) {
+                    // Movendo para baixo - poeira atrás (acima)
+                    dustOffsetY = -5;
+                } else {
+                    // Movendo para cima - poeira atrás (abaixo, nos pés)
+                    dustOffsetY = 30;
+                }
+            }
+
+            this.dustEmitter.setPosition(this.player.x + dustOffsetX, this.player.y + dustOffsetY);
             this.dustEmitter.start();
             // Som de passos
             if (time > this.stepTimer) {
