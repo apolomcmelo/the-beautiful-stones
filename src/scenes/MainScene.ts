@@ -399,14 +399,23 @@ export class MainScene extends Phaser.Scene {
         this.physics.add.collider(this.heavyBoxes, this.walls);
         this.physics.add.collider(this.player, this.heavyBoxes);
         this.physics.add.collider(this.player, this.specialObjects);
-        this.physics.add.collider(this.assistants, this.specialObjects);
+        // Skip assistant collision with specialObjects when in action mode (so they can reach doors/screens)
+        this.physics.add.collider(this.assistants, this.specialObjects, undefined, (assistant, _obj) => {
+            const cat = assistant as Phaser.Physics.Arcade.Sprite;
+            const mode = cat.getData('mode');
+            if (mode === 'action' || mode === 'return') {
+                return false;
+            }
+            return true;
+        }, this);
         this.physics.add.collider(this.player, this.npcs);
-        // Skip Koffe collision with NPCs when in hint mode (so he can reach targets)
+        // Skip assistant collision with NPCs when in action/hint mode (so they can reach targets)
         this.physics.add.collider(this.assistants, this.npcs, undefined, (assistant, _npc) => {
             const cat = assistant as Phaser.Physics.Arcade.Sprite;
-            // Allow collision unless this is Koffe in hint mode
-            if (cat.name === 'Koffe' && cat.getData('mode') === 'hint') {
-                return false; // Skip collision
+            const mode = cat.getData('mode');
+            // Skip collision when assistant is moving to target or returning
+            if (mode === 'hint' || mode === 'action' || mode === 'return') {
+                return false;
             }
             return true; // Normal collision
         }, this);
@@ -1061,8 +1070,75 @@ export class MainScene extends Phaser.Scene {
         if (activeCat) this.selector.setPosition(activeCat.x, activeCat.y - 25);
 
         this.assistants.forEach((cat, i) => {
+            // Action mode for Maron, Fiódor, Orpheu - move to target, execute, return
+            const catMode = cat.getData('mode');
+
+            if ((cat.name === 'Maron' || cat.name === 'Fiódor' || cat.name === 'Orpheu') && catMode === 'action') {
+                const target = cat.getData('actionTarget');
+                if (target) {
+                    const distToTarget = Phaser.Math.Distance.Between(cat.x, cat.y, target.x, target.y);
+                    if (distToTarget > 5) {
+                        this.physics.moveTo(cat, target.x, target.y, 150);
+                    } else {
+                        // Arrived at target - execute action based on type
+                        (cat.body as Phaser.Physics.Arcade.Body).setVelocity(0);
+                        const actionType = cat.getData('actionType');
+
+                        if (actionType === 'heal') {
+                            this.playerHealth = Math.min(100, this.playerHealth + 10);
+                            this.triggerSparkles(cat.x, cat.y, 0x00ff00);
+                            sfx.collect();
+                            this.updateUI();
+                            this.showFloatingText(cat.x, cat.y - 20, "Purr... +10 HP", 0x2ecc71);
+                        } else if (actionType === 'openDoor') {
+                            const doorSprite = cat.getData('targetSprite') as Phaser.Physics.Arcade.Sprite;
+                            this.doorRoom1Opened = true;
+                            playAssistantVoice('Orpheu');
+                            this.triggerSparkles(target.x, target.y, 0xffffff);
+                            sfx.action();
+                            if (doorSprite && doorSprite.active) {
+                                doorSprite.disableBody(true, true);
+                                doorSprite.destroy();
+                            }
+                            this.removeWallAt(6, 8);
+                            this.removeWallAt(6, 7);
+                        } else if (actionType === 'fixScreen') {
+                            const screenSprite = cat.getData('targetSprite') as Phaser.Physics.Arcade.Sprite;
+                            playAssistantVoice('Fiódor');
+                            this.cameras.main.flash(400);
+                            this.triggerSparkles(target.x, target.y, 0x00ffff);
+                            sfx.action();
+                            if (screenSprite && screenSprite.active) {
+                                screenSprite.setData('fixed', true);
+                                screenSprite.setFrame(1);
+                            }
+                            this.screenFixed = true;
+                            this.registry.set('screenFixed', true);
+                        }
+
+                        // Switch to return mode
+                        cat.setData('mode', 'return');
+                    }
+                }
+            } else if ((cat.name === 'Maron' || cat.name === 'Fiódor' || cat.name === 'Orpheu') && catMode === 'return') {
+                const returnPos = cat.getData('returnPosition');
+                if (returnPos) {
+                    const distToReturn = Phaser.Math.Distance.Between(cat.x, cat.y, returnPos.x, returnPos.y);
+                    if (distToReturn > 15) {
+                        this.physics.moveTo(cat, returnPos.x, returnPos.y, 150);
+                    } else {
+                        // Back to original position
+                        (cat.body as Phaser.Physics.Arcade.Body).setVelocity(0);
+                        cat.setData('mode', 'follow');
+                        cat.setData('actionType', null);
+                        cat.setData('actionTarget', null);
+                        cat.setData('returnPosition', null);
+                        cat.setData('targetSprite', null);
+                    }
+                }
+            }
             // Koffe pathfinding mode (hint)
-            if (cat.name === "Koffe" && cat.getData('mode') === 'hint') {
+            else if (cat.name === "Koffe" && cat.getData('mode') === 'hint') {
                 // Follow A* path if available
                 if (this.koffeCurrentPath.length > 0 && this.koffePathIndex < this.koffeCurrentPath.length) {
                     const waypoint = this.koffeCurrentPath[this.koffePathIndex];
@@ -1239,10 +1315,16 @@ export class MainScene extends Phaser.Scene {
         playAssistantVoice(activeCat.name);
         if (activeCat.name === "Maron") {
             if (time > this.lastHealTime + 2000) {
-                this.playerHealth = Math.min(100, this.playerHealth + 10);
-                this.triggerSparkles(activeCat.x, activeCat.y, 0x00ff00); // Brilho verde de cura
-                sfx.collect(); // Som de cura (reutiliza o ding)
-                this.updateUI(); this.showFloatingText(activeCat.x, activeCat.y - 20, "Purr... +10 HP", 0x2ecc71);
+                // Maron walks until 5px from player, heals, then returns
+                const returnPos = { x: activeCat.x, y: activeCat.y };
+                const angle = Phaser.Math.Angle.Between(this.player.x, this.player.y, activeCat.x, activeCat.y);
+                const targetX = this.player.x + Math.cos(angle) * 5;
+                const targetY = this.player.y + Math.sin(angle) * 5;
+
+                activeCat.setData('mode', 'action');
+                activeCat.setData('actionType', 'heal');
+                activeCat.setData('actionTarget', { x: targetX, y: targetY });
+                activeCat.setData('returnPosition', returnPos);
                 this.lastHealTime = time;
             }
         }
@@ -1262,14 +1344,15 @@ export class MainScene extends Phaser.Scene {
                 return true;
             }
             if (activeCat.name === 'Orpheu') {
-                this.doorRoom1Opened = true;
-                playAssistantVoice('Orpheu');
-                this.triggerSparkles(targetSprite.x, targetSprite.y, 0xffffff);
-                sfx.action();
-                targetSprite.disableBody(true, true);
-                targetSprite.destroy();
-                this.removeWallAt(6, 8);
-                this.removeWallAt(6, 7);
+                // Orpheu moves to door, opens it, then returns
+                const returnPos = { x: activeCat.x, y: activeCat.y };
+                const doorTarget = { x: targetSprite.x, y: targetSprite.y };
+
+                activeCat.setData('mode', 'action');
+                activeCat.setData('actionType', 'openDoor');
+                activeCat.setData('actionTarget', doorTarget);
+                activeCat.setData('returnPosition', returnPos);
+                activeCat.setData('targetSprite', targetSprite);
             } else {
                 this.triggerDialogue("Denise", "Não alcanço essa maçaneta. Se eu tivesse alguém que conseguisse abrir portas pulando...");
             }
@@ -1286,14 +1369,15 @@ export class MainScene extends Phaser.Scene {
 
         if (type === 'broken_screen' && activeCat.name === 'Fiódor') {
             if (!target.getData('fixed')) {
-                playAssistantVoice('Fiódor');
-                this.cameras.main.flash(400); // Flash ao consertar
-                this.triggerSparkles(targetSprite.x, targetSprite.y, 0x00ffff); // Brilho ciano
-                sfx.action(); // Som de ação
-                target.setData('fixed', true);
-                targetSprite.setFrame(1); // Change to fixed frame
-                this.screenFixed = true;
-                this.registry.set('screenFixed', true);
+                // Fiódor moves to screen, fixes it, then returns
+                const returnPos = { x: activeCat.x, y: activeCat.y };
+                const screenTarget = { x: targetSprite.x, y: targetSprite.y };
+
+                activeCat.setData('mode', 'action');
+                activeCat.setData('actionType', 'fixScreen');
+                activeCat.setData('actionTarget', screenTarget);
+                activeCat.setData('returnPosition', returnPos);
+                activeCat.setData('targetSprite', targetSprite);
                 return true;
             }
         } else if (type === 'broken_screen') {
