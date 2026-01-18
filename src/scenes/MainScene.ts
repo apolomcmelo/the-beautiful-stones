@@ -1512,7 +1512,7 @@ export class MainScene extends Phaser.Scene {
             const isFirst = this.cinnamonCount === 0;
             this.cinnamonCount++;
             this.showFloatingText(player.x, player.y - 20, "+1 Canela", 0xffff00);
-            this.triggerDialogue("Denise", "Canela coletada! Para usar, pressione Z.");
+            this.triggerDialogue("Sistema", "Canela coletada! Para usar, pressione Z.");
             this.updateInventoryUI();
             if (isFirst) this.updateControlsHint();
         }
@@ -1520,7 +1520,7 @@ export class MainScene extends Phaser.Scene {
             const isFirst = this.cloveCount === 0;
             this.cloveCount++;
             this.showFloatingText(player.x, player.y - 20, "+1 Cravo", 0xffff00);
-            this.triggerDialogue("Denise", "Cravo coletado! Para usar, pressione X.");
+            this.triggerDialogue("Sistema", "Cravo coletado! Para usar, pressione X.");
             this.updateInventoryUI();
             if (isFirst) this.updateControlsHint();
         }
@@ -1528,7 +1528,7 @@ export class MainScene extends Phaser.Scene {
             const isFirst = this.pastelCount === 0;
             this.pastelCount++;
             this.showFloatingText(player.x, player.y - 20, "+1 Pastel de Nata", 0xffff00);
-            this.triggerDialogue("Denise", "Pastel de Nata coletado! Para usar, pressione C.");
+            this.triggerDialogue("Sistema", "Pastel de Nata coletado! Para usar, pressione C.");
             this.updateInventoryUI();
             if (isFirst) this.updateControlsHint();
         }
